@@ -3,6 +3,7 @@ import { CheckCircle2, ChevronRight, Clock, Target, Scale, Heart, Moon, Zap } fr
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import { redirect } from 'next/navigation'
+import AICoachChat from '../_components/AICoachChat'
 import {
   mockUser,
   mockPlan,
@@ -403,6 +404,12 @@ export default async function DashboardPage() {
             <ChevronRight size={16} className="text-gray-400 group-hover:text-[#f97316] transition-colors" />
           </Link>
         </div>
+      </section>
+
+      {/* AI Coach Chat */}
+      <section>
+        <h2 className="text-lg font-semibold text-gray-900 mb-3">Tu AI Coach</h2>
+        <AICoachChat />
       </section>
 
       {/* Card coach (solo si tiene coach) */}

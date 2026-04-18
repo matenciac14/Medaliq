@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import { parseUserConfig } from '@/lib/config/user-config'
+import { evaluateAndAdjust } from '@/lib/plan/adjustments'
 
 interface CheckInBody {
   weightKg?: number
@@ -64,7 +65,7 @@ export async function POST(req: NextRequest) {
 
   const activePlan = await prisma.trainingPlan.findFirst({
     where: { userId, status: 'ACTIVE' },
-    select: { startDate: true },
+    include: { weeks: { orderBy: { weekNumber: 'asc' }, take: 1 } },
   })
 
   if (activePlan) {
@@ -74,6 +75,33 @@ export async function POST(req: NextRequest) {
   }
 
   const alerts = evaluateAlerts(body)
+
+  // Obtener contexto del plan para el motor de ajuste
+  const planContext = activePlan
+    ? {
+        currentWeek: getCurrentWeekNumber(activePlan.startDate),
+        totalWeeks: activePlan.totalWeeks,
+        phase: activePlan.weeks[0]?.phase ?? 'BASE',
+        weeklyVolumeKm: activePlan.weeks[0]?.volumeKm ?? undefined,
+        isRecoveryWeek: activePlan.weeks[0]?.isRecoveryWeek ?? false,
+      }
+    : { currentWeek: 1, totalWeeks: 18, phase: 'BASE' }
+
+  // Evaluar ajustes con motor + AI
+  const adjustmentResult = await evaluateAndAdjust(
+    {
+      weightKg: body.weightKg,
+      hrResting: body.hrResting,
+      sleepHours: body.sleepHours,
+      sleepScore: body.sleepScore,
+      hardestSessionRpe: body.hardestRpe,
+      dietAdherencePct: body.adherencePct,
+      painFlag: body.hasPain,
+      energyLevel: body.energyLevel,
+      notes: body.notes,
+    },
+    planContext
+  )
 
   const checkInData = {
     weightKg: body.weightKg,
@@ -85,7 +113,7 @@ export async function POST(req: NextRequest) {
     painFlag: body.hasPain,
     energyLevel: body.energyLevel,
     notes: body.notes,
-    adjustmentsTriggered: alerts,
+    adjustmentsTriggered: adjustmentResult.triggers,
     recordedAt: new Date(),
   }
 
@@ -112,5 +140,13 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, alerts })
+  return NextResponse.json({
+    ok: true,
+    alerts,
+    adjustment: {
+      severity: adjustmentResult.severity,
+      recommendation: adjustmentResult.recommendation,
+      adjustments: adjustmentResult.adjustments,
+    },
+  })
 }

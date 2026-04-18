@@ -1,9 +1,91 @@
+import { redirect } from 'next/navigation'
+import { auth } from '@/auth'
+import { prisma } from '@/lib/db/prisma'
 import { mockAthletes } from '@/lib/mock/coach-data'
 import AthleteTabs from './_components/AthleteTabs'
 
-export default function CoachDashboardPage() {
-  const totalAlerts = mockAthletes.reduce((acc, a) => acc + a.alerts.length, 0)
-  const pendingCheckIns = mockAthletes.filter((a) => a.lastCheckInDaysAgo >= 3).length
+export default async function CoachDashboardPage() {
+  const session = await auth()
+
+  if (!session?.user?.id || session.user.role !== 'COACH') {
+    redirect('/dashboard')
+  }
+
+  const coachId = session.user.id
+
+  // ── Fetch atletas reales ──────────────────────────────────────────────────
+  const coachRelations = await prisma.coachAthlete.findMany({
+    where: { coachId },
+    include: {
+      athlete: {
+        include: {
+          profile: true,
+          trainingPlans: {
+            where: { status: 'ACTIVE' },
+            take: 1,
+            include: {
+              weeks: {
+                take: 1,
+                orderBy: { weekNumber: 'asc' },
+              },
+            },
+          },
+          checkIns: {
+            orderBy: { recordedAt: 'desc' },
+            take: 1,
+          },
+          goals: {
+            where: { status: 'ACTIVE' },
+            take: 1,
+          },
+        },
+      },
+    },
+  })
+
+  // ── Mapear al tipo Athlete que espera AthleteTabs ─────────────────────────
+  const athletesFromDB = coachRelations.map(({ athlete }) => {
+    const plan        = athlete.trainingPlans[0] ?? null
+    const lastCheckIn = athlete.checkIns[0] ?? null
+
+    const daysSince = lastCheckIn
+      ? Math.floor(
+          (Date.now() - new Date(lastCheckIn.recordedAt).getTime()) / 86_400_000
+        )
+      : 999
+
+    const currentWeek = plan
+      ? Math.max(
+          1,
+          Math.floor(
+            (Date.now() - new Date(plan.startDate).getTime()) / 604_800_000
+          ) + 1
+        )
+      : 0
+
+    return {
+      id:                 athlete.id,
+      name:               athlete.name ?? 'Atleta',
+      email:              athlete.email ?? '',
+      goal:               athlete.goals[0]?.type ?? 'GENERAL_FITNESS',
+      currentWeek,
+      totalWeeks:         plan?.totalWeeks ?? 0,
+      phase:              (plan?.weeks[0]?.phase as string) ?? 'BASE',
+      lastCheckInDaysAgo: daysSince,
+      weightKg:           lastCheckIn?.weightKg ?? athlete.profile?.weightKg ?? 0,
+      weightGoalKg:       athlete.profile?.weightGoalKg ?? 0,
+      hrResting:          lastCheckIn?.hrResting ?? athlete.profile?.hrResting ?? 0,
+      adherencePct:       75, // calcular real después
+      alerts:             lastCheckIn?.adjustmentsTriggered ?? [],
+      planStatus:         plan?.status ?? 'SIN PLAN',
+    }
+  })
+
+  // ── Fallback a mock si no hay atletas reales ──────────────────────────────
+  const athletes = athletesFromDB.length > 0 ? athletesFromDB : mockAthletes
+
+  const totalAlerts    = athletes.reduce((acc, a) => acc + a.alerts.length, 0)
+  const pendingCheckIns = athletes.filter((a) => a.lastCheckInDaysAgo >= 3).length
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -13,7 +95,7 @@ export default function CoachDashboardPage() {
           <h1 className="text-2xl font-bold" style={{ color: '#1e3a5f' }}>
             Panel de entrenamiento
           </h1>
-          <p className="text-gray-500 text-sm mt-0.5">{mockAthletes.length} atletas activos</p>
+          <p className="text-gray-500 text-sm mt-0.5">{athletes.length} atletas activos</p>
         </div>
         {totalAlerts > 0 && (
           <span className="self-start sm:self-auto inline-flex items-center gap-1.5 bg-red-100 text-red-700 font-semibold text-sm px-3 py-1.5 rounded-full">
@@ -25,25 +107,13 @@ export default function CoachDashboardPage() {
 
       {/* Metric cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <MetricCard
-          label="Atletas activos"
-          value={mockAthletes.length}
-          color="#1e3a5f"
-        />
-        <MetricCard
-          label="Check-ins pendientes"
-          value={pendingCheckIns}
-          color="#f97316"
-        />
-        <MetricCard
-          label="Alertas activas"
-          value={totalAlerts}
-          color="#dc2626"
-        />
+        <MetricCard label="Atletas activos"      value={athletes.length}  color="#1e3a5f" />
+        <MetricCard label="Check-ins pendientes" value={pendingCheckIns}  color="#f97316" />
+        <MetricCard label="Alertas activas"      value={totalAlerts}      color="#dc2626" />
       </div>
 
       {/* Tabs + athlete list */}
-      <AthleteTabs athletes={mockAthletes} />
+      <AthleteTabs athletes={athletes} />
     </div>
   )
 }

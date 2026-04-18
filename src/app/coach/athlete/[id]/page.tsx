@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { mockAthletes, mockAthleteCheckIns } from '@/lib/mock/coach-data'
+import AthleteFeatureToggles from './_components/AthleteFeatureToggles'
 
 const TABS = ['Resumen', 'Plan', 'Progreso', 'Nutrición']
 
@@ -163,6 +164,12 @@ export default function AthleteDetailPage({ params }: { params: { id: string } }
               </ul>
             </div>
           )}
+
+          {/* Acceso del atleta */}
+          <AthleteFeatureToggles
+            athleteId={params.id}
+            initialFeatures={{ plan: true, checkin: true, nutrition: false, progress: false }}
+          />
 
           {/* Últimos check-ins tabla */}
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 overflow-x-auto">

@@ -143,6 +143,11 @@ export default function CheckinPage() {
   const [showAlertModal, setShowAlertModal] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [adjustment, setAdjustment] = useState<{
+    severity: 'ok' | 'warning' | 'critical'
+    recommendation: string
+    adjustments: string[]
+  } | null>(null)
 
   function handleSubmit() {
     const data: CheckInData = {
@@ -174,7 +179,7 @@ export default function CheckinPage() {
     setSaving(true)
     setShowAlertModal(false)
     try {
-      await fetch('/api/checkin', {
+      const res = await fetch('/api/checkin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data ?? {
@@ -190,6 +195,10 @@ export default function CheckinPage() {
           notes: notes || undefined,
         }),
       })
+      const json = await res.json()
+      if (json.adjustment) {
+        setAdjustment(json.adjustment)
+      }
       setSaved(true)
     } finally {
       setSaving(false)
@@ -197,12 +206,48 @@ export default function CheckinPage() {
   }
 
   if (saved) {
+    const bannerStyles = {
+      ok: {
+        wrapper: 'bg-green-50 border border-green-200',
+        title: 'text-green-800',
+        text: 'text-green-700',
+        icon: '✅',
+        label: '¡Semana perfecta!',
+      },
+      warning: {
+        wrapper: 'bg-yellow-50 border border-yellow-200',
+        title: 'text-yellow-800',
+        text: 'text-yellow-700',
+        icon: '⚠️',
+        label: 'Ajuste recomendado',
+      },
+      critical: {
+        wrapper: 'bg-red-50 border border-red-200',
+        title: 'text-red-800',
+        text: 'text-red-700',
+        icon: '🚨',
+        label: 'Atención requerida',
+      },
+    }
+    const severity = adjustment?.severity ?? 'ok'
+    const style = bannerStyles[severity]
+
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 max-w-sm w-full text-center space-y-4">
           <div className="text-5xl">✅</div>
           <h2 className="text-xl font-bold text-gray-900">Check-in guardado</h2>
-          <p className="text-sm text-gray-500">Tu coach revisara los datos y ajustara el plan si es necesario.</p>
+
+          {adjustment && (
+            <div className={`rounded-xl p-4 text-left space-y-1 ${style.wrapper}`}>
+              <p className={`text-sm font-bold flex items-center gap-2 ${style.title}`}>
+                <span>{style.icon}</span>
+                {style.label}
+              </p>
+              <p className={`text-sm ${style.text}`}>{adjustment.recommendation}</p>
+            </div>
+          )}
+
           <button
             onClick={() => router.push('/dashboard')}
             className="w-full bg-[#1e3a5f] hover:bg-[#162d4a] text-white font-semibold py-3 rounded-xl transition-colors"

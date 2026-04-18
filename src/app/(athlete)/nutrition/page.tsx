@@ -1,5 +1,8 @@
 import Link from 'next/link'
+import { auth } from '@/auth'
+import { prisma } from '@/lib/db/prisma'
 import { mockNutritionPlan, mockMeals, mockSupplements, todaySessionType } from '@/lib/mock/nutrition-data'
+import GenerateNutritionButton from './_components/GenerateNutritionButton'
 
 // Determina tipo de día según sesión
 function getDayType(sessionType: string): 'hard' | 'easy' | 'rest' {
@@ -111,7 +114,12 @@ function DayTabContent({ label, active }: { label: string; active: boolean }) {
   )
 }
 
-export default function NutritionPage() {
+export default async function NutritionPage() {
+  const session = await auth()
+  const hasPlan = session?.user?.id
+    ? !!(await prisma.nutritionPlan.findUnique({ where: { userId: session.user.id }, select: { id: true } }))
+    : false
+
   const todayType = getDayType(todaySessionType)
   const badge = DAY_TYPE_LABELS[todayType]
   const macros = getMacrosForType(todayType)
@@ -140,6 +148,9 @@ export default function NutritionPage() {
           {badge.emoji} {badge.label}
         </span>
       </div>
+
+      {/* Generar plan con AI — solo si no hay plan en DB */}
+      {!hasPlan && <GenerateNutritionButton />}
 
       {/* Tabs */}
       <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
