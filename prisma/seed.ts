@@ -1,6 +1,8 @@
+import 'dotenv/config'
 import { PrismaClient, UserRole, GoalType, GoalStatus, PlanStatus, PlanSource, Phase, SessionType } from '../src/generated/prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import bcrypt from 'bcryptjs'
+import { FULL_ATHLETE_CONFIG, COACH_CONFIG, DEFAULT_USER_CONFIG } from '../src/lib/config/user-config'
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
 const prisma = new PrismaClient({ adapter } as any)
@@ -12,12 +14,13 @@ async function main() {
   const coachPassword = await bcrypt.hash('coach123', 12)
   const coach = await prisma.user.upsert({
     where: { email: 'coach@medaliq.com' },
-    update: {},
+    update: { config: COACH_CONFIG },
     create: {
       email: 'coach@medaliq.com',
       name: 'Carlos Entrenador',
       password: coachPassword,
       role: UserRole.COACH,
+      config: COACH_CONFIG,
     },
   })
 
@@ -25,12 +28,13 @@ async function main() {
   const athletePassword = await bcrypt.hash('atleta123', 12)
   const athlete1 = await prisma.user.upsert({
     where: { email: 'miguel@medaliq.com' },
-    update: {},
+    update: { config: FULL_ATHLETE_CONFIG },
     create: {
       email: 'miguel@medaliq.com',
       name: 'Miguel Atleta',
       password: athletePassword,
       role: UserRole.ATHLETE,
+      config: FULL_ATHLETE_CONFIG,
       profile: {
         create: {
           age: 30,
@@ -169,6 +173,7 @@ async function main() {
       name: 'Ana Runner',
       password: await bcrypt.hash('atleta123', 12),
       role: UserRole.ATHLETE,
+      config: DEFAULT_USER_CONFIG,  // recién registrada, sin features aún
       profile: {
         create: {
           age: 27,

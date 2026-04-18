@@ -13,17 +13,22 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { mockUser } from '@/lib/mock/dashboard-data'
+import { FULL_ATHLETE_CONFIG } from '@/lib/config/user-config'
+
+// TODO: reemplazar por config real del usuario autenticado (DB)
+const userConfig = FULL_ATHLETE_CONFIG
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
 
+  const { features } = userConfig
   const navLinks = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, show: true },
-    { href: '/plan', label: 'Mi Plan', icon: CalendarDays, show: mockUser.hasPlan },
-    { href: '/checkin', label: 'Check-in', icon: ClipboardCheck, show: mockUser.hasPlan },
-    { href: '/nutrition', label: 'Nutrición', icon: Apple, show: mockUser.hasNutrition },
-    { href: '/progress', label: 'Progreso', icon: TrendingUp, show: mockUser.hasCheckIns },
-    { href: '/coach', label: 'Panel Coach', icon: Users, show: mockUser.role === 'COACH' },
+    { href: '/plan',      label: 'Mi Plan',    icon: CalendarDays,    show: features.plan },
+    { href: '/checkin',   label: 'Check-in',   icon: ClipboardCheck,  show: features.checkin },
+    { href: '/nutrition', label: 'Nutrición',  icon: Apple,           show: features.nutrition },
+    { href: '/progress',  label: 'Progreso',   icon: TrendingUp,      show: features.progress },
+    { href: '/coach',     label: 'Panel Coach',icon: Users,           show: features.coach },
   ].filter((l) => l.show)
 
   return (
