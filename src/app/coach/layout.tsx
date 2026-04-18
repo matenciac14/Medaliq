@@ -1,12 +1,24 @@
+'use client'
+
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { mockCoach } from '@/lib/mock/coach-data'
+import { cn } from '@/lib/utils'
+
+const navLinks = [
+  { href: '/coach/dashboard', label: 'Mis atletas', icon: '👥' },
+  { href: '/coach/invite', label: 'Invitar atleta', icon: '➕' },
+  { href: '/coach/settings', label: 'Configuración', icon: '⚙️' },
+]
 
 export default function CoachLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
+
   return (
     <div className="min-h-screen flex" style={{ backgroundColor: '#f8fafc' }}>
-      {/* Sidebar */}
+      {/* Sidebar — desktop */}
       <aside
-        className="w-64 flex flex-col fixed inset-y-0 left-0 z-10 shadow-lg"
+        className="hidden md:flex md:flex-col w-64 fixed inset-y-0 left-0 z-10 shadow-lg"
         style={{ backgroundColor: '#1e3a5f' }}
       >
         {/* Logo */}
@@ -24,9 +36,24 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
 
         {/* Nav links */}
         <nav className="flex-1 px-4 py-6 space-y-1">
-          <NavLink href="/coach/dashboard" label="Mis atletas" icon="👥" />
-          <NavLink href="/coach/invite" label="Invitar atleta" icon="➕" />
-          <NavLink href="/coach/settings" label="Configuración" icon="⚙️" />
+          {navLinks.map(({ href, label, icon }) => {
+            const isActive = pathname === href || (href !== '/coach/dashboard' && pathname.startsWith(href))
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={cn(
+                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                  isActive
+                    ? 'bg-white/15 text-white'
+                    : 'text-white/70 hover:bg-white/10 hover:text-white'
+                )}
+              >
+                <span className="text-base">{icon}</span>
+                <span>{label}</span>
+              </Link>
+            )
+          })}
         </nav>
 
         {/* Back to athlete dashboard */}
@@ -57,20 +84,41 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
         </div>
       </aside>
 
-      {/* Main content */}
-      <main className="flex-1 ml-64 min-h-screen">{children}</main>
-    </div>
-  )
-}
+      {/* Mobile top bar */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-3" style={{ backgroundColor: '#1e3a5f' }}>
+        <Link href="/coach/dashboard" className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-md flex items-center justify-center font-bold text-white text-xs" style={{ backgroundColor: '#f97316' }}>M</div>
+          <span className="text-white font-bold text-base">Medaliq Coach</span>
+        </Link>
+        <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold" style={{ backgroundColor: '#f97316' }}>
+          {mockCoach.name.split(' ').map((n) => n[0]).join('').slice(0, 2)}
+        </div>
+      </div>
 
-function NavLink({ href, label, icon }: { href: string; label: string; icon: string }) {
-  return (
-    <Link
-      href={href}
-      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-colors text-sm font-medium"
-    >
-      <span className="text-base">{icon}</span>
-      <span>{label}</span>
-    </Link>
+      {/* Main content */}
+      <main className="flex-1 md:ml-64 pt-14 md:pt-0 min-h-screen">
+        {children}
+      </main>
+
+      {/* Mobile bottom nav */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex z-10">
+        {navLinks.map(({ href, label, icon }) => {
+          const isActive = pathname === href || (href !== '/coach/dashboard' && pathname.startsWith(href))
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={cn(
+                'flex-1 flex flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors',
+                isActive ? 'text-[#f97316]' : 'text-gray-500'
+              )}
+            >
+              <span className="text-lg leading-none">{icon}</span>
+              {label}
+            </Link>
+          )
+        })}
+      </nav>
+    </div>
   )
 }
