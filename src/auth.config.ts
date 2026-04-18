@@ -20,8 +20,9 @@ export const authConfig: NextAuthConfig = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.role = (user as any).role
         token.id = user.id
+        token.role = (user as any).role
+        token.onboardingCompleted = (user as any).onboardingCompleted ?? false
       }
       return token
     },
@@ -29,6 +30,7 @@ export const authConfig: NextAuthConfig = {
       if (token) {
         session.user.id = token.id as string
         session.user.role = token.role as string
+        session.user.onboardingCompleted = token.onboardingCompleted as boolean
       }
       return session
     },

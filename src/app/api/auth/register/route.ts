@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/db/prisma'
+import { DEFAULT_USER_CONFIG, COACH_CONFIG } from '@/lib/config/user-config'
 
 export async function POST(req: NextRequest) {
   try {
@@ -26,12 +27,20 @@ export async function POST(req: NextRequest) {
 
     const hashedPassword = await bcrypt.hash(password, 12)
 
+    // Config inicial según rol:
+    // - COACH: features.coach = true, onboarding completado
+    // - ATHLETE: todo en false, espera onboarding
+    const initialConfig = userRole === 'COACH'
+      ? { ...COACH_CONFIG, onboarding: { completed: true, completedAt: new Date().toISOString() } }
+      : DEFAULT_USER_CONFIG
+
     await prisma.user.create({
       data: {
         name,
         email,
         password: hashedPassword,
         role: userRole,
+        config: initialConfig,
       },
     })
 

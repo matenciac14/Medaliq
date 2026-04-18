@@ -4,6 +4,7 @@ import Credentials from 'next-auth/providers/credentials'
 import Google from 'next-auth/providers/google'
 import { prisma } from '@/lib/db/prisma'
 import bcrypt from 'bcryptjs'
+import { parseUserConfig } from '@/lib/config/user-config'
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -39,12 +40,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (!isValid) return null
 
+        const config = parseUserConfig(user.config)
+
         return {
           id: user.id,
           email: user.email,
           name: user.name,
           image: user.image,
           role: user.role,
+          onboardingCompleted: config.onboarding.completed,
         }
       },
     }),
@@ -52,8 +56,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.role = (user as any).role
         token.id = user.id
+        token.role = (user as any).role
+        token.onboardingCompleted = (user as any).onboardingCompleted ?? false
       }
       return token
     },
@@ -61,6 +66,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (token) {
         session.user.id = token.id as string
         session.user.role = token.role as string
+        session.user.onboardingCompleted = token.onboardingCompleted as boolean
       }
       return session
     },
