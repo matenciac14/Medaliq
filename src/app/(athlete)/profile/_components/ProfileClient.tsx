@@ -19,6 +19,7 @@ type Props = {
     email: string
     profile: {
       age: number
+      dateOfBirth: string | null
       heightCm: number
       weightKg: number
       weightGoalKg: number | null
@@ -32,6 +33,31 @@ type Props = {
     plan: { name: string; totalWeeks: number } | null
     dailyLogs: DailyLog[]
   }
+}
+
+function calcAge(dob: string): number {
+  const today = new Date()
+  const birth = new Date(dob)
+  let age = today.getFullYear() - birth.getFullYear()
+  const m = today.getMonth() - birth.getMonth()
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--
+  return age
+}
+
+function estimateHrMax(age: number): number {
+  return Math.round(208 - 0.7 * age)
+}
+
+function calcBMI(weightKg: number, heightCm: number): string {
+  const bmi = weightKg / Math.pow(heightCm / 100, 2)
+  return bmi.toFixed(1)
+}
+
+function bmiLabel(bmi: number): string {
+  if (bmi < 18.5) return 'Bajo peso'
+  if (bmi < 25)   return 'Normal'
+  if (bmi < 30)   return 'Sobrepeso'
+  return 'Obesidad'
 }
 
 const ENERGY_LABELS = ['', 'Muy baja', 'Baja', 'Normal', 'Buena', 'Excelente']
@@ -60,7 +86,7 @@ export default function ProfileClient({ user }: Props) {
   const p = user.profile
   const [editingProfile, setEditingProfile] = useState(false)
   const [profileForm, setProfileForm] = useState({
-    age: p?.age?.toString() ?? '',
+    dateOfBirth: p?.dateOfBirth?.slice(0, 10) ?? '',
     heightCm: p?.heightCm?.toString() ?? '',
     weightKg: p?.weightKg?.toString() ?? '',
     weightGoalKg: p?.weightGoalKg?.toString() ?? '',
@@ -69,6 +95,11 @@ export default function ProfileClient({ user }: Props) {
     injuries: p?.injuries?.join(', ') ?? '',
     conditions: p?.conditions?.join(', ') ?? '',
   })
+
+  // Valores calculados
+  const computedAge = profileForm.dateOfBirth ? calcAge(profileForm.dateOfBirth) : p?.age ?? null
+  const computedHrMax = profileForm.hrMax ? parseInt(profileForm.hrMax) : computedAge ? estimateHrMax(computedAge) : null
+  const bmi = p?.weightKg && p?.heightCm ? parseFloat(calcBMI(p.weightKg, p.heightCm)) : null
   const [savingProfile, setSavingProfile] = useState(false)
   const [savedProfile, setSavedProfile] = useState(false)
 
@@ -79,14 +110,14 @@ export default function ProfileClient({ user }: Props) {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          age: profileForm.age || undefined,
+          dateOfBirth: profileForm.dateOfBirth || undefined,
           heightCm: profileForm.heightCm || undefined,
           weightKg: profileForm.weightKg || undefined,
           weightGoalKg: profileForm.weightGoalKg || undefined,
           hrResting: profileForm.hrResting || undefined,
           hrMax: profileForm.hrMax || undefined,
-          injuries: profileForm.injuries ? profileForm.injuries.split(',').map(s => s.trim()).filter(Boolean) : [],
-          conditions: profileForm.conditions ? profileForm.conditions.split(',').map(s => s.trim()).filter(Boolean) : [],
+          injuries: profileForm.injuries ? profileForm.injuries.split(',').map((s: string) => s.trim()).filter(Boolean) : [],
+          conditions: profileForm.conditions ? profileForm.conditions.split(',').map((s: string) => s.trim()).filter(Boolean) : [],
         }),
       })
       setSavedProfile(true)
@@ -184,14 +215,28 @@ export default function ProfileClient({ user }: Props) {
 
         {editingProfile ? (
           <div className="space-y-3">
+            {/* Fecha de nacimiento → calcula edad y FC máx automáticamente */}
+            <div>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">Fecha de nacimiento</label>
+              <input
+                type="date"
+                value={profileForm.dateOfBirth}
+                onChange={e => setProfileForm(f => ({ ...f, dateOfBirth: e.target.value }))}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#1e3a5f]"
+              />
+              {profileForm.dateOfBirth && (
+                <p className="text-xs text-gray-400 mt-1">
+                  Edad calculada: <span className="font-semibold text-[#1e3a5f]">{calcAge(profileForm.dateOfBirth)} años</span>
+                  {' · '}FC máx estimada (Tanaka): <span className="font-semibold text-[#1e3a5f]">{estimateHrMax(calcAge(profileForm.dateOfBirth))} bpm</span>
+                </p>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-3">
               {[
-                { label: 'Edad (años)', key: 'age', type: 'number', placeholder: '30' },
                 { label: 'Altura (cm)', key: 'heightCm', type: 'number', placeholder: '175' },
                 { label: 'Peso actual (kg)', key: 'weightKg', type: 'number', placeholder: '75.0', step: '0.1' },
                 { label: 'Peso objetivo (kg)', key: 'weightGoalKg', type: 'number', placeholder: '70.0', step: '0.1' },
                 { label: 'FC reposo (bpm)', key: 'hrResting', type: 'number', placeholder: '55' },
-                { label: 'FC máxima (bpm)', key: 'hrMax', type: 'number', placeholder: '185' },
               ].map(({ label, key, type, placeholder, step }) => (
                 <div key={key}>
                   <label className="text-xs font-medium text-gray-500 mb-1 block">{label}</label>
@@ -205,6 +250,17 @@ export default function ProfileClient({ user }: Props) {
                   />
                 </div>
               ))}
+              <div>
+                <label className="text-xs font-medium text-gray-500 mb-1 block">FC máxima real (bpm)</label>
+                <input
+                  type="number"
+                  placeholder={computedHrMax?.toString() ?? '185'}
+                  value={profileForm.hrMax}
+                  onChange={e => setProfileForm(f => ({ ...f, hrMax: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#1e3a5f]"
+                />
+                <p className="text-[10px] text-gray-400 mt-0.5">Deja vacío para usar la estimada por Tanaka</p>
+              </div>
             </div>
             <div>
               <label className="text-xs font-medium text-gray-500 mb-1 block">Lesiones (separadas por coma)</label>
@@ -238,12 +294,35 @@ export default function ProfileClient({ user }: Props) {
         ) : p ? (
           <>
             <div className="grid grid-cols-2 gap-3 text-sm">
-              <div><span className="text-gray-500 text-xs">Edad</span><p className="font-semibold">{p.age} años</p></div>
+              <div>
+                <span className="text-gray-500 text-xs">Fecha de nacimiento</span>
+                <p className="font-semibold">{p.dateOfBirth ? new Date(p.dateOfBirth + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'}</p>
+              </div>
+              <div>
+                <span className="text-gray-500 text-xs">Edad</span>
+                <p className="font-semibold">
+                  {p.dateOfBirth ? calcAge(p.dateOfBirth) : p.age} años
+                  {p.dateOfBirth && <span className="text-[10px] text-gray-400 ml-1">calculada</span>}
+                </p>
+              </div>
               <div><span className="text-gray-500 text-xs">Altura</span><p className="font-semibold">{p.heightCm} cm</p></div>
+              <div>
+                <span className="text-gray-500 text-xs">IMC</span>
+                <p className="font-semibold">
+                  {bmi ?? '—'}
+                  {bmi && <span className="text-[10px] text-gray-400 ml-1">{bmiLabel(bmi)}</span>}
+                </p>
+              </div>
               <div><span className="text-gray-500 text-xs">Peso actual</span><p className="font-semibold">{p.weightKg} kg</p></div>
               <div><span className="text-gray-500 text-xs">Peso objetivo</span><p className="font-semibold">{p.weightGoalKg ?? '—'} kg</p></div>
               <div><span className="text-gray-500 text-xs">FC reposo</span><p className="font-semibold">{p.hrResting ?? '—'} bpm</p></div>
-              <div><span className="text-gray-500 text-xs">FC máxima</span><p className="font-semibold">{p.hrMax ?? '—'} bpm</p></div>
+              <div>
+                <span className="text-gray-500 text-xs">FC máxima</span>
+                <p className="font-semibold">
+                  {computedHrMax ?? '—'} bpm
+                  {!p.hrMax && computedHrMax && <span className="text-[10px] text-gray-400 ml-1">estimada</span>}
+                </p>
+              </div>
             </div>
             {(p.injuries.length > 0 || p.conditions.length > 0) && (
               <div className="pt-3 border-t border-gray-100 space-y-2">

@@ -104,8 +104,9 @@ model CoachAthlete {
 // ─── PERFIL DE SALUD ────────────────────────────────────────────────────────
 
 model HealthProfile {
-  id             String   @id @default(cuid())
-  userId         String   @unique
+  id             String    @id @default(cuid())
+  userId         String    @unique
+  dateOfBirth    DateTime? @db.Date
   age            Int
   heightCm       Float
   weightKg       Float

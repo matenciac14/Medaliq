@@ -37,6 +37,7 @@ export default async function ProfilePage() {
         email: dbUser.email ?? '',
         profile: p ? {
           age: p.age,
+          dateOfBirth: p.dateOfBirth?.toISOString().split('T')[0] ?? null,
           heightCm: p.heightCm,
           weightKg: p.weightKg,
           weightGoalKg: p.weightGoalKg ?? null,
