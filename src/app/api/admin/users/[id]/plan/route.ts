@@ -34,7 +34,7 @@ export async function PATCH(
     config = COACH_CONFIG
     role = 'COACH'
   } else if (plan === 'PRO') {
-    config = { ...FULL_ATHLETE_CONFIG, features: { ...FULL_ATHLETE_CONFIG.features, gym: true } }
+    config = { ...FULL_ATHLETE_CONFIG, features: { ...FULL_ATHLETE_CONFIG.features, gym: false } }
     role = 'ATHLETE'
   } else {
     // FREE
