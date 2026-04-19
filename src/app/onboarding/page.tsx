@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { signOut } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 
 // ---------------------------------------------------------------------------
@@ -915,6 +916,12 @@ export default function OnboardingPage() {
           <span className="text-gray-500 text-sm flex-1">
             Paso {effectiveStep} de {effectiveTotal} — {getStepLabel(step)}
           </span>
+          <button
+            onClick={() => signOut({ callbackUrl: '/login' })}
+            className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            Salir
+          </button>
         </div>
         {/* Barra de progreso */}
         <div className="h-1 bg-gray-100 w-full">
