@@ -2,6 +2,8 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import Anthropic from '@anthropic-ai/sdk'
 import { rateLimit } from '@/lib/rate-limit'
+import { parseUserConfig } from '@/lib/config/user-config'
+import { getAIConfig } from '@/lib/ai/config'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -16,10 +18,44 @@ export async function POST(req: Request) {
   }
 
   const { messages } = await req.json()
+  const aiConfig = getAIConfig()
 
-  // Cargar contexto del usuario
+  // ── Verificar límite mensual ──────────────────────────────────────────────
+  const userRecord = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { config: true },
+  })
+
+  const config = parseUserConfig(userRecord?.config)
+  const currentMonth = new Date().toISOString().slice(0, 7) // "YYYY-MM"
+
+  // Reset del contador si el mes cambió
+  let messagesThisMonth = config.ai.messagesThisMonth
+  let messagesResetAt = config.ai.messagesResetAt
+
+  if (messagesResetAt !== currentMonth) {
+    messagesThisMonth = 0
+    messagesResetAt = currentMonth
+  }
+
+  const monthlyLimit = config.ai.monthlyLimit
+
+  // Calcular fecha de reset (1ro del próximo mes)
+  const now = new Date()
+  const nextMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1))
+  const nextMonthISO = nextMonth.toISOString()
+
+  // Bloquear si alcanzó el límite (999999 = trial/sin límite)
+  if (monthlyLimit !== 999999 && messagesThisMonth >= monthlyLimit) {
+    return Response.json(
+      { error: 'LIMIT_REACHED', limit: monthlyLimit, resetAt: nextMonthISO },
+      { status: 429 }
+    )
+  }
+
+  // ── Cargar contexto completo del usuario ──────────────────────────────────
   const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
+    where: { id: userId },
     include: {
       profile: true,
       goals: { where: { status: 'ACTIVE' }, take: 1 },
@@ -33,12 +69,15 @@ export async function POST(req: Request) {
   })
 
   // Construir system prompt con contexto real del usuario
-  const systemPrompt = buildSystemPrompt(user)
+  const baseSystemPrompt = buildSystemPrompt(user)
+  const systemPrompt = aiConfig.systemPromptExtra
+    ? `${baseSystemPrompt}\n\n${aiConfig.systemPromptExtra}`
+    : baseSystemPrompt
 
-  // Stream de respuesta
+  // ── Stream de respuesta ───────────────────────────────────────────────────
   const stream = await anthropic.messages.stream({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 1024,
+    model: aiConfig.chatModel,
+    max_tokens: aiConfig.maxTokensChat,
     system: systemPrompt,
     messages: messages.map((m: { role: string; content: string }) => ({
       role: m.role,
@@ -46,7 +85,20 @@ export async function POST(req: Request) {
     })),
   })
 
-  // Retornar como ReadableStream
+  const newCount = messagesThisMonth + 1
+  const remaining = monthlyLimit === 999999 ? 999999 : Math.max(0, monthlyLimit - newCount)
+
+  // Actualizar contador en DB de forma asíncrona (fire-and-forget pero esperamos para no perder el update)
+  const updatedConfig = {
+    ...config,
+    ai: {
+      ...config.ai,
+      messagesThisMonth: newCount,
+      messagesResetAt: currentMonth,
+    },
+  }
+
+  // Retornar como ReadableStream — actualizar DB cuando el stream complete
   const encoder = new TextEncoder()
   const readable = new ReadableStream({
     async start(controller) {
@@ -59,11 +111,25 @@ export async function POST(req: Request) {
         }
       }
       controller.close()
+
+      // Actualizar contador en DB después de respuesta exitosa
+      try {
+        await prisma.user.update({
+          where: { id: userId },
+          data: { config: updatedConfig as object },
+        })
+      } catch {
+        // No bloquear al usuario si falla el update del contador
+      }
     },
   })
 
   return new Response(readable, {
-    headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'X-AI-Remaining': String(remaining),
+      'X-AI-Limit': String(monthlyLimit),
+    },
   })
 }
 

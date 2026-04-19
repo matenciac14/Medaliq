@@ -146,6 +146,7 @@ export const es: Translations = {
       subscriptions: 'Suscripciones',
       newAthlete: 'Nuevo',
       activations: 'Activaciones',
+      ai: 'Configuración IA',
     },
     common: {
       loading: 'Cargando...',

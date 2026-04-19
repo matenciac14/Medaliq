@@ -4,6 +4,7 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import { redirect } from 'next/navigation'
 import AICoachChat from '../_components/AICoachChat'
+import { parseUserConfig } from '@/lib/config/user-config'
 
 const SESSION_ICONS: Record<string, string> = {
   RODAJE_Z2: '🏃',
@@ -80,6 +81,16 @@ export default async function DashboardPage() {
   if (!dbUser) redirect('/login')
 
   const firstName = (dbUser.name ?? dbUser.email ?? 'Atleta').split(' ')[0]
+
+  // ── AI chat: límite mensual ────────────────────────────────────────────────
+  const userConfig = parseUserConfig(dbUser.config)
+  const currentMonth = new Date().toISOString().slice(0, 7)
+  const aiMessagesUsed = userConfig.ai.messagesResetAt === currentMonth
+    ? userConfig.ai.messagesThisMonth
+    : 0
+  const aiMonthlyLimit = userConfig.ai.monthlyLimit
+  const nextMonth = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() + 1, 1))
+  const aiResetAt = nextMonth.toLocaleDateString('es-CO', { day: 'numeric', month: 'long' })
   const activePlan = activePlanRaw ?? null
   const profile = dbUser.profile
   const lastCheckIn = dbUser.checkIns[0] ?? null
@@ -382,7 +393,11 @@ export default async function DashboardPage() {
             </div>
           </div>
         ) : (
-          <AICoachChat />
+          <AICoachChat
+            initialUsed={aiMessagesUsed}
+            monthlyLimit={aiMonthlyLimit}
+            resetAt={aiResetAt}
+          />
         )}
       </section>
 
