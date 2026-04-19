@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
-import { LayoutDashboard, Users, UserCheck, CreditCard, Settings, LogOut } from 'lucide-react'
+import { LayoutDashboard, Users, UserCheck, CreditCard, Settings, LogOut, HelpCircle } from 'lucide-react'
 
 const NAV_ITEMS = [
   { href: '/admin',               label: 'Overview',      icon: LayoutDashboard },
@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { href: '/admin/coaches',       label: 'Coaches',       icon: UserCheck       },
   { href: '/admin/subscriptions', label: 'Suscripciones', icon: CreditCard      },
   { href: '/admin/settings',      label: 'Ajustes',       icon: Settings        },
+  { href: '/admin/help',          label: 'Ayuda',         icon: HelpCircle      },
 ]
 
 export function AdminSidebarClient() {

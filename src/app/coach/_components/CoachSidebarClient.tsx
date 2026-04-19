@@ -3,14 +3,15 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
-import { Users, Dumbbell, Globe, Settings, LogOut, Plus } from 'lucide-react'
+import { Users, Dumbbell, Globe, Settings, LogOut, Plus, HelpCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navLinks = [
-  { href: '/coach/dashboard', label: 'Mis atletas',  icon: Users    },
-  { href: '/coach/gym',       label: 'Gym',           icon: Dumbbell },
-  { href: '/coach/profile',   label: 'Mi perfil',     icon: Globe    },
-  { href: '/coach/settings',  label: 'Config',        icon: Settings },
+  { href: '/coach/dashboard', label: 'Mis atletas',  icon: Users      },
+  { href: '/coach/gym',       label: 'Gym',           icon: Dumbbell   },
+  { href: '/coach/profile',   label: 'Mi perfil',     icon: Globe      },
+  { href: '/coach/settings',  label: 'Config',        icon: Settings   },
+  { href: '/coach/help',      label: 'Ayuda',         icon: HelpCircle },
 ]
 
 type Props = { coachName: string }
