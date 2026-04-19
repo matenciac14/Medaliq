@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import RevealOnScroll from "./_components/RevealOnScroll";
-import { getT } from "@/lib/i18n";
+import { getT } from "@/lib/i18n/server";
 import LanguageSwitcher from "./_components/LanguageSwitcher";
 
 export default async function Home() {
