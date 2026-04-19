@@ -145,6 +145,7 @@ export const es: Translations = {
       coaches: 'Coaches',
       subscriptions: 'Suscripciones',
       newAthlete: 'Nuevo',
+      activations: 'Activaciones',
     },
     common: {
       loading: 'Cargando...',

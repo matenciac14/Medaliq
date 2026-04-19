@@ -86,10 +86,12 @@ src/app/
   admin/
     page.tsx               ← KPIs de negocio
     users/page.tsx
+    activaciones/page.tsx  ← alta manual sin Stripe (FREE → PRO/COACH)
     coaches/page.tsx
     subscriptions/page.tsx
     settings/page.tsx
-    roadmap/page.tsx       ← 8 fases, hardcoded, actualizable manualmente
+    roadmap/page.tsx       ← fases del producto, hardcoded, actualizable manualmente
+    help/page.tsx
   coaches/page.tsx         ← directorio público de coaches (sin auth)
   p/[slug]/page.tsx        ← perfil público del coach (sin auth)
   p/ai-coach/page.tsx      ← perfil AI Coach (sin auth)
@@ -123,7 +125,7 @@ src/app/
 ## Base de datos — Neon (producción)
 - `DATABASE_URL` — pooler URL (`-pooler` en hostname) para runtime/queries
 - `DIRECT_URL` — direct URL (sin pooler) para migraciones
-- 4 migraciones aplicadas: `init`, `add_user_config`, `gym_feature`, `marketplace`
+- 5 migraciones aplicadas: `init`, `add_user_config`, `gym_feature`, `marketplace`, `add_coach_note_to_planned_session`
 - Seed: `pnpm prisma db seed` → 39 ejercicios globales + usuarios de prueba
 - Usuarios seed:
   - `admin@medaliq.com` / `admin123!` — role ADMIN
@@ -131,9 +133,10 @@ src/app/
   - `miguel@medaliq.com` / `atleta123` — ATHLETE con plan + coach asignado
   - `ana@medaliq.com` / `atleta123` — ATHLETE B2C sin coach
 
-## Mock data (pendiente migrar a DB real)
-- `src/lib/mock/coach-data.ts` — mockAthletes usado en coach/athlete/[id] (tabs Resumen/Plan/Progreso)
-- Tab Gym del panel atleta SÍ usa DB real vía `/api/coach/gym/athlete/[id]/logs`
+## Mock data
+- `src/lib/mock/coach-data.ts` — archivo existente (ya no usado en coach/athlete/[id])
+- Todos los tabs del panel atleta (`coach/athlete/[id]`) usan DB real via `Promise.all` en el server component
+- Tab Gym del panel atleta usa DB real vía `/api/coach/gym/athlete/[id]/logs`
 
 ## Lógica de negocio
 - `src/lib/plan/formulas.ts` — Karvonen HR zones, Mifflin-St Jeor TDEE, Riegel race time
@@ -177,13 +180,13 @@ Medaliq = marketplace de coaches especializados + AI Coach como opción base
 - AI Coach compite en el marketplace como opción autónoma
 - Revenue: Coach $49/mes · Atleta Pro $15/mes · Free con limitaciones
 
-## Estado actual — todo completado
+## Estado actual
 
 ### Fase 1 — Fundación ✅
 Auth, onboarding (9 pasos), generador de plan AI, dashboard atleta, calendario plan, registro sesión, check-in semanal + alertas, plan nutricional, gráficas de progreso, UserConfig JSON.
 
 ### Fase 2 — Coach B2B ✅
-Dashboard coach, panel atleta (5 tabs), revisar/aprobar plan, vinculación por código invitación.
+Dashboard coach, panel atleta (5 tabs con DB real), notas de coach persistidas (`PlannedSession.coachNote`), revisar/aprobar plan, vinculación por código invitación.
 
 ### Fase 3 — Gym Coach ✅
 Biblioteca de ejercicios (39 globales + custom), constructor de rutinas wizard (4 pasos), asignación a atleta, dashboard gym atleta, tracker de sesión en tiempo real (sets/pesos/timer), historial de sesiones, progresión de cargas (+2.5kg suggestion), tab Gym en panel coach con gráfica de progresión por ejercicio.
@@ -192,30 +195,38 @@ Biblioteca de ejercicios (39 globales + custom), constructor de rutinas wizard (
 Directorio público `/coaches`, perfiles `/p/[slug]` y `/p/ai-coach`, coach edita perfil/programas/posts, coach crea asesorado directamente, atleta se une desde marketplace.
 
 ### Fase 5 — Admin ✅
-KPIs de negocio, gestión usuarios/coaches/suscripciones, roadmap del producto, configuración de plataforma.
+KPIs de negocio, gestión usuarios/coaches/suscripciones, roadmap del producto, configuración de plataforma, alta manual sin Stripe (`/admin/activaciones`).
 
-### Fase 6 — Deploy (en progreso)
-- [x] PostgreSQL en Neon — 4 migraciones + seed aplicados
+### Fase 6 — Pre-lanzamiento ✅ (completado)
+- [x] Rate limiting en APIs críticas (`/api/auth/register`, `/api/onboarding/generate`, `/api/ai/chat`)
+- [x] Páginas de error custom (`src/app/not-found.tsx`, `src/app/error.tsx`)
+- [x] i18n ES/EN/PT con selector de banderas (cookie-based, sin URL restructuring)
+- [x] Páginas de ayuda por perfil (`/help`, `/coach/help`, `/admin/help`)
+- [x] Animaciones en landing (RevealOnScroll, keyframes, orbs)
+- [x] Alta manual desde admin (`/admin/activaciones` + `PATCH /api/admin/users/[id]/plan`)
+- [x] Coach notes persistidas en DB (`PlannedSession.coachNote`)
+
+### Fase 7 — Deploy (pendiente)
+- [x] PostgreSQL en Neon — 5 migraciones + seed aplicados
 - [x] Variables de entorno configuradas
 - [ ] Deploy en Vercel — pendiente (conectar repo GitHub `matenciac14/Medaliq`)
 - [ ] Dominio medaliq.com → Vercel (CNAME en Route 53)
-- [ ] Rate limiting en APIs críticas
-- [ ] Error pages (404, 500)
-- [ ] Google OAuth con dominio real
+- [ ] Google OAuth: credenciales en Google Cloud Console + env vars en Vercel
 
-### Fase 7 — Monetización (post-lanzamiento)
+### Fase 8 — Monetización (post-lanzamiento)
 Stripe, email transaccional AWS SES, upgrade page, trial 14 días.
 
-### Fase 8 — Integraciones fitness (futuro)
+### Fase 9 — Integraciones fitness (futuro)
 Strava, Garmin, Polar, Google Health Connect, Apple HealthKit.
 
 ## Pendiente inmediato
 - [ ] Deploy en Vercel (conectar `matenciac14/Medaliq`, agregar env vars)
 - [ ] Dominio medaliq.com en Route 53 → CNAME a `cname.vercel-dns.com`
-- [ ] Rate limiting en `/api/auth/register`, `/api/onboarding/generate`, `/api/ai/chat`
-- [ ] Páginas de error custom (`src/app/not-found.tsx`, `src/app/error.tsx`)
-- [ ] Google OAuth con credenciales reales (Google Cloud Console)
-- [ ] Conectar tabs Resumen/Plan/Progreso de coach/athlete/[id] a DB real (usa mockAthletes)
+- [ ] Google OAuth: crear proyecto en Google Cloud Console, credenciales OAuth 2.0, agregar `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` en Vercel
+- [ ] SEO: meta tags + sitemap.xml
+- [ ] Zod validation en APIs críticas
+- [ ] Prisma connection pooling (ya usa Neon pooler en DATABASE_URL)
+- [ ] Merge `feature/athlete-dashboard` → `develop` → `main`
 - [ ] Marketplace: reviews y ratings (post-lanzamiento)
 - [ ] Stripe (post-lanzamiento)
 

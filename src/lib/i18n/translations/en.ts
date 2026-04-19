@@ -145,6 +145,7 @@ export const en: Translations = {
       coaches: 'Coaches',
       subscriptions: 'Subscriptions',
       newAthlete: 'New',
+      activations: 'Activations',
     },
     common: {
       loading: 'Loading...',

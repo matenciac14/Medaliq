@@ -145,6 +145,7 @@ export type Translations = {
       coaches: string
       subscriptions: string
       newAthlete: string
+      activations: string
     }
     common: {
       loading: string
