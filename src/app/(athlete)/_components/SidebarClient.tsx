@@ -12,6 +12,7 @@ import {
   Users,
   LogOut,
   Dumbbell,
+  UserCircle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { UserConfig } from '@/lib/config/user-config'
@@ -33,6 +34,7 @@ export default function SidebarClient({ user, config }: Props) {
     { href: '/progress',  label: 'Progreso',    icon: TrendingUp,      show: features.progress },
     { href: '/gym',       label: 'Gym',         icon: Dumbbell,        show: features.gym },
     { href: '/coach',     label: 'Panel Coach', icon: Users,           show: features.coach },
+    { href: '/profile',   label: 'Mi perfil',   icon: UserCircle,      show: true },
   ].filter((l) => l.show)
 
   // Mobile: gym tiene prioridad sobre nutrición
