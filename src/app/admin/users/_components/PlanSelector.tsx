@@ -39,21 +39,22 @@ export function PlanSelector({ userId, currentTier }: Props) {
     }
   }
 
+  const selectColor: Record<PlanTier, string> = {
+    FREE:  'bg-gray-100 text-gray-700 border-gray-200',
+    PRO:   'bg-emerald-50 text-emerald-700 border-emerald-200',
+    COACH: 'bg-orange-50 text-orange-700 border-orange-200',
+  }
+
   return (
-    <div className="flex items-center gap-2">
-      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${PLAN_BADGE[tier]}`}>
-        {tier}
-      </span>
-      <select
-        disabled={loading}
-        value={tier}
-        onChange={(e) => handleChange(e.target.value as PlanTier)}
-        className="text-xs border border-gray-300 rounded px-1 py-0.5 bg-white text-gray-700 disabled:opacity-50"
-      >
-        <option value="FREE">Free</option>
-        <option value="PRO">Pro</option>
-        <option value="COACH">Coach</option>
-      </select>
-    </div>
+    <select
+      disabled={loading}
+      value={tier}
+      onChange={(e) => handleChange(e.target.value as PlanTier)}
+      className={`text-xs font-medium border rounded-full px-2.5 py-0.5 cursor-pointer disabled:opacity-50 transition-colors ${selectColor[tier]}`}
+    >
+      <option value="FREE">Free</option>
+      <option value="PRO">Pro</option>
+      <option value="COACH">Coach</option>
+    </select>
   )
 }
