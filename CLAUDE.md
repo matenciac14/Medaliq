@@ -134,6 +134,24 @@ const isLastDataStep = steps[stepIndex + 1] === 'generating'
 - Límite por rate limiting: 20 msgs/min por usuario, límite mensual configurable
 - Modelo: configurable via `getAIConfig()` (default Sonnet)
 
+## Feature gating por tier
+
+| Feature | FREE | TRIAL (30d) | PRO |
+|---------|------|-------------|-----|
+| Dashboard | ✅ | ✅ | ✅ |
+| Log manual | ✅ | ✅ | ✅ |
+| Profile | ✅ | ✅ | ✅ |
+| Plan adaptativo | ❌ paywall | ✅ | ✅ |
+| Check-in semanal | ❌ paywall | ✅ | ✅ |
+| Nutrición | ❌ paywall | ✅ | ✅ |
+| Progreso | ❌ paywall | ✅ | ✅ |
+| Gym tracker | ❌ paywall | ✅ | ✅ |
+| AI Coach chat | ❌ bloqueado (limit=0) | ✅ ilimitado (999999) | ✅ 100 msgs/mes |
+
+- Paywalls implementados a nivel de página en todas las rutas Pro
+- Sidebar oculta links según `features.*` (primera capa de defensa)
+- Downgrade route desactiva: plan, checkin, nutrition, progress, gym, coach
+
 ## Flujos de usuario — críticos
 
 ### Atleta B2C (sin coach)
@@ -268,6 +286,9 @@ src/app/
 - [x] Verificar StepSportDetails para BODY path — muestra peso objetivo + fecha meta ✅
 - [x] Verificar StepHRFitness para BODY y STRENGTH — solo experienceLevel, sin FC ✅
 - [x] B2B post-onboarding: API devuelve isB2B → redirect a `/pending` directamente ✅
+- [x] Gating completo FREE vs TRIAL/PRO: paywalls en /checkin, /progress, /gym, /gym/history, /gym/session ✅
+- [x] AICoachChat: monthlyLimit=0 bloquea (FREE), 999999=ilimitado (Trial), >0=Pro con límite ✅
+- [x] Downgrade route: desactiva plan, checkin, nutrition, progress, gym, coach features ✅
 - [ ] Definir comportamiento Google OAuth para registro de COACH (¿permitir o bloquear?)
 - [ ] Test E2E: registro ATHLETE B2C → onboarding RUNNING → plan generado → dashboard
 - [ ] Test E2E: onboarding todos los deportes (6 deportes + BODY)
