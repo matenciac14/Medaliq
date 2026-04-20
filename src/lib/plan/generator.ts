@@ -35,6 +35,7 @@ export type GeneratePlanInput = {
   injuries: string[]
   conditions: string[]
   nutritionCommitment: string
+  generatedBy?: 'AI' | 'COACH'
 }
 
 type Recommendation = { title: string; text: string }
@@ -157,8 +158,10 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
   const hasWeightGoal = !!input.weightGoalKg
   const macros = calculateMacros(tdee, input.weightKg, hasWeightGoal)
 
-  // 5. Llamar a AI para personalizar textos
-  const recommendations = await getAIRecommendations(input, hrMax, hrZones)
+  // 5. Llamar a AI para personalizar textos (solo si es B2C, no coach)
+  const recommendations = input.generatedBy === 'COACH'
+    ? []
+    : await getAIRecommendations(input, hrMax, hrZones)
 
   // 6. Calcular fecha de inicio del plan (hoy)
   const planStart = new Date()
@@ -173,21 +176,20 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
   try {
     const result = await prisma.$transaction(async (tx) => {
       // 8a. Crear TrainingPlan
-      // hrZones se guarda como JSON en el schema
       const trainingPlan = await tx.trainingPlan.create({
         data: {
           userId: input.userId,
           name: `Plan ${input.goalType} — ${planStart.toLocaleDateString('es-CO')}`,
           totalWeeks,
           status: 'ACTIVE' as any,
-          generatedBy: 'AI' as any,
+          generatedBy: (input.generatedBy ?? 'AI') as any,
           startDate: planStart,
           endDate: planEnd,
           hrZones: hrZones as any,
         },
       })
 
-      // 8b. Upsert NutritionPlan (el schema tiene @unique en userId)
+      // 8b. Upsert NutritionPlan
       await tx.nutritionPlan.upsert({
         where: { userId: input.userId },
         create: {
@@ -235,27 +237,23 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
             },
           })
 
-          // Crear sesiones de la semana
-          for (const session of week.sessions) {
-            const sessionDateVal = sessionDate(planStart, weekIndex, session.dayOfWeek)
-
-            await tx.plannedSession.create({
-              data: {
-                weekId: planWeek.id,
-                dayOfWeek: session.dayOfWeek,
-                type: session.type as any,
-                durationMin: session.durationMin,
-                zoneTarget: session.zoneTarget,
-                structure: session.structure,
-                date: sessionDateVal,
-              },
-            })
-          }
+          // Crear todas las sesiones de la semana en un solo INSERT
+          await tx.plannedSession.createMany({
+            data: week.sessions.map((session) => ({
+              weekId: planWeek.id,
+              dayOfWeek: session.dayOfWeek,
+              type: session.type as any,
+              durationMin: session.durationMin,
+              zoneTarget: session.zoneTarget,
+              structure: session.structure,
+              date: sessionDate(planStart, weekIndex, session.dayOfWeek),
+            })),
+          })
         }
       }
 
       return trainingPlan
-    })
+    }, { timeout: 30000 })
 
     // Determinar sport.type y sport.goal a partir del goalType
     const goalTypeUpper = input.goalType.toUpperCase()

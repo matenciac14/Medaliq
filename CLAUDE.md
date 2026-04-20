@@ -1,5 +1,12 @@
 # Medaliq
 
+## Regla crítica para agentes
+**NUNCA romper código existente.** Antes de modificar cualquier archivo:
+1. Leerlo completo para entender el contexto
+2. Solo tocar las líneas estrictamente necesarias
+3. No refactorizar, no renombrar, no reorganizar lo que ya funciona
+4. Si el cambio afecta una función compartida, verificar todos sus callers antes de modificar su firma
+
 ## Qué es
 SaaS de coaching deportivo con AI para LatAm. Cubre recomposición corporal, metas de carrera (cualquier deporte) y entrenadores con atletas. El "cerebro" es un AI coach que hace intake personalizado, genera planes periodizados y los ajusta según datos reales.
 
@@ -138,10 +145,29 @@ src/app/
 - Todos los tabs del panel atleta (`coach/athlete/[id]`) usan DB real via `Promise.all` en el server component
 - Tab Gym del panel atleta usa DB real vía `/api/coach/gym/athlete/[id]/logs`
 
+## Flujos de usuario — críticos
+
+### Atleta B2C (sin coach)
+1. Registro → onboarding completo (9 pasos) → AI genera plan → JWT refresh → `/dashboard`
+2. Admin activa cuenta desde `/admin/activaciones` (setea `config.features.*` a true)
+
+### Atleta B2B (del coach)
+1. Coach crea atleta desde `/coach/clients/new` → atleta recibe credenciales
+2. Atleta hace onboarding solo para recolectar perfil (edad, peso, HR, lesiones) — **NO genera plan**
+3. Atleta queda en `/pending` esperando activación
+4. Coach activa cuenta desde tab Resumen del asesorado (`PATCH /api/coach/athlete/[id]/activate`)
+5. Coach crea plan desde tab Plan del asesorado (`POST /api/coach/athlete/[id]/plan`) — sin llamada AI
+6. Medaliq cobra al coach $6/asesorado activo/mes
+
+### Generador de planes (`generator.ts`)
+- `generatedBy: 'AI'` → llama Haiku para recomendaciones personalizadas (B2C)
+- `generatedBy: 'COACH'` → salta llamada AI, plan puro desde template (B2B)
+- Timeout de transacción: 30s (18 semanas × n sesiones via `createMany`)
+
 ## Lógica de negocio
 - `src/lib/plan/formulas.ts` — Karvonen HR zones, Mifflin-St Jeor TDEE, Riegel race time
 - `src/lib/plan/templates.ts` — HALF_MARATHON_18W, TEN_K_12W, FIVE_K_8W, BODY_RECOMPOSITION_16W
-- `src/lib/plan/generator.ts` — selecciona template, llama Haiku, guarda en DB
+- `src/lib/plan/generator.ts` — selecciona template, llama Haiku (solo B2C), guarda en DB
 
 ## Gym Feature — Modelo de datos
 

@@ -158,6 +158,49 @@ export default function AthleteDetailClient({
   const [savedNotes, setSavedNotes] = useState<Record<string, boolean>>({})
   const [savingNotes, setSavingNotes] = useState<Record<string, boolean>>({})
 
+  // Plan creation state
+  const [creatingPlan, setCreatingPlan] = useState(false)
+  const [planGoalType, setPlanGoalType] = useState('RACE_HALF_MARATHON')
+  const [planDaysPerWeek, setPlanDaysPerWeek] = useState(4)
+  const [planGenerating, setPlanGenerating] = useState(false)
+  const [planError, setPlanError] = useState<string | null>(null)
+  const [planCreated, setPlanCreated] = useState(false)
+
+  async function handleCreatePlan() {
+    setPlanGenerating(true)
+    setPlanError(null)
+    try {
+      const res = await fetch(`/api/coach/athlete/${athleteId}/plan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ goalType: planGoalType, daysPerWeek: planDaysPerWeek, hoursPerSession: 1 }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Error generando el plan')
+      setPlanCreated(true)
+      setCreatingPlan(false)
+      window.location.reload()
+    } catch (err) {
+      setPlanError(err instanceof Error ? err.message : 'Error desconocido')
+    } finally {
+      setPlanGenerating(false)
+    }
+  }
+
+  // Activation state
+  const [activating, setActivating] = useState(false)
+  const [activated, setActivated] = useState(initialFeatures.plan)
+
+  async function handleActivate() {
+    setActivating(true)
+    try {
+      const res = await fetch(`/api/coach/athlete/${athleteId}/activate`, { method: 'PATCH' })
+      if (res.ok) setActivated(true)
+    } finally {
+      setActivating(false)
+    }
+  }
+
   // Nutrition edit state
   const [editingNutrition, setEditingNutrition] = useState(false)
   const [nutritionDraft, setNutritionDraft] = useState<NutritionPlanData>(nutritionPlan)
@@ -345,6 +388,24 @@ export default function AthleteDetailClient({
             </div>
           </div>
 
+          {/* Activación */}
+          {!activated && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-amber-800">Cuenta pendiente de activación</p>
+                <p className="text-xs text-amber-600 mt-0.5">El asesorado no tiene acceso al dashboard hasta que lo actives</p>
+              </div>
+              <button
+                onClick={handleActivate}
+                disabled={activating}
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50 shrink-0"
+                style={{ backgroundColor: '#1e3a5f' }}
+              >
+                {activating ? 'Activando...' : 'Activar cuenta'}
+              </button>
+            </div>
+          )}
+
           {/* Zonas FC */}
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
             <h2 className="font-semibold text-gray-900 mb-4">Zonas de frecuencia cardíaca</h2>
@@ -452,10 +513,84 @@ export default function AthleteDetailClient({
           </div>
 
           {!activePlan ? (
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-10 text-center">
-              <div className="text-4xl mb-3">📋</div>
-              <h2 className="text-lg font-semibold text-gray-700 mb-1">Sin plan activo</h2>
-              <p className="text-gray-400 text-sm">El atleta aún no tiene un plan de entrenamiento activo</p>
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-8">
+              {!creatingPlan ? (
+                <div className="text-center">
+                  <div className="text-4xl mb-3">📋</div>
+                  <h2 className="text-lg font-semibold text-gray-700 mb-1">Sin plan activo</h2>
+                  <p className="text-gray-400 text-sm mb-5">Crea el plan de entrenamiento para este asesorado</p>
+                  <button
+                    onClick={() => setCreatingPlan(true)}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                    style={{ backgroundColor: '#1e3a5f' }}
+                  >
+                    + Crear plan
+                  </button>
+                </div>
+              ) : (
+                <div className="max-w-md mx-auto space-y-5">
+                  <h2 className="font-semibold text-gray-900 text-lg">Crear plan de entrenamiento</h2>
+
+                  {/* Perfil del atleta para referencia */}
+                  {healthProfile && (
+                    <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-600 grid grid-cols-2 gap-2">
+                      <span>Edad: <strong>{healthProfile.age} años</strong></span>
+                      <span>Peso: <strong>{healthProfile.weightKg} kg</strong></span>
+                      {healthProfile.hrResting && <span>FC reposo: <strong>{healthProfile.hrResting} bpm</strong></span>}
+                      {healthProfile.injuries.length > 0 && (
+                        <span className="col-span-2 text-amber-600">Lesiones: {healthProfile.injuries.join(', ')}</span>
+                      )}
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Objetivo del plan</label>
+                    <select
+                      value={planGoalType}
+                      onChange={(e) => setPlanGoalType(e.target.value)}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-300"
+                    >
+                      <option value="RACE_5K">Carrera 5K (8 semanas)</option>
+                      <option value="RACE_10K">Carrera 10K (12 semanas)</option>
+                      <option value="RACE_HALF_MARATHON">Media maratón (18 semanas)</option>
+                      <option value="BODY_RECOMPOSITION">Recomposición corporal (16 semanas)</option>
+                      <option value="GENERAL_FITNESS">Fitness general</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Días de entrenamiento por semana</label>
+                    <select
+                      value={planDaysPerWeek}
+                      onChange={(e) => setPlanDaysPerWeek(Number(e.target.value))}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-300"
+                    >
+                      {[3, 4, 5, 6].map((d) => (
+                        <option key={d} value={d}>{d} días</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {planError && <p className="text-sm text-red-500">{planError}</p>}
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setCreatingPlan(false)}
+                      className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={handleCreatePlan}
+                      disabled={planGenerating}
+                      className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                      style={{ backgroundColor: '#1e3a5f' }}
+                    >
+                      {planGenerating ? 'Generando...' : 'Generar plan'}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             activePlan.weeks.map((week) => (
