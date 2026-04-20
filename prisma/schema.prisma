@@ -113,14 +113,21 @@ model HealthProfile {
   weightGoalKg   Float?
   hrResting      Int?
   hrMax          Int?
+  ftp            Int?      // Cycling/Triathlon — Functional Threshold Power (watts)
   altitudeMeters Int?
   injuries       String[]
   conditions     String[]
   medications    String[]
   sleepHoursAvg  Float?
   sleepScoreAvg  Float?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  // Sport-specific fields
+  sport          String?   // RUNNING | CYCLING | SWIMMING | TRIATHLON | FOOTBALL | STRENGTH
+  experienceLevel String?  // BEGINNER | INTERMEDIATE | ADVANCED
+  sportDetails   Json      @default("{}")  // campos específicos por deporte
+  // Fuente de cada dato — preparado para integraciones con dispositivos
+  dataSources    Json      @default("{}")  // { hrMax: {source:'garmin', updatedAt:''}, ftp: {...} }
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

@@ -4,86 +4,21 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { signOut, useSession } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
+import {
+  WizardData,
+  INITIAL_DATA,
+  getSteps,
+  StepId,
+  Sport,
+} from './_types'
 
 // ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-type WizardData = {
-  // Paso 1
-  goalType: 'RACE' | 'BODY' | 'FITNESS' | null
-  // Paso 2
-  raceDistance: 'RACE_5K' | 'RACE_10K' | 'RACE_HALF_MARATHON' | 'RACE_MARATHON' | 'RACE_TRIATHLON' | 'RACE_CYCLING' | null
-  bodyGoal: 'FAT_LOSS' | 'MUSCLE_GAIN' | 'RECOMPOSITION' | null
-  // Paso 3
-  raceDate: string | null
-  targetTime: string | null
-  weightGoalKg: number | null
-  // Paso 4
-  age: number | null
-  heightCm: number | null
-  weightKg: number | null
-  hrResting: number | null
-  hrMax: number | null
-  // Paso 5
-  recentBest5k: string | null
-  recentBest10k: string | null
-  recentBestHalf: string | null
-  lastRaceMonthsAgo: number | null
-  arrivedTrained: boolean | null
-  // Paso 6
-  injuries: string[]
-  conditions: string[]
-  sleepHoursAvg: number | null
-  // Paso 7
-  daysPerWeek: number
-  hoursPerSession: number
-  city: string
-  equipment: string[]
-  // Paso 8
-  nutritionCommitment: 'strict' | 'moderate' | 'flexible' | null
-  hrTestAvailable: boolean | null
-}
-
-const INITIAL_DATA: WizardData = {
-  goalType: null,
-  raceDistance: null,
-  bodyGoal: null,
-  raceDate: null,
-  targetTime: null,
-  weightGoalKg: null,
-  age: null,
-  heightCm: null,
-  weightKg: null,
-  hrResting: null,
-  hrMax: null,
-  recentBest5k: null,
-  recentBest10k: null,
-  recentBestHalf: null,
-  lastRaceMonthsAgo: null,
-  arrivedTrained: null,
-  injuries: [],
-  conditions: [],
-  sleepHoursAvg: 7,
-  daysPerWeek: 4,
-  hoursPerSession: 1,
-  city: '',
-  equipment: [],
-  nutritionCommitment: null,
-  hrTestAvailable: null,
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
+// UI helpers
 // ---------------------------------------------------------------------------
 
 function cn(...classes: (string | false | null | undefined)[]) {
   return classes.filter(Boolean).join(' ')
 }
-
-// ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
 
 function SelectCard({
   selected,
@@ -111,12 +46,7 @@ function SelectCard({
     >
       <span className="text-2xl leading-none mt-0.5">{icon}</span>
       <span className="flex flex-col gap-0.5">
-        <span
-          className={cn(
-            'font-semibold text-base',
-            selected ? 'text-[#f97316]' : 'text-[#1e3a5f]'
-          )}
-        >
+        <span className={cn('font-semibold text-base', selected ? 'text-[#f97316]' : 'text-[#1e3a5f]')}>
           {label}
         </span>
         {subtext && <span className="text-sm text-gray-500">{subtext}</span>}
@@ -141,15 +71,7 @@ function SelectCard({
   )
 }
 
-function CheckCard({
-  selected,
-  onClick,
-  label,
-}: {
-  selected: boolean
-  onClick: () => void
-  label: string
-}) {
+function CheckCard({ selected, onClick, label }: { selected: boolean; onClick: () => void; label: string }) {
   return (
     <button
       type="button"
@@ -166,15 +88,7 @@ function CheckCard({
   )
 }
 
-function ToggleBtn({
-  selected,
-  onClick,
-  label,
-}: {
-  selected: boolean
-  onClick: () => void
-  label: string
-}) {
+function ToggleBtn({ selected, onClick, label }: { selected: boolean; onClick: () => void; label: string }) {
   return (
     <button
       type="button"
@@ -205,9 +119,7 @@ function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
 }
 
 function StepTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="text-2xl font-bold text-[#1e3a5f] mb-1">{children}</h2>
-  )
+  return <h2 className="text-2xl font-bold text-[#1e3a5f] mb-1">{children}</h2>
 }
 
 function StepSubtitle({ children }: { children: React.ReactNode }) {
@@ -218,105 +130,118 @@ function StepSubtitle({ children }: { children: React.ReactNode }) {
 // Step components
 // ---------------------------------------------------------------------------
 
-function Step1({ data, update }: { data: WizardData; update: (d: Partial<WizardData>) => void }) {
+function StepMainGoal({ data, update }: { data: WizardData; update: (d: Partial<WizardData>) => void }) {
   return (
     <div className="flex flex-col gap-3">
       <StepTitle>¿Cuál es tu objetivo?</StepTitle>
-      <StepSubtitle>Elige el que mejor describe lo que buscas lograr.</StepSubtitle>
+      <StepSubtitle>Esto define el tipo de plan que vamos a construir para ti.</StepSubtitle>
       <SelectCard
-        selected={data.goalType === 'RACE'}
-        onClick={() => update({ goalType: 'RACE' })}
-        icon="🏃"
-        label="Tengo una carrera"
-        subtext="Running, ciclismo, triatlón..."
+        selected={data.mainGoal === 'SPORT'}
+        onClick={() => update({ mainGoal: 'SPORT', bodyGoal: null })}
+        icon="🏅"
+        label="Mejorar en un deporte"
+        subtext="Running, ciclismo, natación, triatlón, fútbol o fuerza"
       />
       <SelectCard
-        selected={data.goalType === 'BODY'}
-        onClick={() => update({ goalType: 'BODY' })}
+        selected={data.mainGoal === 'BODY'}
+        onClick={() => update({ mainGoal: 'BODY', sport: null })}
         icon="💪"
-        label="Quiero cambiar mi cuerpo"
-        subtext="Bajar grasa, ganar músculo o ambos"
-      />
-      <SelectCard
-        selected={data.goalType === 'FITNESS'}
-        onClick={() => update({ goalType: 'FITNESS' })}
-        icon="⚡"
-        label="Mejorar mi condición"
-        subtext="Fitness general sin meta específica"
+        label="Cambiar mi cuerpo"
+        subtext="Bajar grasa, ganar músculo o recomposición"
       />
     </div>
   )
 }
 
-function Step2({ data, update }: { data: WizardData; update: (d: Partial<WizardData>) => void }) {
-  if (data.goalType === 'RACE') {
-    const distances = [
-      { value: 'RACE_5K', label: '5K' },
-      { value: 'RACE_10K', label: '10K' },
-      { value: 'RACE_HALF_MARATHON', label: 'Media maratón' },
-      { value: 'RACE_MARATHON', label: 'Maratón' },
-      { value: 'RACE_TRIATHLON', label: 'Triatlón' },
-      { value: 'RACE_CYCLING', label: 'Ciclismo' },
-    ] as const
+function StepSportSelect({ data, update }: { data: WizardData; update: (d: Partial<WizardData>) => void }) {
+  const sports: { value: Sport; icon: string; label: string; subtext: string }[] = [
+    { value: 'RUNNING', icon: '🏃', label: 'Running', subtext: '5K, 10K, media maratón, maratón' },
+    { value: 'CYCLING', icon: '🚴', label: 'Ciclismo', subtext: 'Ruta o MTB' },
+    { value: 'SWIMMING', icon: '🏊', label: 'Natación', subtext: 'Competencia o fitness' },
+    { value: 'TRIATHLON', icon: '🏆', label: 'Triatlón', subtext: 'Sprint, olímpico, medio o full' },
+    { value: 'FOOTBALL', icon: '⚽', label: 'Fútbol', subtext: 'Amateur, semipro o recreativo' },
+    { value: 'STRENGTH', icon: '🏋️', label: 'Fuerza', subtext: 'Powerlifting, hipertrofia o funcional' },
+  ]
 
-    return (
-      <div className="flex flex-col gap-3">
-        <StepTitle>¿Qué distancia?</StepTitle>
-        <StepSubtitle>Selecciona la modalidad de tu evento.</StepSubtitle>
-        {distances.map((d) => (
-          <SelectCard
-            key={d.value}
-            selected={data.raceDistance === d.value}
-            onClick={() => update({ raceDistance: d.value })}
-            icon="🏅"
-            label={d.label}
-          />
-        ))}
-      </div>
-    )
-  }
-
-  if (data.goalType === 'BODY') {
-    return (
-      <div className="flex flex-col gap-3">
-        <StepTitle>¿Qué tipo de cambio?</StepTitle>
-        <StepSubtitle>Sé específico para que el plan sea más preciso.</StepSubtitle>
+  return (
+    <div className="flex flex-col gap-3">
+      <StepTitle>¿Qué deporte practicas?</StepTitle>
+      <StepSubtitle>Selecciona tu deporte principal.</StepSubtitle>
+      {sports.map((s) => (
         <SelectCard
-          selected={data.bodyGoal === 'FAT_LOSS'}
-          onClick={() => update({ bodyGoal: 'FAT_LOSS' })}
-          icon="🔥"
-          label="Bajar grasa"
-          subtext="Reducir % de grasa corporal"
+          key={s.value}
+          selected={data.sport === s.value}
+          onClick={() => update({ sport: s.value })}
+          icon={s.icon}
+          label={s.label}
+          subtext={s.subtext}
         />
-        <SelectCard
-          selected={data.bodyGoal === 'MUSCLE_GAIN'}
-          onClick={() => update({ bodyGoal: 'MUSCLE_GAIN' })}
-          icon="💪"
-          label="Ganar músculo"
-          subtext="Aumentar masa muscular"
-        />
-        <SelectCard
-          selected={data.bodyGoal === 'RECOMPOSITION'}
-          onClick={() => update({ bodyGoal: 'RECOMPOSITION' })}
-          icon="⚖️"
-          label="Los dos (recomposición)"
-          subtext="Bajar grasa y ganar músculo simultáneamente"
-        />
-      </div>
-    )
-  }
-
-  return null
+      ))}
+    </div>
+  )
 }
 
-function Step3({ data, update }: { data: WizardData; update: (d: Partial<WizardData>) => void }) {
-  if (data.goalType === 'RACE') {
+function StepBodyGoal({ data, update }: { data: WizardData; update: (d: Partial<WizardData>) => void }) {
+  return (
+    <div className="flex flex-col gap-3">
+      <StepTitle>¿Qué tipo de cambio?</StepTitle>
+      <StepSubtitle>Sé específico para que el plan sea más preciso.</StepSubtitle>
+      <SelectCard
+        selected={data.bodyGoal === 'FAT_LOSS'}
+        onClick={() => update({ bodyGoal: 'FAT_LOSS' })}
+        icon="🔥"
+        label="Bajar grasa"
+        subtext="Reducir % de grasa corporal"
+      />
+      <SelectCard
+        selected={data.bodyGoal === 'MUSCLE_GAIN'}
+        onClick={() => update({ bodyGoal: 'MUSCLE_GAIN' })}
+        icon="📈"
+        label="Ganar músculo"
+        subtext="Aumentar masa muscular"
+      />
+      <SelectCard
+        selected={data.bodyGoal === 'RECOMPOSITION'}
+        onClick={() => update({ bodyGoal: 'RECOMPOSITION' })}
+        icon="⚖️"
+        label="Los dos (recomposición)"
+        subtext="Bajar grasa y ganar músculo simultáneamente"
+      />
+    </div>
+  )
+}
+
+function StepSportDetails({ data, update }: { data: WizardData; update: (d: Partial<WizardData>) => void }) {
+  const sport = data.mainGoal === 'SPORT' ? data.sport : null
+
+  // RUNNING
+  if (sport === 'RUNNING') {
+    const distances = [
+      { value: 'RACE_5K' as const, label: '5K' },
+      { value: 'RACE_10K' as const, label: '10K' },
+      { value: 'RACE_HALF_MARATHON' as const, label: 'Media maratón' },
+      { value: 'RACE_MARATHON' as const, label: 'Maratón' },
+    ]
     return (
       <div className="flex flex-col gap-5">
-        <StepTitle>Tu fecha y tiempo objetivo</StepTitle>
-        <StepSubtitle>Esto define la periodización completa de tu plan.</StepSubtitle>
+        <StepTitle>Detalles de running</StepTitle>
+        <StepSubtitle>Cuéntanos sobre tu meta de carrera.</StepSubtitle>
         <div>
-          <Label>Fecha de la carrera</Label>
+          <Label>Distancia objetivo</Label>
+          <div className="flex flex-col gap-2 mt-1">
+            {distances.map((d) => (
+              <SelectCard
+                key={d.value}
+                selected={data.raceDistance === d.value}
+                onClick={() => update({ raceDistance: d.value })}
+                icon="🏅"
+                label={d.label}
+              />
+            ))}
+          </div>
+        </div>
+        <div>
+          <Label>Fecha de la carrera (opcional)</Label>
           <Input
             type="date"
             value={data.raceDate ?? ''}
@@ -331,30 +256,71 @@ function Step3({ data, update }: { data: WizardData; update: (d: Partial<WizardD
             value={data.targetTime ?? ''}
             onChange={(e) => update({ targetTime: e.target.value || null })}
           />
-          <p className="text-xs text-gray-400 mt-1">Déjalo vacío si no tienes un tiempo específico.</p>
+        </div>
+        <div>
+          <Label>Mejor tiempo reciente en esa distancia — opcional</Label>
+          <Input
+            type="text"
+            placeholder="28:30"
+            value={data.recentBestTime ?? ''}
+            onChange={(e) => update({ recentBestTime: e.target.value || null })}
+          />
+          <p className="text-xs text-gray-400 mt-1">Formato MM:SS o HH:MM:SS</p>
         </div>
       </div>
     )
   }
 
-  if (data.goalType === 'BODY') {
+  // CYCLING
+  if (sport === 'CYCLING') {
     return (
       <div className="flex flex-col gap-5">
-        <StepTitle>Tu meta de peso</StepTitle>
-        <StepSubtitle>Nos ayuda a calibrar la velocidad de cambio saludable.</StepSubtitle>
+        <StepTitle>Detalles de ciclismo</StepTitle>
+        <StepSubtitle>Para calibrar tu plan según tu modalidad y equipo.</StepSubtitle>
         <div>
-          <Label>Peso objetivo (kg)</Label>
-          <Input
-            type="number"
-            placeholder="70"
-            value={data.weightGoalKg ?? ''}
-            onChange={(e) =>
-              update({ weightGoalKg: e.target.value ? Number(e.target.value) : null })
-            }
-          />
+          <Label>Modalidad</Label>
+          <div className="flex gap-3 mt-1">
+            <ToggleBtn
+              selected={data.cyclingModality === 'ROAD'}
+              onClick={() => update({ cyclingModality: 'ROAD' })}
+              label="Ruta"
+            />
+            <ToggleBtn
+              selected={data.cyclingModality === 'MTB'}
+              onClick={() => update({ cyclingModality: 'MTB' })}
+              label="MTB"
+            />
+          </div>
         </div>
         <div>
-          <Label>Fecha aproximada para alcanzarlo</Label>
+          <Label>¿Tienes medidor de potencia?</Label>
+          <div className="flex gap-3 mt-1">
+            <ToggleBtn
+              selected={data.hasPowerMeter === true}
+              onClick={() => update({ hasPowerMeter: true })}
+              label="Sí"
+            />
+            <ToggleBtn
+              selected={data.hasPowerMeter === false}
+              onClick={() => update({ hasPowerMeter: false })}
+              label="No"
+            />
+          </div>
+        </div>
+        {data.hasPowerMeter && (
+          <div>
+            <Label>FTP actual (watts) — opcional</Label>
+            <Input
+              type="number"
+              placeholder="220"
+              value={data.ftp ?? ''}
+              onChange={(e) => update({ ftp: e.target.value ? Number(e.target.value) : null })}
+            />
+            <p className="text-xs text-gray-400 mt-1">Functional Threshold Power — puedes dejarlo en blanco si no lo conoces.</p>
+          </div>
+        )}
+        <div>
+          <Label>Fecha del próximo evento (opcional)</Label>
           <Input
             type="date"
             value={data.raceDate ?? ''}
@@ -365,19 +331,216 @@ function Step3({ data, update }: { data: WizardData; update: (d: Partial<WizardD
     )
   }
 
-  if (data.goalType === 'FITNESS') {
+  // SWIMMING
+  if (sport === 'SWIMMING') {
+    const strokes = [
+      { value: 'FREESTYLE' as const, label: 'Libre' },
+      { value: 'BACKSTROKE' as const, label: 'Espalda' },
+      { value: 'BREASTSTROKE' as const, label: 'Pecho' },
+      { value: 'BUTTERFLY' as const, label: 'Mariposa' },
+      { value: 'MIXED' as const, label: 'Mixto / 4 estilos' },
+    ]
     return (
       <div className="flex flex-col gap-5">
-        <StepTitle>¿Qué quieres lograr?</StepTitle>
-        <StepSubtitle>Descríbelo con tus palabras.</StepSubtitle>
+        <StepTitle>Detalles de natación</StepTitle>
+        <StepSubtitle>Tu estilo y marcas recientes.</StepSubtitle>
         <div>
-          <Label>Describe tu objetivo de condición física</Label>
-          <textarea
-            className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 text-sm outline-none focus:border-[#1e3a5f] transition-colors bg-white resize-none"
-            rows={4}
-            placeholder="Ej: quiero poder correr 5K sin parar, mejorar mi energía diaria, sentirme más ágil..."
-            value={data.targetTime ?? ''}
-            onChange={(e) => update({ targetTime: e.target.value || null })}
+          <Label>Estilo principal</Label>
+          <div className="flex flex-wrap gap-2 mt-1">
+            {strokes.map((s) => (
+              <ToggleBtn
+                key={s.value}
+                selected={data.swimStroke === s.value}
+                onClick={() => update({ swimStroke: s.value })}
+                label={s.label}
+              />
+            ))}
+          </div>
+        </div>
+        <div>
+          <Label>Mejor tiempo en 100m (MM:SS) — opcional</Label>
+          <Input
+            type="text"
+            placeholder="01:20"
+            value={data.recentSwimTime ?? ''}
+            onChange={(e) => update({ recentSwimTime: e.target.value || null })}
+          />
+        </div>
+        <div>
+          <Label>Fecha del próximo evento (opcional)</Label>
+          <Input
+            type="date"
+            value={data.raceDate ?? ''}
+            onChange={(e) => update({ raceDate: e.target.value || null })}
+          />
+        </div>
+      </div>
+    )
+  }
+
+  // TRIATHLON
+  if (sport === 'TRIATHLON') {
+    const distances = [
+      { value: 'SPRINT' as const, label: 'Sprint', subtext: '750m · 20km · 5km' },
+      { value: 'OLYMPIC' as const, label: 'Olímpico', subtext: '1.5km · 40km · 10km' },
+      { value: 'HALF' as const, label: 'Medio (70.3)', subtext: '1.9km · 90km · 21km' },
+      { value: 'FULL' as const, label: 'Full (140.6)', subtext: '3.8km · 180km · 42km' },
+    ]
+    return (
+      <div className="flex flex-col gap-5">
+        <StepTitle>Detalles de triatlón</StepTitle>
+        <StepSubtitle>Distancia objetivo y tu segmento más débil.</StepSubtitle>
+        <div>
+          <Label>Distancia objetivo</Label>
+          <div className="flex flex-col gap-2 mt-1">
+            {distances.map((d) => (
+              <SelectCard
+                key={d.value}
+                selected={data.triathlonDistance === d.value}
+                onClick={() => update({ triathlonDistance: d.value })}
+                icon="🏆"
+                label={d.label}
+                subtext={d.subtext}
+              />
+            ))}
+          </div>
+        </div>
+        <div>
+          <Label>Segmento más débil</Label>
+          <div className="flex gap-3 mt-1">
+            {(['SWIM', 'BIKE', 'RUN'] as const).map((s) => (
+              <ToggleBtn
+                key={s}
+                selected={data.weakestSegment === s}
+                onClick={() => update({ weakestSegment: s })}
+                label={s === 'SWIM' ? 'Natación' : s === 'BIKE' ? 'Ciclismo' : 'Running'}
+              />
+            ))}
+          </div>
+        </div>
+        <div>
+          <Label>Fecha del evento (opcional)</Label>
+          <Input
+            type="date"
+            value={data.raceDate ?? ''}
+            onChange={(e) => update({ raceDate: e.target.value || null })}
+          />
+        </div>
+      </div>
+    )
+  }
+
+  // FOOTBALL
+  if (sport === 'FOOTBALL') {
+    const positions = [
+      { value: 'GOALKEEPER' as const, label: 'Portero' },
+      { value: 'DEFENDER' as const, label: 'Defensa' },
+      { value: 'MIDFIELDER' as const, label: 'Mediocampista' },
+      { value: 'FORWARD' as const, label: 'Delantero' },
+    ]
+    const levels = [
+      { value: 'RECREATIONAL' as const, label: 'Recreativo' },
+      { value: 'AMATEUR' as const, label: 'Amateur' },
+      { value: 'SEMIPRO' as const, label: 'Semipro' },
+    ]
+    const phases = [
+      { value: 'PRESEASON' as const, label: 'Pretemporada' },
+      { value: 'INSEASON' as const, label: 'En temporada' },
+      { value: 'OFFSEASON' as const, label: 'Fuera de temporada' },
+    ]
+    return (
+      <div className="flex flex-col gap-5">
+        <StepTitle>Detalles de fútbol</StepTitle>
+        <StepSubtitle>Posición, nivel y momento de la temporada.</StepSubtitle>
+        <div>
+          <Label>Posición</Label>
+          <div className="flex flex-wrap gap-2 mt-1">
+            {positions.map((p) => (
+              <ToggleBtn
+                key={p.value}
+                selected={data.footballPosition === p.value}
+                onClick={() => update({ footballPosition: p.value })}
+                label={p.label}
+              />
+            ))}
+          </div>
+        </div>
+        <div>
+          <Label>Nivel de competencia</Label>
+          <div className="flex flex-wrap gap-2 mt-1">
+            {levels.map((l) => (
+              <ToggleBtn
+                key={l.value}
+                selected={data.competitionLevel === l.value}
+                onClick={() => update({ competitionLevel: l.value })}
+                label={l.label}
+              />
+            ))}
+          </div>
+        </div>
+        <div>
+          <Label>Fase de temporada</Label>
+          <div className="flex flex-wrap gap-2 mt-1">
+            {phases.map((ph) => (
+              <ToggleBtn
+                key={ph.value}
+                selected={data.seasonPhase === ph.value}
+                onClick={() => update({ seasonPhase: ph.value })}
+                label={ph.label}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // STRENGTH
+  if (sport === 'STRENGTH') {
+    const styles = [
+      { value: 'POWERLIFTING' as const, icon: '🏋️', label: 'Powerlifting', subtext: 'Sentadilla, press banca, peso muerto' },
+      { value: 'HYPERTROPHY' as const, icon: '💪', label: 'Hipertrofia', subtext: 'Ganar tamaño muscular' },
+      { value: 'FUNCTIONAL' as const, icon: '⚡', label: 'Funcional', subtext: 'Crossfit, calistenia, fuerza general' },
+    ]
+    return (
+      <div className="flex flex-col gap-5">
+        <StepTitle>Detalles de fuerza</StepTitle>
+        <StepSubtitle>¿Cuál es tu enfoque de entrenamiento?</StepSubtitle>
+        {styles.map((s) => (
+          <SelectCard
+            key={s.value}
+            selected={data.strengthStyle === s.value}
+            onClick={() => update({ strengthStyle: s.value })}
+            icon={s.icon}
+            label={s.label}
+            subtext={s.subtext}
+          />
+        ))}
+      </div>
+    )
+  }
+
+  // BODY goal (no sport)
+  if (data.mainGoal === 'BODY') {
+    return (
+      <div className="flex flex-col gap-5">
+        <StepTitle>Tu meta de composición corporal</StepTitle>
+        <StepSubtitle>Estos datos nos ayudan a calcular la velocidad de cambio saludable.</StepSubtitle>
+        <div>
+          <Label>Peso objetivo (kg)</Label>
+          <Input
+            type="number"
+            placeholder="68"
+            value={data.weightGoalKg ?? ''}
+            onChange={(e) => update({ weightGoalKg: e.target.value ? Number(e.target.value) : null })}
+          />
+        </div>
+        <div>
+          <Label>Fecha aproximada para alcanzarlo (opcional)</Label>
+          <Input
+            type="date"
+            value={data.raceDate ?? ''}
+            onChange={(e) => update({ raceDate: e.target.value || null })}
           />
         </div>
       </div>
@@ -387,7 +550,7 @@ function Step3({ data, update }: { data: WizardData; update: (d: Partial<WizardD
   return null
 }
 
-function Step4({ data, update }: { data: WizardData; update: (d: Partial<WizardData>) => void }) {
+function StepPhysical({ data, update }: { data: WizardData; update: (d: Partial<WizardData>) => void }) {
   return (
     <div className="flex flex-col gap-5">
       <StepTitle>Tus datos físicos</StepTitle>
@@ -422,96 +585,165 @@ function Step4({ data, update }: { data: WizardData; update: (d: Partial<WizardD
         />
       </div>
       <div>
-        <Label>FC en reposo (bpm) — ¿Tienes reloj deportivo?</Label>
-        <Input
-          type="number"
-          placeholder="58"
-          value={data.hrResting ?? ''}
-          onChange={(e) => update({ hrResting: e.target.value ? Number(e.target.value) : null })}
-        />
-      </div>
-      <div>
-        <Label>FC máxima (bpm) — Opcional, si no la conoces la calculamos</Label>
-        <Input
-          type="number"
-          placeholder="185"
-          value={data.hrMax ?? ''}
-          onChange={(e) => update({ hrMax: e.target.value ? Number(e.target.value) : null })}
-        />
-      </div>
-    </div>
-  )
-}
-
-function Step5({ data, update }: { data: WizardData; update: (d: Partial<WizardData>) => void }) {
-  const lastRaceOptions = [
-    { label: 'Este mes', value: 0 },
-    { label: '1–3 meses', value: 2 },
-    { label: '3–6 meses', value: 4 },
-    { label: 'Más de 6 meses', value: 7 },
-    { label: 'Nunca', value: 99 },
-  ]
-
-  return (
-    <div className="flex flex-col gap-5">
-      <StepTitle>Tu historial deportivo</StepTitle>
-      <StepSubtitle>Opcional — pero nos ayuda a calibrar mejor el punto de partida.</StepSubtitle>
-      <div>
-        <Label>Mejor tiempo reciente en 5K (MM:SS)</Label>
-        <Input
-          type="text"
-          placeholder="28:30"
-          value={data.recentBest5k ?? ''}
-          onChange={(e) => update({ recentBest5k: e.target.value || null })}
-        />
-      </div>
-      <div>
-        <Label>Mejor tiempo reciente en 10K (MM:SS)</Label>
-        <Input
-          type="text"
-          placeholder="58:00"
-          value={data.recentBest10k ?? ''}
-          onChange={(e) => update({ recentBest10k: e.target.value || null })}
-        />
-      </div>
-      <div>
-        <Label>¿Cuándo fue tu última carrera o competencia?</Label>
-        <div className="flex flex-wrap gap-2 mt-1">
-          {lastRaceOptions.map((opt) => (
-            <ToggleBtn
-              key={opt.value}
-              selected={data.lastRaceMonthsAgo === opt.value}
-              onClick={() => update({ lastRaceMonthsAgo: opt.value })}
-              label={opt.label}
-            />
-          ))}
+        <Label>Género</Label>
+        <div className="flex gap-3 mt-1">
+          <ToggleBtn
+            selected={data.gender === 'male'}
+            onClick={() => update({ gender: 'male' })}
+            label="Hombre"
+          />
+          <ToggleBtn
+            selected={data.gender === 'female'}
+            onClick={() => update({ gender: 'female' })}
+            label="Mujer"
+          />
         </div>
       </div>
-      {data.lastRaceMonthsAgo !== null && data.lastRaceMonthsAgo !== 99 && (
+      {data.mainGoal === 'BODY' && (
         <div>
-          <Label>¿Llegaste entrenado o improvisado a esa carrera?</Label>
-          <div className="flex gap-3 mt-1">
-            <ToggleBtn
-              selected={data.arrivedTrained === true}
-              onClick={() => update({ arrivedTrained: true })}
-              label="Entrenado"
-            />
-            <ToggleBtn
-              selected={data.arrivedTrained === false}
-              onClick={() => update({ arrivedTrained: false })}
-              label="Improvisado"
-            />
-          </div>
+          <Label>Peso objetivo (kg) — opcional si ya lo ingresaste</Label>
+          <Input
+            type="number"
+            placeholder="65"
+            value={data.weightGoalKg ?? ''}
+            onChange={(e) => update({ weightGoalKg: e.target.value ? Number(e.target.value) : null })}
+          />
         </div>
       )}
     </div>
   )
 }
 
-const INJURY_OPTIONS = ['Rodilla', 'Tobillo', 'Cadera', 'Hombro', 'Espalda', 'Ninguna']
-const CONDITION_OPTIONS = ['Hipertensión', 'Diabetes', 'Problemas cardíacos', 'Tiroides', 'Ninguna']
+function StepHRFitness({ data, update }: { data: WizardData; update: (d: Partial<WizardData>) => void }) {
+  const showHR = data.mainGoal === 'SPORT' && data.sport !== 'STRENGTH'
 
-function Step6({ data, update }: { data: WizardData; update: (d: Partial<WizardData>) => void }) {
+  return (
+    <div className="flex flex-col gap-5">
+      <StepTitle>Condición física</StepTitle>
+      <StepSubtitle>Datos para personalizar las zonas e intensidades del plan.</StepSubtitle>
+
+      <div>
+        <Label>Nivel de experiencia</Label>
+        <div className="flex flex-col gap-2 mt-1">
+          <SelectCard
+            selected={data.experienceLevel === 'BEGINNER'}
+            onClick={() => update({ experienceLevel: 'BEGINNER' })}
+            icon="🌱"
+            label="Principiante"
+            subtext="Menos de 1 año entrenando este deporte"
+          />
+          <SelectCard
+            selected={data.experienceLevel === 'INTERMEDIATE'}
+            onClick={() => update({ experienceLevel: 'INTERMEDIATE' })}
+            icon="📈"
+            label="Intermedio"
+            subtext="1–3 años con entrenamiento regular"
+          />
+          <SelectCard
+            selected={data.experienceLevel === 'ADVANCED'}
+            onClick={() => update({ experienceLevel: 'ADVANCED' })}
+            icon="🏆"
+            label="Avanzado"
+            subtext="Más de 3 años y experiencia en competencias"
+          />
+        </div>
+      </div>
+
+      {showHR && (
+        <>
+          <div>
+            <Label>FC máxima (bpm)</Label>
+            <div className="flex gap-3 mt-1 mb-3">
+              <ToggleBtn
+                selected={data.hrSource === 'known'}
+                onClick={() => update({ hrSource: 'known' })}
+                label="La conozco"
+              />
+              <ToggleBtn
+                selected={data.hrSource === 'estimated'}
+                onClick={() => update({ hrSource: 'estimated', hrMax: null })}
+                label="Que la estime el sistema"
+              />
+            </div>
+            {data.hrSource === 'known' && (
+              <Input
+                type="number"
+                placeholder="185"
+                value={data.hrMax ?? ''}
+                onChange={(e) => update({ hrMax: e.target.value ? Number(e.target.value) : null })}
+              />
+            )}
+            {data.hrSource === 'estimated' && data.age && (
+              <p className="text-xs text-gray-400 mt-1">
+                Estimaremos: 211 − 0.64 × {data.age} = <strong>{Math.round(211 - 0.64 * data.age)} bpm</strong>
+              </p>
+            )}
+          </div>
+          <div>
+            <Label>FC en reposo (bpm) — opcional</Label>
+            <Input
+              type="number"
+              placeholder="58"
+              value={data.hrResting ?? ''}
+              onChange={(e) => update({ hrResting: e.target.value ? Number(e.target.value) : null })}
+            />
+            <p className="text-xs text-gray-400 mt-1">
+              Si tienes reloj deportivo o pulsómetro, agrega este dato para mayor precisión.
+            </p>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+function StepSchedule({ data, update }: { data: WizardData; update: (d: Partial<WizardData>) => void }) {
+  const daysOptions = [3, 4, 5, 6]
+  const hoursOptions = [
+    { label: '45 min', value: 0.75 },
+    { label: '1h', value: 1 },
+    { label: '1h 30', value: 1.5 },
+    { label: '2h', value: 2 },
+  ]
+
+  return (
+    <div className="flex flex-col gap-5">
+      <StepTitle>Tu disponibilidad</StepTitle>
+      <StepSubtitle>El plan se adapta a tu tiempo real disponible.</StepSubtitle>
+      <div>
+        <Label>Días disponibles para entrenar por semana</Label>
+        <div className="flex gap-2 mt-1 flex-wrap">
+          {daysOptions.map((d) => (
+            <ToggleBtn
+              key={d}
+              selected={data.daysPerWeek === d}
+              onClick={() => update({ daysPerWeek: d })}
+              label={`${d} días`}
+            />
+          ))}
+        </div>
+      </div>
+      <div>
+        <Label>Duración por sesión</Label>
+        <div className="flex gap-2 flex-wrap mt-1">
+          {hoursOptions.map((h) => (
+            <ToggleBtn
+              key={h.value}
+              selected={data.hoursPerSession === h.value}
+              onClick={() => update({ hoursPerSession: h.value })}
+              label={h.label}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const INJURY_OPTIONS = ['Rodilla', 'Tobillo', 'Cadera', 'Hombro', 'Espalda/lumbar', 'Fascitis plantar', 'Ninguna']
+const CONDITION_OPTIONS = ['Hipertensión', 'Diabetes', 'Problemas cardíacos', 'Asma', 'Tiroides', 'Ninguna']
+
+function StepHealth({ data, update }: { data: WizardData; update: (d: Partial<WizardData>) => void }) {
   function toggleInjury(item: string) {
     if (item === 'Ninguna') {
       update({ injuries: data.injuries.includes('Ninguna') ? [] : ['Ninguna'] })
@@ -538,11 +770,11 @@ function Step6({ data, update }: { data: WizardData; update: (d: Partial<WizardD
 
   return (
     <div className="flex flex-col gap-5">
-      <StepTitle>Tu salud</StepTitle>
-      <StepSubtitle>Esta información es confidencial y solo se usa para ajustar tu plan.</StepSubtitle>
+      <StepTitle>Salud y compromiso</StepTitle>
+      <StepSubtitle>Información confidencial — solo se usa para ajustar el plan de forma segura.</StepSubtitle>
 
       <div>
-        <Label>Lesiones o molestias actuales (selección múltiple)</Label>
+        <Label>Lesiones o molestias actuales</Label>
         <div className="flex flex-wrap gap-2 mt-1">
           {INJURY_OPTIONS.map((item) => (
             <CheckCard
@@ -556,7 +788,7 @@ function Step6({ data, update }: { data: WizardData; update: (d: Partial<WizardD
       </div>
 
       <div>
-        <Label>Condiciones médicas relevantes (selección múltiple)</Label>
+        <Label>Condiciones médicas relevantes</Label>
         <div className="flex flex-wrap gap-2 mt-1">
           {CONDITION_OPTIONS.map((item) => (
             <CheckCard
@@ -571,125 +803,12 @@ function Step6({ data, update }: { data: WizardData; update: (d: Partial<WizardD
 
       {hasCardiacRisk && (
         <div className="px-4 py-3 rounded-xl bg-yellow-50 border border-yellow-300 text-yellow-800 text-sm">
-          ⚠️ Recomendamos consultar con tu médico antes de iniciar. Puedes continuar — nuestro plan incluirá una nota al respecto.
+          ⚠️ Recomendamos consultar con tu médico antes de iniciar. Puedes continuar — el plan incluirá una nota al respecto.
         </div>
       )}
 
-      <div>
-        <Label>Promedio de horas de sueño por noche: {data.sleepHoursAvg}h</Label>
-        <input
-          type="range"
-          min={4}
-          max={10}
-          step={0.5}
-          value={data.sleepHoursAvg ?? 7}
-          onChange={(e) => update({ sleepHoursAvg: Number(e.target.value) })}
-          className="w-full accent-[#f97316] mt-1"
-        />
-        <div className="flex justify-between text-xs text-gray-400 mt-1">
-          <span>4h</span>
-          <span>10h</span>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-const EQUIPMENT_OPTIONS = [
-  'Pista atlética',
-  'Cicla/rodillo',
-  'Piscina',
-  'Gimnasio',
-  'Solo calle/parque',
-]
-
-function Step7({ data, update }: { data: WizardData; update: (d: Partial<WizardData>) => void }) {
-  function toggleEquipment(item: string) {
-    const next = data.equipment.includes(item)
-      ? data.equipment.filter((e) => e !== item)
-      : [...data.equipment, item]
-    update({ equipment: next })
-  }
-
-  const daysOptions = [3, 4, 5, 6]
-  const hoursOptions = [
-    { label: '45 min', value: 0.75 },
-    { label: '1h', value: 1 },
-    { label: '1h 30', value: 1.5 },
-    { label: '2h', value: 2 },
-  ]
-
-  return (
-    <div className="flex flex-col gap-5">
-      <StepTitle>Tu logística</StepTitle>
-      <StepSubtitle>Define cuánto tiempo y recursos tienes disponibles.</StepSubtitle>
-
-      <div>
-        <Label>Días disponibles para entrenar por semana</Label>
-        <div className="flex gap-2 mt-1">
-          {daysOptions.map((d) => (
-            <ToggleBtn
-              key={d}
-              selected={data.daysPerWeek === d}
-              onClick={() => update({ daysPerWeek: d })}
-              label={`${d} días`}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <Label>Horas por sesión</Label>
-        <div className="flex gap-2 flex-wrap mt-1">
-          {hoursOptions.map((h) => (
-            <ToggleBtn
-              key={h.value}
-              selected={data.hoursPerSession === h.value}
-              onClick={() => update({ hoursPerSession: h.value })}
-              label={h.label}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <Label>Ciudad donde entrenas</Label>
-        <Input
-          type="text"
-          placeholder="Bogotá, Medellín, Ciudad de México..."
-          value={data.city}
-          onChange={(e) => update({ city: e.target.value })}
-        />
-        <p className="text-xs text-gray-400 mt-1">La altitud afecta el entrenamiento aeróbico.</p>
-      </div>
-
-      <div>
-        <Label>Equipamiento disponible (selección múltiple)</Label>
-        <div className="flex flex-wrap gap-2 mt-1">
-          {EQUIPMENT_OPTIONS.map((item) => (
-            <CheckCard
-              key={item}
-              selected={data.equipment.includes(item)}
-              onClick={() => toggleEquipment(item)}
-              label={item}
-            />
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function Step8({ data, update }: { data: WizardData; update: (d: Partial<WizardData>) => void }) {
-  return (
-    <div className="flex flex-col gap-6">
-      <StepTitle>Tu compromiso</StepTitle>
-      <StepSubtitle>Dos preguntas finales para afinar las recomendaciones.</StepSubtitle>
-
       <div className="flex flex-col gap-3">
-        <p className="font-semibold text-[#1e3a5f] text-sm">
-          ¿Qué tan dispuesto estás a ajustar tu alimentación?
-        </p>
+        <p className="font-semibold text-[#1e3a5f] text-sm">¿Qué tan dispuesto estás a ajustar tu alimentación?</p>
         <SelectCard
           selected={data.nutritionCommitment === 'strict'}
           onClick={() => update({ nutritionCommitment: 'strict' })}
@@ -712,49 +831,11 @@ function Step8({ data, update }: { data: WizardData; update: (d: Partial<WizardD
           subtext="Prefiero solo recomendaciones generales"
         />
       </div>
-
-      {data.goalType === 'RACE' && (
-        <div className="flex flex-col gap-3">
-          <p className="font-semibold text-[#1e3a5f] text-sm">
-            ¿Puedes hacer un test de FC máxima esta semana?
-          </p>
-          <SelectCard
-            selected={data.hrTestAvailable === true}
-            onClick={() => update({ hrTestAvailable: true })}
-            icon="✅"
-            label="Sí, lo hago"
-            subtext="Tendré datos precisos de mis zonas"
-          />
-          <SelectCard
-            selected={data.hrTestAvailable === false}
-            onClick={() => update({ hrTestAvailable: false })}
-            icon="📅"
-            label="Lo haré después"
-            subtext="Lo agrego cuando pueda"
-          />
-          <SelectCard
-            selected={data.hrTestAvailable === null && data.nutritionCommitment !== null ? false : false}
-            onClick={() => update({ hrTestAvailable: null })}
-            icon="🧮"
-            label="Prefiero usar la fórmula"
-            subtext="Usamos 211 - 0.64 × edad"
-          />
-        </div>
-      )}
     </div>
   )
 }
 
-// Paso 9 — Generando plan
-function Step9({ data }: { data: WizardData }) {
-  const messages = [
-    'Analizando tu perfil...',
-    'Calculando zonas de entrenamiento...',
-    'Personalizando tu plan...',
-  ]
-
-  const [msgIndex] = useState(0)
-
+function StepGenerating() {
   return (
     <div className="flex flex-col items-center justify-center gap-8 py-12">
       <div className="relative w-20 h-20">
@@ -763,64 +844,67 @@ function Step9({ data }: { data: WizardData }) {
         <span className="absolute inset-0 flex items-center justify-center text-2xl">🏅</span>
       </div>
       <div className="text-center">
-        <p className="text-lg font-semibold text-[#1e3a5f]">{messages[msgIndex]}</p>
-        <p className="text-sm text-gray-400 mt-1">Esto solo toma unos segundos</p>
+        <p className="text-lg font-semibold text-[#1e3a5f]">Generando tu plan personalizado...</p>
+        <p className="text-sm text-gray-400 mt-1">Consultando especialistas y calculando zonas</p>
       </div>
-      {/* Suppress unused var warning */}
-      <span className="hidden">{JSON.stringify(data).length}</span>
     </div>
   )
 }
 
 // ---------------------------------------------------------------------------
-// Wizard controller
+// Step validation
 // ---------------------------------------------------------------------------
 
-function getStepCount(data: WizardData) {
-  // FITNESS skips step 2 and step 3 is different (textarea)
-  return 9
-}
-
-function getStepLabel(step: number) {
-  const labels = [
-    'Objetivo',
-    'Meta específica',
-    'Detalles',
-    'Datos físicos',
-    'Historial',
-    'Salud',
-    'Logística',
-    'Compromiso',
-    'Generando plan',
-  ]
-  return labels[step - 1] ?? ''
-}
-
-function isStepValid(step: number, data: WizardData): boolean {
-  switch (step) {
-    case 1:
-      return data.goalType !== null
-    case 2:
-      if (data.goalType === 'RACE') return data.raceDistance !== null
-      if (data.goalType === 'BODY') return data.bodyGoal !== null
-      return true // FITNESS skips
-    case 3:
-      if (data.goalType === 'RACE') return !!data.raceDate
-      if (data.goalType === 'BODY') return !!data.weightGoalKg
+function isStepValid(stepId: StepId, data: WizardData): boolean {
+  switch (stepId) {
+    case 'main-goal':
+      return data.mainGoal !== null
+    case 'sport-select':
+      return data.sport !== null
+    case 'body-goal':
+      return data.bodyGoal !== null
+    case 'sport-details': {
+      if (data.mainGoal === 'SPORT') {
+        if (data.sport === 'RUNNING') return data.raceDistance !== null
+        if (data.sport === 'CYCLING') return data.cyclingModality !== null
+        if (data.sport === 'SWIMMING') return data.swimStroke !== null
+        if (data.sport === 'TRIATHLON') return data.triathlonDistance !== null && data.weakestSegment !== null
+        if (data.sport === 'FOOTBALL') return data.footballPosition !== null && data.competitionLevel !== null
+        if (data.sport === 'STRENGTH') return data.strengthStyle !== null
+      }
       return true
-    case 4:
-      return !!(data.age && data.heightCm && data.weightKg)
-    case 5:
-      return true // all optional
-    case 6:
-      return data.sleepHoursAvg !== null
-    case 7:
-      return !!data.city && data.equipment.length > 0
-    case 8:
+    }
+    case 'physical':
+      return !!(data.age && data.heightCm && data.weightKg && data.gender)
+    case 'hr-fitness':
+      if (!data.experienceLevel) return false
+      if (data.mainGoal === 'SPORT' && data.sport !== 'STRENGTH') {
+        return data.hrSource !== null && (data.hrSource === 'estimated' || !!data.hrMax)
+      }
+      return true
+    case 'schedule':
+      return true
+    case 'health':
       return data.nutritionCommitment !== null
-    default:
+    case 'generating':
       return true
   }
+}
+
+// ---------------------------------------------------------------------------
+// Step labels
+// ---------------------------------------------------------------------------
+
+const STEP_LABELS: Record<StepId, string> = {
+  'main-goal': 'Objetivo',
+  'sport-select': 'Deporte',
+  'body-goal': 'Meta corporal',
+  'sport-details': 'Detalles',
+  physical: 'Perfil físico',
+  'hr-fitness': 'Condición',
+  schedule: 'Disponibilidad',
+  health: 'Salud',
+  generating: 'Generando',
 }
 
 // ---------------------------------------------------------------------------
@@ -830,43 +914,43 @@ function isStepValid(step: number, data: WizardData): boolean {
 export default function OnboardingPage() {
   const router = useRouter()
   const { update: refreshSession } = useSession()
-  const [step, setStep] = useState(1)
   const [data, setData] = useState<WizardData>(INITIAL_DATA)
+  const [stepIndex, setStepIndex] = useState(0)
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  const totalSteps = getStepCount(data)
 
   function update(partial: Partial<WizardData>) {
     setData((prev) => ({ ...prev, ...partial }))
   }
 
+  const steps = getSteps(data)
+  const currentStepId = steps[stepIndex]
+  const totalSteps = steps.length
+  const progressPct = Math.min(((stepIndex + 1) / totalSteps) * 100, 100)
+  const isLastDataStep = stepIndex === steps.length - 2 // one before 'generating'
+
   function nextStep() {
-    if (!isStepValid(step, data)) return
-    // FITNESS skips step 2
-    if (step === 1 && data.goalType === 'FITNESS') {
-      setStep(3)
-      return
-    }
-    if (step >= 8) {
+    if (!isStepValid(currentStepId, data)) return
+
+    if (isLastDataStep) {
       handleGenerate()
       return
     }
-    setStep((s) => s + 1)
+
+    // Recalculate steps after update in case sport/mainGoal changed
+    const updatedSteps = getSteps(data)
+    if (stepIndex < updatedSteps.length - 1) {
+      setStepIndex(stepIndex + 1)
+    }
   }
 
   function prevStep() {
-    if (step === 1) return
-    // FITNESS reverses skip
-    if (step === 3 && data.goalType === 'FITNESS') {
-      setStep(1)
-      return
-    }
-    setStep((s) => s - 1)
+    if (stepIndex === 0) return
+    setStepIndex(stepIndex - 1)
   }
 
   async function handleGenerate() {
-    setStep(9)
+    setStepIndex(steps.indexOf('generating') >= 0 ? steps.indexOf('generating') : steps.length - 1)
     setIsGenerating(true)
     setError(null)
 
@@ -878,45 +962,44 @@ export default function OnboardingPage() {
       })
 
       const json = await res.json()
-
       if (!res.ok) throw new Error(json.error ?? 'Error generando el plan')
 
       await refreshSession({ onboardingCompleted: true })
       router.push('/dashboard')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido')
-      setStep(8)
+      // Go back to last data step
+      const generatingIdx = steps.indexOf('generating')
+      setStepIndex(generatingIdx > 0 ? generatingIdx - 1 : 0)
     } finally {
       setIsGenerating(false)
     }
   }
 
-  const stepContent: Record<number, React.ReactNode> = {
-    1: <Step1 data={data} update={update} />,
-    2: <Step2 data={data} update={update} />,
-    3: <Step3 data={data} update={update} />,
-    4: <Step4 data={data} update={update} />,
-    5: <Step5 data={data} update={update} />,
-    6: <Step6 data={data} update={update} />,
-    7: <Step7 data={data} update={update} />,
-    8: <Step8 data={data} update={update} />,
-    9: <Step9 data={data} />,
+  const stepContent: Record<StepId, React.ReactNode> = {
+    'main-goal': <StepMainGoal data={data} update={update} />,
+    'sport-select': <StepSportSelect data={data} update={update} />,
+    'body-goal': <StepBodyGoal data={data} update={update} />,
+    'sport-details': <StepSportDetails data={data} update={update} />,
+    physical: <StepPhysical data={data} update={update} />,
+    'hr-fitness': <StepHRFitness data={data} update={update} />,
+    schedule: <StepSchedule data={data} update={update} />,
+    health: <StepHealth data={data} update={update} />,
+    generating: <StepGenerating />,
   }
 
-  // Effective step for progress bar (FITNESS skips step 2)
-  const effectiveStep = step === 3 && data.goalType === 'FITNESS' ? 2 : step
-  const effectiveTotal = data.goalType === 'FITNESS' ? 8 : 9
-  const progressPct = Math.min((effectiveStep / effectiveTotal) * 100, 100)
+  const isGeneratingStep = currentStepId === 'generating'
+  const stepLabel = STEP_LABELS[currentStepId] ?? ''
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header fijo */}
+      {/* Header */}
       <header className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-[600px] mx-auto px-4 py-3 flex items-center gap-3">
           <span className="text-xl font-bold text-[#1e3a5f]">Medaliq</span>
           <span className="text-gray-300">·</span>
           <span className="text-gray-500 text-sm flex-1">
-            Paso {effectiveStep} de {effectiveTotal} — {getStepLabel(step)}
+            Paso {stepIndex + 1} de {totalSteps} — {stepLabel}
           </span>
           <button
             onClick={() => signOut({ callbackUrl: '/login' })}
@@ -925,7 +1008,6 @@ export default function OnboardingPage() {
             Salir
           </button>
         </div>
-        {/* Barra de progreso */}
         <div className="h-1 bg-gray-100 w-full">
           <div
             className="h-1 bg-[#f97316] transition-all duration-300"
@@ -934,13 +1016,10 @@ export default function OnboardingPage() {
         </div>
       </header>
 
-      {/* Contenido del paso */}
+      {/* Content */}
       <main className="flex-1 max-w-[600px] w-full mx-auto px-4 py-8 pb-32">
-        <div
-          key={step}
-          className="animate-in fade-in slide-in-from-right-4 duration-200"
-        >
-          {stepContent[step]}
+        <div key={currentStepId} className="animate-in fade-in slide-in-from-right-4 duration-200">
+          {stepContent[currentStepId]}
         </div>
 
         {error && (
@@ -950,11 +1029,11 @@ export default function OnboardingPage() {
         )}
       </main>
 
-      {/* Footer fijo — navegación */}
-      {step !== 9 && (
+      {/* Footer nav */}
+      {!isGeneratingStep && (
         <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
           <div className="max-w-[600px] mx-auto px-4 py-4 flex gap-3">
-            {step > 1 && (
+            {stepIndex > 0 && (
               <Button
                 variant="outline"
                 onClick={prevStep}
@@ -966,10 +1045,10 @@ export default function OnboardingPage() {
             )}
             <Button
               onClick={nextStep}
-              disabled={!isStepValid(step, data) || isGenerating}
-              className={`flex-1 bg-[#f97316] hover:bg-[#ea6c0e] text-white font-semibold py-3 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${step === 1 ? 'w-full' : ''}`}
+              disabled={!isStepValid(currentStepId, data) || isGenerating}
+              className={`flex-1 bg-[#f97316] hover:bg-[#ea6c0e] text-white font-semibold py-3 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${stepIndex === 0 ? 'w-full' : ''}`}
             >
-              {step === 8 ? 'Generar mi plan →' : 'Siguiente →'}
+              {isLastDataStep ? 'Generar mi plan →' : 'Siguiente →'}
             </Button>
           </div>
         </footer>

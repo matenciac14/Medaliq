@@ -1,49 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
+import { prisma } from '@/lib/db/prisma'
 import { generatePlan } from '@/lib/plan/generator'
 import { rateLimit } from '@/lib/rate-limit'
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-type WizardData = {
-  goalType: 'RACE' | 'BODY' | 'FITNESS' | null
-  raceDistance: string | null   // 'RACE_5K' | 'RACE_10K' | 'RACE_HALF_MARATHON' | etc.
-  bodyGoal: string | null       // 'BODY_RECOMPOSITION' | 'WEIGHT_LOSS'
-  raceDate: string | null
-  targetTime: string | null
-  weightGoalKg: number | null
-  age: number | null
-  heightCm: number | null
-  weightKg: number | null
-  gender: 'male' | 'female' | null
-  hrResting: number | null
-  hrMax: number | null
-  recentBest5k: string | null   // formato "mm:ss" o null
-  recentBest10k: string | null
-  recentBestHalf: string | null
-  lastRaceMonthsAgo: number | null
-  arrivedTrained: boolean | null
-  injuries: string[]
-  conditions: string[]
-  sleepHoursAvg: number | null
-  daysPerWeek: number
-  hoursPerSession: number
-  city: string
-  equipment: string[]
-  nutritionCommitment: 'strict' | 'moderate' | 'flexible' | null
-  hrTestAvailable: boolean | null
-}
+import type { WizardData } from '@/app/onboarding/_types'
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-/**
- * Convierte tiempo en formato "mm:ss" o "hh:mm:ss" a segundos.
- * Devuelve null si el formato es inválido.
- */
 function timeStringToSecs(timeStr: string | null): number | null {
   if (!timeStr) return null
   const parts = timeStr.split(':').map(Number)
@@ -54,20 +19,89 @@ function timeStringToSecs(timeStr: string | null): number | null {
 }
 
 /**
- * Mapea los campos del wizard al goalType que entiende el generator.
+ * Mapea WizardData al goalType que usa el generator/templates.
  */
 function resolveGoalType(data: WizardData): string {
-  if (data.goalType === 'RACE') {
-    return data.raceDistance ?? 'RACE_HALF_MARATHON'
+  if (data.mainGoal === 'SPORT') {
+    switch (data.sport) {
+      case 'RUNNING':
+        return data.raceDistance ?? 'RACE_HALF_MARATHON'
+      case 'CYCLING':
+        return 'RACE_CYCLING'
+      case 'TRIATHLON':
+        return 'RACE_TRIATHLON'
+      case 'SWIMMING':
+      case 'FOOTBALL':
+      case 'STRENGTH':
+        return 'BODY_RECOMPOSITION' // fallback hasta tener templates específicos
+      default:
+        return 'GENERAL_FITNESS'
+    }
   }
-  if (data.goalType === 'BODY') {
-    const goal = data.bodyGoal ?? 'BODY_RECOMPOSITION'
-    // Normalizar valores del wizard al key del template
-    if (goal === 'RECOMPOSITION' || goal === 'MUSCLE_GAIN') return 'BODY_RECOMPOSITION'
-    if (goal === 'FAT_LOSS' || goal === 'WEIGHT_LOSS') return 'BODY_RECOMPOSITION'
-    return goal
+
+  if (data.mainGoal === 'BODY') {
+    if (data.bodyGoal === 'FAT_LOSS') return 'BODY_RECOMPOSITION'
+    if (data.bodyGoal === 'MUSCLE_GAIN') return 'BODY_RECOMPOSITION'
+    if (data.bodyGoal === 'RECOMPOSITION') return 'BODY_RECOMPOSITION'
+    return 'BODY_RECOMPOSITION'
   }
+
   return 'GENERAL_FITNESS'
+}
+
+/**
+ * Construye el objeto sportDetails para guardar en HealthProfile.sportDetails
+ */
+function buildSportDetails(data: WizardData): Record<string, unknown> {
+  if (data.mainGoal === 'SPORT') {
+    switch (data.sport) {
+      case 'RUNNING':
+        return {
+          raceDistance: data.raceDistance,
+          raceDate: data.raceDate,
+          targetTime: data.targetTime,
+          recentBestTime: data.recentBestTime,
+        }
+      case 'CYCLING':
+        return {
+          cyclingModality: data.cyclingModality,
+          hasPowerMeter: data.hasPowerMeter,
+          ftp: data.ftp,
+          raceDate: data.raceDate,
+        }
+      case 'SWIMMING':
+        return {
+          swimStroke: data.swimStroke,
+          recentSwimTime: data.recentSwimTime,
+          raceDate: data.raceDate,
+        }
+      case 'TRIATHLON':
+        return {
+          triathlonDistance: data.triathlonDistance,
+          weakestSegment: data.weakestSegment,
+          raceDate: data.raceDate,
+        }
+      case 'FOOTBALL':
+        return {
+          footballPosition: data.footballPosition,
+          competitionLevel: data.competitionLevel,
+          seasonPhase: data.seasonPhase,
+        }
+      case 'STRENGTH':
+        return {
+          strengthStyle: data.strengthStyle,
+        }
+    }
+  }
+
+  if (data.mainGoal === 'BODY') {
+    return {
+      bodyGoal: data.bodyGoal,
+      targetDate: data.raceDate,
+    }
+  }
+
+  return {}
 }
 
 // ---------------------------------------------------------------------------
@@ -92,15 +126,56 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const goalType = resolveGoalType(data)
-    const best5kSecs = timeStringToSecs(data.recentBest5k)
-    const best10kSecs = timeStringToSecs(data.recentBest10k)
-
     const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
     }
     const userId = session.user.id
+
+    const goalType = resolveGoalType(data)
+    const sportDetails = buildSportDetails(data)
+
+    // Upsert HealthProfile con todos los datos del onboarding
+    await prisma.healthProfile.upsert({
+      where: { userId },
+      create: {
+        userId,
+        age: data.age,
+        heightCm: data.heightCm,
+        weightKg: data.weightKg,
+        weightGoalKg: data.weightGoalKg ?? undefined,
+        hrResting: data.hrResting ?? undefined,
+        hrMax: data.hrMax ?? undefined,
+        ftp: data.ftp ?? undefined,
+        injuries: data.injuries,
+        conditions: data.conditions,
+        sport: data.mainGoal === 'SPORT' ? (data.sport ?? undefined) : 'STRENGTH',
+        experienceLevel: data.experienceLevel ?? undefined,
+        sportDetails: sportDetails as object,
+        dataSources: {
+          hrMax: { source: data.hrSource === 'known' ? 'manual' : 'estimated', updatedAt: new Date().toISOString() },
+          ...(data.ftp ? { ftp: { source: 'manual', updatedAt: new Date().toISOString() } } : {}),
+        } as object,
+      },
+      update: {
+        age: data.age,
+        heightCm: data.heightCm,
+        weightKg: data.weightKg,
+        weightGoalKg: data.weightGoalKg ?? undefined,
+        hrResting: data.hrResting ?? undefined,
+        hrMax: data.hrMax ?? undefined,
+        ftp: data.ftp ?? undefined,
+        injuries: data.injuries,
+        conditions: data.conditions,
+        sport: data.mainGoal === 'SPORT' ? (data.sport ?? undefined) : 'STRENGTH',
+        experienceLevel: data.experienceLevel ?? undefined,
+        sportDetails: sportDetails as object,
+        dataSources: {
+          hrMax: { source: data.hrSource === 'known' ? 'manual' : 'estimated', updatedAt: new Date().toISOString() },
+          ...(data.ftp ? { ftp: { source: 'manual', updatedAt: new Date().toISOString() } } : {}),
+        } as object,
+      },
+    })
 
     const result = await generatePlan({
       userId,
