@@ -27,14 +27,29 @@ export default auth((req) => {
     const onboardingCompleted = (session.user as any).onboardingCompleted ?? true
     const role = (session.user as any).role
     const activated = (session.user as any).activated ?? false
+    const trialEndsAt = (session.user as any).trialEndsAt as string | null
+    const userPlan = ((session.user as any).userPlan as string) ?? 'FREE'
 
-    // Redirige a onboarding si no lo completó (excepto si ya está ahí)
+    // Redirige a onboarding si no lo completó
     if (!onboardingCompleted && !pathname.startsWith('/onboarding') && !pathname.startsWith('/api') && !isPublicRoute) {
       return NextResponse.redirect(new URL('/onboarding', nextUrl))
     }
 
+    // Atleta activado pero con trial expirado → /upgrade
+    if (
+      role === 'ATHLETE' &&
+      activated &&
+      userPlan === 'TRIAL' &&
+      trialEndsAt &&
+      new Date(trialEndsAt) < new Date() &&
+      !pathname.startsWith('/upgrade') &&
+      !pathname.startsWith('/api') &&
+      !isPublicRoute
+    ) {
+      return NextResponse.redirect(new URL('/upgrade', nextUrl))
+    }
+
     // Atleta que completó onboarding pero no fue activado → /pending
-    // Solo aplica a ATHLETE, no a ADMIN/COACH
     if (
       role === 'ATHLETE' &&
       onboardingCompleted &&

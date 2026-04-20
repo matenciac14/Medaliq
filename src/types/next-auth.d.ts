@@ -7,6 +7,8 @@ declare module 'next-auth' {
       role: string
       onboardingCompleted: boolean
       activated: boolean
+      trialEndsAt: string | null
+      userPlan: 'TRIAL' | 'FREE' | 'PRO'
       name?: string | null
       email?: string | null
       image?: string | null
@@ -17,6 +19,8 @@ declare module 'next-auth' {
     role?: string
     onboardingCompleted?: boolean
     activated?: boolean
+    trialEndsAt?: string | null
+    userPlan?: 'TRIAL' | 'FREE' | 'PRO'
   }
 }
 
@@ -26,5 +30,7 @@ declare module 'next-auth/jwt' {
     role?: string
     onboardingCompleted?: boolean
     activated?: boolean
+    trialEndsAt?: string | null
+    userPlan?: 'TRIAL' | 'FREE' | 'PRO'
   }
 }

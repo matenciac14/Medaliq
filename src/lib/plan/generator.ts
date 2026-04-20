@@ -278,17 +278,30 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
     }
 
     // Actualizar User.config tras guardar el plan
-    // NOTA: features permanecen todas en false — el admin activa manualmente
     const existingUser = await prisma.user.findUnique({
       where: { id: input.userId },
       select: { config: true },
     })
     const currentConfig = parseUserConfig(existingUser?.config)
+
+    // B2C (generado por AI): auto-activar con trial 30 días
+    // B2B (generado por coach): features las activa el coach manualmente
+    const isB2C = input.generatedBy !== 'COACH'
+    const trialEndsAt = isB2C
+      ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+      : currentConfig.trial?.endsAt ?? null
+
     const newConfig = {
       ...currentConfig,
       features: {
         ...currentConfig.features,
-        // Features permanecen en false hasta activación manual por admin
+        ...(isB2C ? {
+          plan: true,
+          checkin: true,
+          nutrition: true,
+          progress: true,
+          log: true,
+        } : {}),
       },
       onboarding: {
         completed: true,
@@ -303,6 +316,14 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
       sport: {
         type: sportType,
         goal: sportGoal,
+      },
+      trial: {
+        plan: isB2C ? ('TRIAL' as const) : (currentConfig.trial?.plan ?? 'FREE' as const),
+        endsAt: trialEndsAt,
+      },
+      ai: {
+        ...currentConfig.ai,
+        monthlyLimit: isB2C ? 999999 : currentConfig.ai.monthlyLimit,
       },
     }
     await prisma.user.update({

@@ -50,6 +50,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           role: user.role,
           onboardingCompleted: config.onboarding.completed,
           activated: config.features.plan,
+          trialEndsAt: config.trial?.endsAt ?? null,
+          userPlan: config.trial?.plan ?? 'FREE',
         }
       },
     }),
@@ -61,8 +63,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.role = (user as any).role
         token.onboardingCompleted = (user as any).onboardingCompleted ?? false
         token.activated = (user as any).activated ?? false
+        token.trialEndsAt = (user as any).trialEndsAt ?? null
+        token.userPlan = (user as any).userPlan ?? 'FREE'
       }
-      // Refresh activated status from DB on session update (e.g. after admin activates)
+      // Refresh from DB on session update
       if (trigger === 'update' && token.id) {
         try {
           const dbUser = await prisma.user.findUnique({
@@ -73,6 +77,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             const config = parseUserConfig(dbUser.config)
             token.activated = config.features.plan
             token.onboardingCompleted = config.onboarding.completed
+            token.trialEndsAt = config.trial?.endsAt ?? null
+            token.userPlan = config.trial?.plan ?? 'FREE'
           }
         } catch {
           // silently fail — token retains last known value
@@ -86,6 +92,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.role = token.role as string
         session.user.onboardingCompleted = token.onboardingCompleted as boolean
         session.user.activated = token.activated as boolean
+        session.user.trialEndsAt = (token.trialEndsAt as string | null) ?? null
+        session.user.userPlan = (token.userPlan as 'TRIAL' | 'FREE' | 'PRO') ?? 'FREE'
       }
       return session
     },
