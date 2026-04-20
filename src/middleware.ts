@@ -29,7 +29,7 @@ export default auth((req) => {
     const activated = (session.user as any).activated ?? false
 
     // Redirige a onboarding si no lo completó (excepto si ya está ahí)
-    if (!onboardingCompleted && !pathname.startsWith('/onboarding') && !isPublicRoute) {
+    if (!onboardingCompleted && !pathname.startsWith('/onboarding') && !pathname.startsWith('/api') && !isPublicRoute) {
       return NextResponse.redirect(new URL('/onboarding', nextUrl))
     }
 
