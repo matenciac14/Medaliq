@@ -151,9 +151,16 @@ const isLastDataStep = steps[stepIndex + 1] === 'generating'
 6. Medaliq cobra al coach $6/asesorado activo/mes
 
 ### Generador de planes
-- `generatedBy: 'AI'` (default) → llama Haiku para recomendaciones (B2C)
-- `generatedBy: 'COACH'` → salta AI, plan puro desde template (B2B)
+- `generatedBy: 'AI'` (default) → llama Haiku para recomendaciones (B2C), activa trial 30d, pone features.plan=true
+- `generatedBy: 'COACH'` → salta AI, plan puro desde template. NO activa trial, NO activa features.plan — el coach los activa manualmente
+- `isB2C = input.generatedBy !== 'COACH'` — ramificación en generator.ts línea 294
 - Upsert de HealthProfile con sport, experienceLevel, sportDetails JSON, dataSources JSON
+
+### Post-onboarding redirect
+- `handleGenerate()` siempre hace `router.push('/dashboard')` al terminar
+- Para B2B: el middleware intercepta y redirige a `/pending` (features.plan=false → activated=false)
+- Para B2C: va al dashboard directamente (features activadas, JWT refreshed via `refreshSession`)
+- API devuelve `isB2B` en la respuesta → `handleGenerate` pushea a `/pending` si B2B, `/dashboard` si B2C
 
 ## HealthProfile — campos deportivos
 Migración `add_sport_fields_to_health_profile` aplicada:
@@ -257,15 +264,18 @@ src/app/
 
 ### Pendiente inmediato
 
-#### Bloque A — Verificación QA (hacer PRIMERO antes de seguir)
-- [ ] Probar flujo B2C completo: registro → onboarding RUNNING → plan generado → dashboard
-- [ ] Probar onboarding todos los deportes: verificar sport-details renderiza correcto
-- [ ] Verificar que plan no queda vacío (semanas y sesiones creadas)
-- [ ] Verificar trial 30 días activo post-onboarding
-- [ ] Probar flujo B2B: coach crea atleta → activa → crea plan → plan visible en tab Plan
+#### Bloque QA — Registro & Onboarding (URGENTE — antes de cualquier otra cosa)
+- [x] Verificar StepSportDetails para BODY path — muestra peso objetivo + fecha meta ✅
+- [x] Verificar StepHRFitness para BODY y STRENGTH — solo experienceLevel, sin FC ✅
+- [x] B2B post-onboarding: API devuelve isB2B → redirect a `/pending` directamente ✅
+- [ ] Definir comportamiento Google OAuth para registro de COACH (¿permitir o bloquear?)
+- [ ] Test E2E: registro ATHLETE B2C → onboarding RUNNING → plan generado → dashboard
+- [ ] Test E2E: onboarding todos los deportes (6 deportes + BODY)
+- [ ] Test E2E: registro COACH → coach/dashboard sin pasar por onboarding
+- [ ] Test E2E: flujo B2B completo (coach crea atleta → /pending → activación → plan visible)
+- [ ] Verificar plan no queda vacío (PlanWeeks + PlannedSessions creadas en DB)
 
 #### Bloque B — AI Brain (mejoras)
-- [ ] Detectar B2B en onboarding/generate: si el atleta tiene coachId, no generar plan automático
 - [ ] Templates específicos: MARATHON (20-24s), CYCLING (16s), TRIATHLON (24s), SWIMMING (12s)
 - [ ] `goalNotes` del AIProfile cubrir los nuevos deportes (natación, fútbol, fuerza, ciclismo, triatlón)
 - [ ] Contador de mensajes AI en UI del chat ("X / ∞ mensajes usados este mes")

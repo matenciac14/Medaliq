@@ -966,7 +966,7 @@ export default function OnboardingPage() {
       if (!res.ok) throw new Error(json.error ?? 'Error generando el plan')
 
       await refreshSession({ onboardingCompleted: true })
-      router.push('/dashboard')
+      router.push(json.isB2B ? '/pending' : '/dashboard')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido')
       // Go back to last data step

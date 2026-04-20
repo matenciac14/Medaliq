@@ -48,15 +48,18 @@ export default function RegisterPage() {
     }
 
     // Auto-login después de registro
+    // Coach va directo a su dashboard, atleta al onboarding
+    const callbackUrl = role === 'COACH' ? '/coach/dashboard' : '/onboarding'
     await signIn('credentials', {
       email,
       password,
-      callbackUrl: '/onboarding',
+      callbackUrl,
       redirect: true,
     })
   }
 
   async function handleGoogle() {
+    // Google OAuth siempre registra como atleta
     await signIn('google', { callbackUrl: '/onboarding' })
   }
 

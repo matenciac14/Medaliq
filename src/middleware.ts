@@ -83,6 +83,11 @@ export default auth((req) => {
     if (role === 'COACH' && pathname === '/dashboard') {
       return NextResponse.redirect(new URL('/coach/dashboard', nextUrl))
     }
+
+    // Coach que intenta ir al onboarding de atleta → su dashboard
+    if (role === 'COACH' && pathname.startsWith('/onboarding')) {
+      return NextResponse.redirect(new URL('/coach/dashboard', nextUrl))
+    }
   }
 
   return NextResponse.next()

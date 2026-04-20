@@ -205,6 +205,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      isB2B,
       planId: result.planId,
       recommendations: result.recommendations,
       hrZones: result.hrZones,
