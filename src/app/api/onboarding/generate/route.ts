@@ -61,7 +61,11 @@ function resolveGoalType(data: WizardData): string {
     return data.raceDistance ?? 'RACE_HALF_MARATHON'
   }
   if (data.goalType === 'BODY') {
-    return data.bodyGoal ?? 'BODY_RECOMPOSITION'
+    const goal = data.bodyGoal ?? 'BODY_RECOMPOSITION'
+    // Normalizar valores del wizard al key del template
+    if (goal === 'RECOMPOSITION' || goal === 'MUSCLE_GAIN') return 'BODY_RECOMPOSITION'
+    if (goal === 'FAT_LOSS' || goal === 'WEIGHT_LOSS') return 'BODY_RECOMPOSITION'
+    return goal
   }
   return 'GENERAL_FITNESS'
 }
