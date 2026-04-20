@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { signOut } from 'next-auth/react'
+import { signOut, useSession } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 
 // ---------------------------------------------------------------------------
@@ -829,6 +829,7 @@ function isStepValid(step: number, data: WizardData): boolean {
 
 export default function OnboardingPage() {
   const router = useRouter()
+  const { update: refreshSession } = useSession()
   const [step, setStep] = useState(1)
   const [data, setData] = useState<WizardData>(INITIAL_DATA)
   const [isGenerating, setIsGenerating] = useState(false)
@@ -880,6 +881,7 @@ export default function OnboardingPage() {
 
       if (!res.ok) throw new Error(json.error ?? 'Error generando el plan')
 
+      await refreshSession({ onboardingCompleted: true })
       router.push('/dashboard')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido')
