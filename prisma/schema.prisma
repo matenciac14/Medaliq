@@ -528,6 +528,13 @@ enum PostType {
 
 // ─── PLAN NUTRICIONAL ───────────────────────────────────────────────────────
 
+/// Singleton — siempre un solo registro con id = "singleton"
+model SystemConfig {
+  id        String   @id @default("singleton")
+  aiProfile Json     @default("{}")   // AIProfile — perfil de la AI para planes y chat
+  updatedAt DateTime @updatedAt
+}
+
 model NutritionPlan {
   id             String   @id @default(cuid())
   userId         String   @unique

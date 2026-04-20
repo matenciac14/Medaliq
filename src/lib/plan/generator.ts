@@ -6,6 +6,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { prisma } from '@/lib/db/prisma'
 import { parseUserConfig } from '@/lib/config/user-config'
+import { parseAIProfile, buildPlanSystemPrompt } from '@/lib/ai/profile'
 import {
   calculateHRZones,
   calculateMacros,
@@ -80,6 +81,11 @@ async function getAIRecommendations(
   try {
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
+    // Leer AI Profile desde DB para usar la filosofía y restricciones configuradas por el admin
+    const sysConfig = await prisma.systemConfig.findUnique({ where: { id: 'singleton' } })
+    const aiProfile = parseAIProfile(sysConfig?.aiProfile)
+    const systemPrompt = buildPlanSystemPrompt(aiProfile, input.goalType)
+
     const injuriesStr = input.injuries.length > 0 ? input.injuries.join(', ') : 'ninguna'
     const conditionsStr = input.conditions.length > 0 ? input.conditions.join(', ') : 'ninguna'
 
@@ -88,7 +94,7 @@ async function getAIRecommendations(
     const response = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 500,
-      system: 'Coach deportivo experto. Responde SOLO en JSON válido.',
+      system: systemPrompt,
       messages: [{ role: 'user', content: userMessage }],
     })
 
@@ -96,7 +102,6 @@ async function getAIRecommendations(
     const parsed = JSON.parse(rawText)
     return (parsed.recommendations as Recommendation[]) ?? []
   } catch {
-    // No bloquear el flujo si Haiku falla
     return []
   }
 }
