@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
-import { mockAthletes } from '@/lib/mock/coach-data'
 import AthleteTabs from './_components/AthleteTabs'
 
 export default async function CoachDashboardPage() {
@@ -81,10 +80,9 @@ export default async function CoachDashboardPage() {
     }
   })
 
-  // ── Fallback a mock si no hay atletas reales ──────────────────────────────
-  const athletes = athletesFromDB.length > 0 ? athletesFromDB : mockAthletes
+  const athletes = athletesFromDB
 
-  const totalAlerts    = athletes.reduce((acc, a) => acc + a.alerts.length, 0)
+  const totalAlerts     = athletes.reduce((acc, a) => acc + a.alerts.length, 0)
   const pendingCheckIns = athletes.filter((a) => a.lastCheckInDaysAgo >= 3).length
 
   return (
@@ -105,15 +103,33 @@ export default async function CoachDashboardPage() {
         )}
       </div>
 
-      {/* Metric cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <MetricCard label="Atletas activos"      value={athletes.length}  color="#1e3a5f" />
-        <MetricCard label="Check-ins pendientes" value={pendingCheckIns}  color="#f97316" />
-        <MetricCard label="Alertas activas"      value={totalAlerts}      color="#dc2626" />
-      </div>
+      {/* Empty state */}
+      {athletes.length === 0 && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-16 text-center">
+          <p className="text-5xl mb-4">🏃</p>
+          <h2 className="text-xl font-semibold text-gray-700 mb-2">Aún no tienes asesorados</h2>
+          <p className="text-gray-400 text-sm mb-6">Crea tu primer asesorado o comparte tu link de invitación</p>
+          <a
+            href="/coach/clients/new"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90"
+            style={{ backgroundColor: '#1e3a5f' }}
+          >
+            + Crear asesorado
+          </a>
+        </div>
+      )}
 
-      {/* Tabs + athlete list */}
-      <AthleteTabs athletes={athletes} />
+      {/* Metric cards + list — solo si hay atletas */}
+      {athletes.length > 0 && (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+            <MetricCard label="Atletas activos"      value={athletes.length}  color="#1e3a5f" />
+            <MetricCard label="Check-ins pendientes" value={pendingCheckIns}  color="#f97316" />
+            <MetricCard label="Alertas activas"      value={totalAlerts}      color="#dc2626" />
+          </div>
+          <AthleteTabs athletes={athletes} />
+        </>
+      )}
     </div>
   )
 }
