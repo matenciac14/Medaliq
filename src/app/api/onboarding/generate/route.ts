@@ -135,6 +135,12 @@ export async function POST(req: NextRequest) {
     const goalType = resolveGoalType(data)
     const sportDetails = buildSportDetails(data)
 
+    // Detectar si el atleta pertenece a un coach (B2B) para no activar trial automáticamente
+    const coachRelation = await prisma.coachAthlete.findFirst({
+      where: { athleteId: userId },
+    })
+    const isB2B = !!coachRelation
+
     // Upsert HealthProfile con todos los datos del onboarding
     await prisma.healthProfile.upsert({
       where: { userId },
@@ -180,6 +186,7 @@ export async function POST(req: NextRequest) {
     const result = await generatePlan({
       userId,
       goalType,
+      generatedBy: isB2B ? 'COACH' : 'AI',
       raceDate: data.raceDate ?? undefined,
       targetTimeSecs: timeStringToSecs(data.targetTime) ?? undefined,
       weightGoalKg: data.weightGoalKg ?? undefined,
