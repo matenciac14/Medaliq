@@ -41,6 +41,9 @@ model User {
 
   // Marketplace
   coachProfile       CoachProfile?
+
+  // Métricas diarias
+  dailyLogs          DailyLog[]
 }
 
 enum UserRole {
@@ -101,8 +104,9 @@ model CoachAthlete {
 // ─── PERFIL DE SALUD ────────────────────────────────────────────────────────
 
 model HealthProfile {
-  id             String   @id @default(cuid())
-  userId         String   @unique
+  id             String    @id @default(cuid())
+  userId         String    @unique
+  dateOfBirth    DateTime? @db.Date
   age            Int
   heightCm       Float
   weightKg       Float
@@ -224,6 +228,7 @@ model PlannedSession {
   zoneTarget  String?
   structure   String?
   detailText  String?
+  coachNote   String?
   date        DateTime
 
   week PlanWeek    @relation(fields: [weekId], references: [id], onDelete: Cascade)
@@ -262,6 +267,25 @@ model SessionLog {
 
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   plannedSession PlannedSession? @relation(fields: [plannedSessionId], references: [id])
+}
+
+// ─── MÉTRICAS DIARIAS ───────────────────────────────────────────────────────
+
+model DailyLog {
+  id          String   @id @default(cuid())
+  userId      String
+  date        DateTime @db.Date
+  weightKg    Float?
+  hrResting   Int?
+  sleepHours  Float?
+  energyLevel Int?     // 1-5
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
 }
 
 // ─── CHECK-IN SEMANAL ───────────────────────────────────────────────────────

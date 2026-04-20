@@ -15,6 +15,25 @@ export async function GET() {
   const athleteId = session.user.id
   const todayDow = jsToOurDow(new Date().getDay())
 
+  // Check today's planned session type
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const tomorrow = new Date(today)
+  tomorrow.setDate(tomorrow.getDate() + 1)
+
+  const plannedToday = await prisma.plannedSession.findFirst({
+    where: {
+      date: { gte: today, lt: tomorrow },
+      week: {
+        plan: {
+          userId: athleteId,
+          status: 'ACTIVE',
+        },
+      },
+    },
+    select: { type: true, durationMin: true, detailText: true },
+  })
+
   // Active assignment
   const assigned = await prisma.assignedWorkout.findFirst({
     where: { athleteId, isActive: true },
@@ -42,6 +61,8 @@ export async function GET() {
     return NextResponse.json({ error: 'Sin rutina asignada' }, { status: 404 })
   }
 
+  const plannedSession = plannedToday ?? null
+
   const todayDay = assigned.template.days[0] ?? null
 
   if (!todayDay || todayDay.isRestDay) {
@@ -53,6 +74,7 @@ export async function GET() {
       workoutDay: todayDay ?? null,
       exercises: [],
       previousLogs: [],
+      plannedSession,
     })
   }
 
@@ -102,5 +124,6 @@ export async function GET() {
       },
     })),
     previousLogs: previousSession?.setLogs ?? [],
+    plannedSession,
   })
 }

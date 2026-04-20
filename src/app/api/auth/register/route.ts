@@ -2,8 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/db/prisma'
 import { DEFAULT_USER_CONFIG, COACH_CONFIG } from '@/lib/config/user-config'
+import { rateLimit } from '@/lib/rate-limit'
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for') ?? req.headers.get('x-real-ip') ?? 'unknown'
+  const { allowed } = rateLimit(`register:${ip}`, { limit: 5, windowMs: 60_000 })
+  if (!allowed) {
+    return NextResponse.json({ error: 'Too many requests. Try again in a minute.' }, { status: 429 })
+  }
+
   try {
     const { name, email, password, role } = await req.json()
 

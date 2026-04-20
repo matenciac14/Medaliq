@@ -25,27 +25,41 @@ export default auth((req) => {
 
   if (isLoggedIn) {
     const onboardingCompleted = (session.user as any).onboardingCompleted ?? true
+    const role = (session.user as any).role
+    const activated = (session.user as any).activated ?? false
 
     // Redirige a onboarding si no lo completó (excepto si ya está ahí)
     if (!onboardingCompleted && !pathname.startsWith('/onboarding') && !isPublicRoute) {
       return NextResponse.redirect(new URL('/onboarding', nextUrl))
     }
 
+    // Atleta que completó onboarding pero no fue activado → /pending
+    // Solo aplica a ATHLETE, no a ADMIN/COACH
+    if (
+      role === 'ATHLETE' &&
+      onboardingCompleted &&
+      !activated &&
+      !pathname.startsWith('/pending') &&
+      !pathname.startsWith('/api') &&
+      !isPublicRoute
+    ) {
+      return NextResponse.redirect(new URL('/pending', nextUrl))
+    }
+
     // Rutas de coach solo para role COACH
     if (
       pathname.startsWith('/coach') &&
-      (session.user as any).role !== 'COACH'
+      role !== 'COACH'
     ) {
       return NextResponse.redirect(new URL('/dashboard', nextUrl))
     }
 
     // Rutas de admin solo para role ADMIN
-    if (pathname.startsWith('/admin') && (session?.user as any)?.role !== 'ADMIN') {
+    if (pathname.startsWith('/admin') && role !== 'ADMIN') {
       return NextResponse.redirect(new URL('/dashboard', nextUrl))
     }
 
     // Admin siempre va a /admin, nunca al dashboard de atleta
-    const role = (session.user as any).role
     if (role === 'ADMIN' && !pathname.startsWith('/admin') && !isPublicRoute && !pathname.startsWith('/api')) {
       return NextResponse.redirect(new URL('/admin', nextUrl))
     }

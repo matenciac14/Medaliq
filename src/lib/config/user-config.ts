@@ -34,6 +34,11 @@ export type UserConfig = {
     units: 'metric' | 'imperial'
     notifications: boolean
   }
+  ai: {
+    messagesThisMonth: number
+    messagesResetAt: string   // "YYYY-MM" — primer día del mes actual
+    monthlyLimit: number      // 100 para Pro, 0 para Free, 999999 para Trial
+  }
 }
 
 /** Config por defecto para un usuario recién registrado */
@@ -65,6 +70,11 @@ export const DEFAULT_USER_CONFIG: UserConfig = {
     language: 'es',
     units: 'metric',
     notifications: true,
+  },
+  ai: {
+    messagesThisMonth: 0,
+    messagesResetAt: '',
+    monthlyLimit: 0,
   },
 }
 
@@ -98,6 +108,11 @@ export const FULL_ATHLETE_CONFIG: UserConfig = {
     units: 'metric',
     notifications: true,
   },
+  ai: {
+    messagesThisMonth: 0,
+    messagesResetAt: '',
+    monthlyLimit: 100,
+  },
 }
 
 /** Config para un coach */
@@ -115,10 +130,21 @@ export const COACH_CONFIG: UserConfig = {
   plan: { activePlanId: null, currentWeek: 0, totalWeeks: 0, phase: null },
   onboarding: { completed: true, completedAt: '2026-04-18T00:00:00.000Z' },
   preferences: { language: 'es', units: 'metric', notifications: true },
+  ai: { messagesThisMonth: 0, messagesResetAt: '', monthlyLimit: 0 },
 }
 
 /** Helper: parsea el JSON crudo de la DB y hace merge con defaults */
 export function parseUserConfig(raw: unknown): UserConfig {
   if (!raw || typeof raw !== 'object') return DEFAULT_USER_CONFIG
-  return { ...DEFAULT_USER_CONFIG, ...(raw as Partial<UserConfig>) }
+  const partial = raw as Partial<UserConfig>
+  return {
+    ...DEFAULT_USER_CONFIG,
+    ...partial,
+    features: { ...DEFAULT_USER_CONFIG.features, ...(partial.features ?? {}) },
+    sport: { ...DEFAULT_USER_CONFIG.sport, ...(partial.sport ?? {}) },
+    plan: { ...DEFAULT_USER_CONFIG.plan, ...(partial.plan ?? {}) },
+    onboarding: { ...DEFAULT_USER_CONFIG.onboarding, ...(partial.onboarding ?? {}) },
+    preferences: { ...DEFAULT_USER_CONFIG.preferences, ...(partial.preferences ?? {}) },
+    ai: { ...DEFAULT_USER_CONFIG.ai, ...(partial.ai ?? {}) },
+  }
 }

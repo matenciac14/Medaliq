@@ -23,6 +23,7 @@ export const authConfig: NextAuthConfig = {
         token.id = user.id
         token.role = (user as any).role
         token.onboardingCompleted = (user as any).onboardingCompleted ?? false
+        token.activated = (user as any).activated ?? false
       }
       return token
     },
@@ -31,6 +32,7 @@ export const authConfig: NextAuthConfig = {
         session.user.id = token.id as string
         session.user.role = token.role as string
         session.user.onboardingCompleted = token.onboardingCompleted as boolean
+        session.user.activated = token.activated as boolean
       }
       return session
     },

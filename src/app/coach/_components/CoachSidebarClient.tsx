@@ -3,21 +3,26 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
-import { Users, Dumbbell, Globe, Settings, LogOut, Plus } from 'lucide-react'
+import { Users, Dumbbell, Globe, Settings, LogOut, Plus, HelpCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
-
-const navLinks = [
-  { href: '/coach/dashboard', label: 'Mis atletas',  icon: Users    },
-  { href: '/coach/gym',       label: 'Gym',           icon: Dumbbell },
-  { href: '/coach/profile',   label: 'Mi perfil',     icon: Globe    },
-  { href: '/coach/settings',  label: 'Config',        icon: Settings },
-]
+import { useLanguage } from '@/app/_components/LanguageContext'
+import LanguageSwitcher from '@/app/_components/LanguageSwitcher'
 
 type Props = { coachName: string }
 
 export default function CoachSidebarClient({ coachName }: Props) {
   const pathname = usePathname()
+  const { t } = useLanguage()
+  const s = t.app.sidebar
   const initials = coachName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+
+  const navLinks = [
+    { href: '/coach/dashboard', label: s.myAthletes,     icon: Users      },
+    { href: '/coach/gym',       label: s.gym,            icon: Dumbbell   },
+    { href: '/coach/profile',   label: s.myProfile,      icon: Globe      },
+    { href: '/coach/settings',  label: s.settings,       icon: Settings   },
+    { href: '/coach/help',      label: s.help,           icon: HelpCircle },
+  ]
 
   function isActive(href: string) {
     return href === '/coach/dashboard' ? pathname === '/coach/dashboard' : pathname.startsWith(href)
@@ -59,7 +64,7 @@ export default function CoachSidebarClient({ coachName }: Props) {
             )}
           >
             <Plus size={18} />
-            <span>Crear asesorado</span>
+            <span>{s.createAthlete}</span>
           </Link>
         </nav>
 
@@ -70,13 +75,16 @@ export default function CoachSidebarClient({ coachName }: Props) {
         </div>
 
         <div className="px-4 pb-6 border-t border-white/10 pt-4">
+          <div className="px-3 py-2 mb-3">
+            <LanguageSwitcher variant="dark" />
+          </div>
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-sm" style={{ backgroundColor: '#f97316' }}>{initials}</div>
             <div className="flex-1 min-w-0">
               <p className="text-white text-sm font-medium leading-tight truncate">{coachName}</p>
               <p className="text-white/50 text-xs">Coach</p>
             </div>
-            <button onClick={() => signOut({ callbackUrl: '/login' })} className="text-white/50 hover:text-white transition-colors" title="Cerrar sesión">
+            <button onClick={() => signOut({ callbackUrl: '/login' })} className="text-white/50 hover:text-white transition-colors" title={s.logout}>
               <LogOut size={16} />
             </button>
           </div>
@@ -89,36 +97,39 @@ export default function CoachSidebarClient({ coachName }: Props) {
           <div className="w-7 h-7 rounded-md flex items-center justify-center font-bold text-white text-xs" style={{ backgroundColor: '#f97316' }}>M</div>
           <span className="text-white font-bold text-base">Medaliq Coach</span>
         </Link>
-        <button onClick={() => signOut({ callbackUrl: '/login' })} className="flex items-center gap-1.5 text-white/70 hover:text-white text-sm transition-colors">
-          <LogOut size={16} />
-          <span>Salir</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <LanguageSwitcher variant="dark" />
+          <button onClick={() => signOut({ callbackUrl: '/login' })} className="flex items-center gap-1.5 text-white/70 hover:text-white text-sm transition-colors">
+            <LogOut size={16} />
+            <span>{s.logout}</span>
+          </button>
+        </div>
       </header>
 
       {/* Mobile bottom nav */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex items-end z-20">
         <Link href="/coach/dashboard" className={cn('flex-1 flex flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors', isActive('/coach/dashboard') ? 'text-[#f97316]' : 'text-gray-500')}>
           <Users size={20} />
-          Mis atletas
+          {s.myAthletes}
         </Link>
         <Link href="/coach/gym" className={cn('flex-1 flex flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors', isActive('/coach/gym') ? 'text-[#f97316]' : 'text-gray-500')}>
           <Dumbbell size={20} />
-          Gym
+          {s.gym}
         </Link>
         {/* Center action — Crear asesorado */}
         <Link href="/coach/clients/new" className="flex-1 flex flex-col items-center pb-2">
           <div className="w-11 h-11 rounded-full flex items-center justify-center shadow-md -mt-5 text-white" style={{ backgroundColor: '#f97316' }}>
             <Plus size={22} />
           </div>
-          <span className="text-[10px] font-medium text-gray-500 mt-0.5">Nuevo</span>
+          <span className="text-[10px] font-medium text-gray-500 mt-0.5">{s.newAthlete}</span>
         </Link>
         <Link href="/coach/profile" className={cn('flex-1 flex flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors', isActive('/coach/profile') ? 'text-[#f97316]' : 'text-gray-500')}>
           <Globe size={20} />
-          Mi perfil
+          {s.myProfile}
         </Link>
         <Link href="/coach/settings" className={cn('flex-1 flex flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors', isActive('/coach/settings') ? 'text-[#f97316]' : 'text-gray-500')}>
           <Settings size={20} />
-          Config
+          {s.settings}
         </Link>
       </nav>
     </>

@@ -3,18 +3,26 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
-import { LayoutDashboard, Users, UserCheck, CreditCard, Settings, LogOut } from 'lucide-react'
-
-const NAV_ITEMS = [
-  { href: '/admin',               label: 'Overview',      icon: LayoutDashboard },
-  { href: '/admin/users',         label: 'Usuarios',      icon: Users           },
-  { href: '/admin/coaches',       label: 'Coaches',       icon: UserCheck       },
-  { href: '/admin/subscriptions', label: 'Suscripciones', icon: CreditCard      },
-  { href: '/admin/settings',      label: 'Ajustes',       icon: Settings        },
-]
+import { LayoutDashboard, Users, UserCheck, CreditCard, Settings, LogOut, HelpCircle, UserPlus, Bot, Map } from 'lucide-react'
+import { useLanguage } from '@/app/_components/LanguageContext'
+import LanguageSwitcher from '@/app/_components/LanguageSwitcher'
 
 export function AdminSidebarClient() {
   const pathname = usePathname()
+  const { t } = useLanguage()
+  const s = t.app.sidebar
+
+  const NAV_ITEMS = [
+    { href: '/admin',               label: s.overview,       icon: LayoutDashboard },
+    { href: '/admin/users',         label: s.users,          icon: Users           },
+    { href: '/admin/activaciones',  label: s.activations,    icon: UserPlus        },
+    { href: '/admin/coaches',       label: s.coaches,        icon: UserCheck       },
+    { href: '/admin/subscriptions', label: s.subscriptions,  icon: CreditCard      },
+    { href: '/admin/ai',            label: s.ai,             icon: Bot             },
+    { href: '/admin/roadmap',       label: s.roadmap,        icon: Map             },
+    { href: '/admin/settings',      label: s.settings,       icon: Settings        },
+    { href: '/admin/help',          label: s.help,           icon: HelpCircle      },
+  ]
 
   function isActive(href: string) {
     return href === '/admin' ? pathname === '/admin' : pathname.startsWith(href)
@@ -56,6 +64,9 @@ export function AdminSidebarClient() {
         </nav>
 
         <div className="p-4 border-t border-white/10 space-y-1">
+          <div className="px-3 py-2 mb-1">
+            <LanguageSwitcher variant="dark" />
+          </div>
           <Link
             href="/dashboard"
             className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-white/50 hover:text-white transition-colors"
@@ -68,7 +79,7 @@ export function AdminSidebarClient() {
             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-white/50 hover:text-white transition-colors"
           >
             <LogOut size={16} />
-            <span>Cerrar sesión</span>
+            <span>{s.logout}</span>
           </button>
         </div>
       </aside>
@@ -83,13 +94,16 @@ export function AdminSidebarClient() {
             Medaliq <span style={{ color: '#f97316' }}>Admin</span>
           </span>
         </div>
-        <button
-          onClick={() => signOut({ callbackUrl: '/login' })}
-          className="flex items-center gap-1.5 text-white/70 hover:text-white text-sm transition-colors"
-        >
-          <LogOut size={16} />
-          <span>Salir</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <LanguageSwitcher variant="dark" />
+          <button
+            onClick={() => signOut({ callbackUrl: '/login' })}
+            className="flex items-center gap-1.5 text-white/70 hover:text-white text-sm transition-colors"
+          >
+            <LogOut size={16} />
+            <span>{s.logout}</span>
+          </button>
+        </div>
       </header>
 
       {/* ── Mobile bottom nav ── */}

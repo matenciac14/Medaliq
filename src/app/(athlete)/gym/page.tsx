@@ -39,6 +39,25 @@ export default async function GymPage() {
 
   const athleteId = session.user.id
 
+  // Check today's planned session type
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+  const tomorrowStart = new Date(todayStart)
+  tomorrowStart.setDate(tomorrowStart.getDate() + 1)
+
+  const plannedToday = await prisma.plannedSession.findFirst({
+    where: {
+      date: { gte: todayStart, lt: tomorrowStart },
+      week: {
+        plan: {
+          userId: athleteId,
+          status: 'ACTIVE',
+        },
+      },
+    },
+    select: { type: true, durationMin: true, detailText: true },
+  })
+
   const assigned = await prisma.assignedWorkout.findFirst({
     where: { athleteId, isActive: true },
     include: {
@@ -107,6 +126,38 @@ export default async function GymPage() {
           Historial
         </Link>
       </div>
+
+      {/* Plan context banner */}
+      {plannedToday?.type === 'FUERZA' && (
+        <div className="bg-orange-50 border border-orange-200 rounded-xl px-5 py-4 flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🏋️</span>
+            <p className="font-semibold text-orange-800">
+              Sesión de fuerza programada · {plannedToday.durationMin} min
+            </p>
+          </div>
+          {plannedToday.detailText && (
+            <p className="text-sm text-orange-700 pl-7">{plannedToday.detailText}</p>
+          )}
+          {todayWorkoutDay && !todayWorkoutDay.isRestDay && (
+            <div className="pl-7">
+              <Link
+                href="/gym/session"
+                className="inline-flex items-center gap-2 bg-[#f97316] hover:bg-orange-600 text-white font-semibold text-sm px-4 py-2.5 rounded-lg transition-colors"
+              >
+                <Clock size={15} />
+                Iniciar sesión →
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
+      {plannedToday?.type === 'DESCANSO' && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl px-5 py-4 flex items-center gap-2">
+          <span className="text-lg">😴</span>
+          <p className="font-medium text-blue-800">Tu plan dice descanso hoy — recupérate bien</p>
+        </div>
+      )}
 
       {/* Template info */}
       <div className="bg-[#1e3a5f] text-white rounded-xl p-5">

@@ -23,7 +23,19 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json()
-    const { name, email, sport, goal } = body
+    const {
+      name,
+      email,
+      sport,
+      goal,
+      planTier,
+    } = body as {
+      name: string
+      email: string
+      sport: string | null
+      goal: string | null
+      planTier?: 'free' | 'pro'
+    }
 
     if (!name || !email) {
       return NextResponse.json(
@@ -44,11 +56,23 @@ export async function POST(req: NextRequest) {
     const tempPassword = generateTempPassword()
     const hashedPassword = await bcrypt.hash(tempPassword, 12)
 
+    // Build features based on selected tier
+    const isPro = planTier === 'pro'
     const athleteConfig = {
       ...DEFAULT_USER_CONFIG,
+      features: {
+        ...DEFAULT_USER_CONFIG.features,
+        plan: isPro,
+        checkin: isPro,
+        nutrition: isPro,
+        progress: isPro,
+        log: isPro,
+        coach: false,
+        gym: false,
+      },
       sport: {
         type: sport ?? null,
-        goal: null,
+        goal: goal ?? null,
       },
       onboarding: {
         completed: false,

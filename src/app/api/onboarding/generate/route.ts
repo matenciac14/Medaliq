@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { generatePlan } from '@/lib/plan/generator'
+import { rateLimit } from '@/lib/rate-limit'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -70,6 +71,12 @@ function resolveGoalType(data: WizardData): string {
 // ---------------------------------------------------------------------------
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for') ?? req.headers.get('x-real-ip') ?? 'unknown'
+  const { allowed } = rateLimit(`onboarding:${ip}`, { limit: 3, windowMs: 60_000 })
+  if (!allowed) {
+    return NextResponse.json({ error: 'Too many requests. Try again in a minute.' }, { status: 429 })
+  }
+
   try {
     const data: WizardData = await req.json()
 

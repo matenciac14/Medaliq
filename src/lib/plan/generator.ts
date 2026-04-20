@@ -280,6 +280,7 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
     }
 
     // Actualizar User.config tras guardar el plan
+    // NOTA: features permanecen todas en false — el admin activa manualmente
     const existingUser = await prisma.user.findUnique({
       where: { id: input.userId },
       select: { config: true },
@@ -289,9 +290,7 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
       ...currentConfig,
       features: {
         ...currentConfig.features,
-        plan: true,
-        checkin: true,
-        log: true,
+        // Features permanecen en false hasta activación manual por admin
       },
       onboarding: {
         completed: true,

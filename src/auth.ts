@@ -49,16 +49,34 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           image: user.image,
           role: user.role,
           onboardingCompleted: config.onboarding.completed,
+          activated: config.features.plan,
         }
       },
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id
         token.role = (user as any).role
         token.onboardingCompleted = (user as any).onboardingCompleted ?? false
+        token.activated = (user as any).activated ?? false
+      }
+      // Refresh activated status from DB on session update (e.g. after admin activates)
+      if (trigger === 'update' && token.id) {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: { config: true },
+          })
+          if (dbUser) {
+            const config = parseUserConfig(dbUser.config)
+            token.activated = config.features.plan
+            token.onboardingCompleted = config.onboarding.completed
+          }
+        } catch {
+          // silently fail — token retains last known value
+        }
       }
       return token
     },
@@ -67,6 +85,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.id as string
         session.user.role = token.role as string
         session.user.onboardingCompleted = token.onboardingCompleted as boolean
+        session.user.activated = token.activated as boolean
       }
       return session
     },

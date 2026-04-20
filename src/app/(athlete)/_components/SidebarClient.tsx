@@ -12,9 +12,13 @@ import {
   Users,
   LogOut,
   Dumbbell,
+  UserCircle,
+  HelpCircle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { UserConfig } from '@/lib/config/user-config'
+import { useLanguage } from '@/app/_components/LanguageContext'
+import LanguageSwitcher from '@/app/_components/LanguageSwitcher'
 
 type Props = {
   user: { name: string; role: string }
@@ -24,25 +28,29 @@ type Props = {
 export default function SidebarClient({ user, config }: Props) {
   const pathname = usePathname()
   const { features } = config
+  const { t } = useLanguage()
+  const s = t.app.sidebar
 
   const allNavLinks = [
-    { href: '/dashboard', label: 'Dashboard',  icon: LayoutDashboard, show: true },
-    { href: '/plan',      label: 'Mi Plan',     icon: CalendarDays,    show: features.plan },
-    { href: '/checkin',   label: 'Check-in',    icon: ClipboardCheck,  show: features.checkin },
-    { href: '/nutrition', label: 'Nutrición',   icon: Apple,           show: features.nutrition },
-    { href: '/progress',  label: 'Progreso',    icon: TrendingUp,      show: features.progress },
-    { href: '/gym',       label: 'Gym',         icon: Dumbbell,        show: features.gym },
-    { href: '/coach',     label: 'Panel Coach', icon: Users,           show: features.coach },
+    { href: '/dashboard', label: s.dashboard,  icon: LayoutDashboard, show: true },
+    { href: '/plan',      label: s.plan,        icon: CalendarDays,    show: features.plan },
+    { href: '/checkin',   label: s.checkin,     icon: ClipboardCheck,  show: features.checkin },
+    { href: '/nutrition', label: s.nutrition,   icon: Apple,           show: features.nutrition },
+    { href: '/progress',  label: s.progress,    icon: TrendingUp,      show: features.progress },
+    { href: '/gym',       label: s.gym,         icon: Dumbbell,        show: features.gym },
+    { href: '/coach',     label: s.coachPanel,  icon: Users,           show: features.coach },
+    { href: '/profile',   label: s.profile,     icon: UserCircle,      show: true },
+    { href: '/help',      label: s.help,        icon: HelpCircle,      show: true },
   ].filter((l) => l.show)
 
   // Mobile: gym tiene prioridad sobre nutrición
   const mobileNavLinks = [
-    { href: '/dashboard', label: 'Dashboard',  icon: LayoutDashboard, show: true },
-    { href: '/plan',      label: 'Mi Plan',     icon: CalendarDays,    show: features.plan },
-    { href: '/gym',       label: 'Gym',         icon: Dumbbell,        show: features.gym },
-    { href: '/checkin',   label: 'Check-in',    icon: ClipboardCheck,  show: features.checkin },
-    { href: '/progress',  label: 'Progreso',    icon: TrendingUp,      show: features.progress },
-    { href: '/nutrition', label: 'Nutrición',   icon: Apple,           show: features.nutrition },
+    { href: '/dashboard', label: s.dashboard,  icon: LayoutDashboard, show: true },
+    { href: '/plan',      label: s.plan,        icon: CalendarDays,    show: features.plan },
+    { href: '/gym',       label: s.gym,         icon: Dumbbell,        show: features.gym },
+    { href: '/checkin',   label: s.checkin,     icon: ClipboardCheck,  show: features.checkin },
+    { href: '/progress',  label: s.progress,    icon: TrendingUp,      show: features.progress },
+    { href: '/nutrition', label: s.nutrition,   icon: Apple,           show: features.nutrition },
   ].filter((l) => l.show).slice(0, 5)
 
   function isActive(href: string) {
@@ -77,6 +85,9 @@ export default function SidebarClient({ user, config }: Props) {
         </nav>
 
         <div className="px-3 py-4 border-t border-white/10">
+          <div className="px-3 py-2 mb-2">
+            <LanguageSwitcher variant="dark" />
+          </div>
           <div className="flex items-center gap-3 px-3 py-2.5">
             <div className="w-8 h-8 rounded-full bg-[#f97316] flex items-center justify-center text-white text-sm font-bold shrink-0">
               {user.name.charAt(0).toUpperCase()}
@@ -88,7 +99,7 @@ export default function SidebarClient({ user, config }: Props) {
             <button
               onClick={() => signOut({ callbackUrl: '/login' })}
               className="text-white/50 hover:text-white transition-colors"
-              title="Cerrar sesión"
+              title={s.logout}
             >
               <LogOut size={16} />
             </button>
@@ -102,13 +113,16 @@ export default function SidebarClient({ user, config }: Props) {
           <div className="w-7 h-7 rounded-md bg-[#f97316] flex items-center justify-center font-bold text-white text-xs">M</div>
           <span className="text-base font-bold">Medaliq</span>
         </Link>
-        <button
-          onClick={() => signOut({ callbackUrl: '/login' })}
-          className="flex items-center gap-1.5 text-white/70 hover:text-white text-sm transition-colors"
-        >
-          <LogOut size={16} />
-          <span>Salir</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <LanguageSwitcher variant="dark" />
+          <button
+            onClick={() => signOut({ callbackUrl: '/login' })}
+            className="flex items-center gap-1.5 text-white/70 hover:text-white text-sm transition-colors"
+          >
+            <LogOut size={16} />
+            <span>{s.logout}</span>
+          </button>
+        </div>
       </header>
 
       {/* ── Mobile bottom nav ── */}
