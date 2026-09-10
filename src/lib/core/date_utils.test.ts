@@ -19,6 +19,8 @@ import {
   jsToWeekIdx,
   formatWeekRange,
   buildWeekDateNumbers,
+  todayInTz,
+  forceMonday,
   MONTHS,
 } from './date_utils'
 
@@ -181,5 +183,132 @@ describe('buildWeekDateNumbers', () => {
   it('dow 1 siempre coincide con el día del lunes pasado como input', () => {
     const monday = new Date(2026, 3, 6) // lunes 6 abril
     expect(buildWeekDateNumbers(monday)[1]).toBe(6)
+  })
+})
+
+// ── todayInTz — resolución de "hoy" en timezone del usuario ─────────────────
+
+describe('todayInTz', () => {
+  it('sin timezone (null) usa UTC como default', () => {
+    const result = todayInTz(null)
+    // Debe ser medianoche UTC de hoy
+    expect(result.getUTCHours()).toBe(0)
+    expect(result.getUTCMinutes()).toBe(0)
+    expect(result.getUTCSeconds()).toBe(0)
+    expect(result.getUTCMilliseconds()).toBe(0)
+  })
+
+  it('sin timezone (undefined) usa UTC como default', () => {
+    const result = todayInTz(undefined)
+    expect(result.getUTCHours()).toBe(0)
+    expect(result.getUTCMinutes()).toBe(0)
+  })
+
+  it('con timezone válido retorna medianoche UTC del día local', () => {
+    const result = todayInTz('America/Bogota')
+    expect(result.getUTCHours()).toBe(0)
+    expect(result.getUTCMinutes()).toBe(0)
+    expect(result.getUTCSeconds()).toBe(0)
+  })
+
+  it('retorna un Date válido para cualquier IANA timezone', () => {
+    const zones = ['America/Bogota', 'America/Mexico_City', 'Europe/Madrid', 'Asia/Tokyo', 'UTC']
+    for (const tz of zones) {
+      const result = todayInTz(tz)
+      expect(result).toBeInstanceOf(Date)
+      expect(isNaN(result.getTime())).toBe(false)
+    }
+  })
+
+  it('dos llamadas con la misma timezone retornan la misma fecha', () => {
+    const a = todayInTz('America/Bogota')
+    const b = todayInTz('America/Bogota')
+    expect(a.toISOString()).toBe(b.toISOString())
+  })
+})
+
+// ── forceMonday — alinear fechas de plan al lunes ───────────────────────────
+
+describe('forceMonday', () => {
+  it('lunes se queda igual', () => {
+    const mon = new Date('2026-09-07T00:00:00.000Z') // lunes
+    const result = forceMonday(mon)
+    expect(result.getUTCDay()).toBe(1)
+    expect(result.toISOString()).toBe('2026-09-07T00:00:00.000Z')
+  })
+
+  it('martes avanza al próximo lunes (+6 días)', () => {
+    const tue = new Date('2026-09-08T00:00:00.000Z') // martes
+    const result = forceMonday(tue)
+    expect(result.getUTCDay()).toBe(1)
+    expect(result.toISOString()).toBe('2026-09-14T00:00:00.000Z')
+  })
+
+  it('miércoles avanza al próximo lunes (+5 días)', () => {
+    const wed = new Date('2026-09-09T00:00:00.000Z') // miércoles
+    const result = forceMonday(wed)
+    expect(result.getUTCDay()).toBe(1)
+    expect(result.toISOString()).toBe('2026-09-14T00:00:00.000Z')
+  })
+
+  it('jueves avanza al próximo lunes (+4 días)', () => {
+    const thu = new Date('2026-09-10T00:00:00.000Z') // jueves
+    const result = forceMonday(thu)
+    expect(result.getUTCDay()).toBe(1)
+    expect(result.toISOString()).toBe('2026-09-14T00:00:00.000Z')
+  })
+
+  it('viernes avanza al próximo lunes (+3 días)', () => {
+    const fri = new Date('2026-09-11T00:00:00.000Z') // viernes
+    const result = forceMonday(fri)
+    expect(result.getUTCDay()).toBe(1)
+    expect(result.toISOString()).toBe('2026-09-14T00:00:00.000Z')
+  })
+
+  it('sábado avanza al próximo lunes (+2 días)', () => {
+    const sat = new Date('2026-09-12T00:00:00.000Z') // sábado
+    const result = forceMonday(sat)
+    expect(result.getUTCDay()).toBe(1)
+    expect(result.toISOString()).toBe('2026-09-14T00:00:00.000Z')
+  })
+
+  it('domingo avanza al día siguiente (+1 día)', () => {
+    const sun = new Date('2026-09-13T00:00:00.000Z') // domingo
+    const result = forceMonday(sun)
+    expect(result.getUTCDay()).toBe(1)
+    expect(result.toISOString()).toBe('2026-09-14T00:00:00.000Z')
+  })
+
+  it('no muta la fecha original', () => {
+    const original = new Date('2026-09-09T00:00:00.000Z') // miércoles
+    const originalTime = original.getTime()
+    forceMonday(original)
+    expect(original.getTime()).toBe(originalTime)
+  })
+
+  it('invariante: resultado siempre es lunes (getUTCDay === 1)', () => {
+    // Probar todos los días de una semana
+    for (let day = 7; day <= 13; day++) {
+      const date = new Date(`2026-09-${String(day).padStart(2, '0')}T00:00:00.000Z`)
+      const result = forceMonday(date)
+      expect(result.getUTCDay()).toBe(1)
+    }
+  })
+
+  it('cruza mes correctamente (viernes 30 oct → lunes 2 nov)', () => {
+    const fri = new Date('2026-10-30T00:00:00.000Z') // viernes
+    const result = forceMonday(fri)
+    expect(result.getUTCDay()).toBe(1)
+    expect(result.getUTCMonth()).toBe(10) // noviembre (0-indexed)
+    expect(result.getUTCDate()).toBe(2)
+  })
+
+  it('cruza año correctamente (miércoles 30 dic → lunes 4 ene)', () => {
+    const wed = new Date('2026-12-30T00:00:00.000Z') // miércoles
+    const result = forceMonday(wed)
+    expect(result.getUTCDay()).toBe(1)
+    expect(result.getUTCFullYear()).toBe(2027)
+    expect(result.getUTCMonth()).toBe(0) // enero
+    expect(result.getUTCDate()).toBe(4)
   })
 })

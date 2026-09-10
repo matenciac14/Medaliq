@@ -7,6 +7,7 @@ vi.mock('@/lib/db/prisma', () => ({
   prisma: {
     food: { findMany: vi.fn(), create: vi.fn() },
     foodProfile: { findUnique: vi.fn().mockResolvedValue(null) },
+    user: { findUnique: vi.fn().mockResolvedValue({ timezone: 'America/Bogota' }) },
   },
 }))
 
@@ -28,12 +29,12 @@ describe('GET /api/athlete/nutrition/foods', () => {
     expect(res.status).toBe(401)
   })
 
-  it('llama findMany con take: 50 y sin filtro de nombre cuando no hay ?q=', async () => {
+  it('llama findMany con take: 80 y sin filtro de nombre cuando no hay ?q=', async () => {
     vi.mocked(auth).mockResolvedValue(SESSION as any)
     vi.mocked(prisma.food.findMany).mockResolvedValue([])
     await GET(getReq())
     expect(prisma.food.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ take: 50, where: { isActive: true } })
+      expect.objectContaining({ take: 80, where: { isActive: true } })
     )
   })
 
@@ -43,7 +44,7 @@ describe('GET /api/athlete/nutrition/foods', () => {
     await GET(getReq('?q=pollo'))
     expect(prisma.food.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        take: 50,
+        take: 80,
         where: {
           isActive: true,
           name: { contains: 'pollo', mode: 'insensitive' },

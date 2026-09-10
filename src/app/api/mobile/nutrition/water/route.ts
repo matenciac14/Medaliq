@@ -40,8 +40,14 @@ export async function POST(req: NextRequest) {
   const delta = Number(body.delta)
   if (!delta || isNaN(delta)) return NextResponse.json({ error: 'delta requerido' }, { status: 400 })
 
+  // POST no recibe tz auto-inyectado (solo GET) → leer de DB como fallback
   const tz = req.nextUrl.searchParams.get('tz') || undefined
-  const today = todayInTz(tz)
+  let resolvedTz = tz
+  if (!resolvedTz) {
+    const u = await prisma.user.findUnique({ where: { id: userId }, select: { timezone: true } })
+    resolvedTz = u?.timezone ?? undefined
+  }
+  const today = todayInTz(resolvedTz)
   const dateStr = today.toISOString()
 
   // Atomic upsert — avoids read-then-write race condition on parallel taps

@@ -103,11 +103,14 @@ export function calculateMacros(tdee: number, weightKg: number, hasWeightGoal: b
   const proteinKcal = proteinG * 4
 
   function buildDay(kcalTarget: number, carbPct: number): MacroDay {
-    const kcal = Math.max(kcalTarget, 1200) // mínimo seguro
-    const carbKcal = kcal * carbPct
+    const baseKcal = Math.max(kcalTarget, 1200)
+    const carbKcal = baseKcal * carbPct
     const carbsG = Math.round(carbKcal / 4)
-    const fatKcal = kcal - proteinKcal - carbKcal
-    const fatG = Math.max(Math.round(fatKcal / 9), Math.round(weightKg * 0.5))
+    const minFatG = Math.round(weightKg * 0.5)
+    const derivedFatG = Math.round((baseKcal - proteinKcal - carbKcal) / 9)
+    const fatG = Math.max(derivedFatG, minFatG)
+    // Recalcular kcal para que macros siempre sumen al total reportado
+    const kcal = proteinKcal + carbsG * 4 + fatG * 9
     return { kcal, protein: proteinG, carbs: carbsG, fat: fatG }
   }
 

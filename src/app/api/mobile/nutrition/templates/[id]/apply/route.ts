@@ -38,11 +38,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   })
   if (!template) return NextResponse.json({ error: 'Plantilla no encontrada.' }, { status: 404 })
 
-  const weekStart = new Date(weekStartStr)
-  weekStart.setHours(0, 0, 0, 0)
+  // YYYY-MM-DD → UTC midnight (no usar setHours que depende del TZ del server)
+  const weekStart = new Date(`${weekStartStr}T00:00:00.000Z`)
   const weekEnd = new Date(weekStart)
-  weekEnd.setDate(weekEnd.getDate() + 6)
-  weekEnd.setHours(23, 59, 59, 999)
+  weekEnd.setUTCDate(weekEnd.getUTCDate() + 6)
+  weekEnd.setUTCHours(23, 59, 59, 999)
 
   const daysByType = new Map(template.days.map((d) => [d.dayType, d]))
 
@@ -50,8 +50,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   for (const [dateStr, dayType] of Object.entries(intensityMap)) {
     const templateDay = daysByType.get(dayType as NutritionDayType)
     if (!templateDay) continue
-    const date = new Date(dateStr)
-    date.setHours(12, 0, 0, 0)
+    const date = new Date(`${dateStr}T00:00:00.000Z`)
+    date.setUTCHours(12, 0, 0, 0)
     for (const meal of templateDay.meals) {
       for (const item of meal.items) {
         records.push({ userId, date, mealType: meal.mealType as MealType, foodId: item.foodId, grams: item.grams })

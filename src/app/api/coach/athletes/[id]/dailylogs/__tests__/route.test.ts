@@ -12,6 +12,7 @@ vi.mock('@/lib/db/prisma', () => ({
     dailyLog: {
       findMany: vi.fn(),
     },
+    user: { findUnique: vi.fn().mockResolvedValue({ timezone: 'America/Bogota' }) },
   },
 }))
 

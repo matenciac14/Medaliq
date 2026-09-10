@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, type ReactNode } from 'react'
+import Link from 'next/link'
+import CalorieDonutHero from './CalorieDonutHero'
 import ConsumedModal from './ConsumedModal'
 import DeficitHeroCard from './DeficitHeroCard'
 import NutritionSummaryDonut from './NutritionSummaryDonut'
@@ -112,7 +114,7 @@ export default function NutritionPageClient({
   return (
     <>
       {/* ─── Desktop: 2-column layout ─── */}
-      <div className="hidden lg:grid lg:grid-cols-[1fr_320px] lg:gap-6 lg:items-start">
+      <div className="hidden lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-6 lg:items-start">
         {/* LEFT — Main column */}
         <div className="space-y-5">
           {headerSlot}
@@ -162,16 +164,23 @@ export default function NutritionPageClient({
         </div>
 
         {/* RIGHT — Sidebar (320px fixed) */}
-        <div>
+        <div className="min-w-0">
           {sidebarContent}
         </div>
       </div>
 
-      {/* ─── Mobile: single column ─── */}
-      <div className="lg:hidden space-y-5">
-        {headerSlot}
+      {/* ─── Mobile: single column (matches Figma mobile frames) ─── */}
+      {/* Order per Figma: sin-plan 4523:550 · con-plan 4523:633 · b2b 4523:753 */}
+      <div className="lg:hidden space-y-3">
+        {/* b2b: CoachBanner first (Figma #2) */}
+        {state === 'b2b' && coachBannerSlot}
+
+        {/* Proposal — all states (sin-plan: empty, con-plan: #2, b2b: #3) */}
         {proposalSlot}
-        {activitySlot}
+
+        {/* con-plan only: Activity before donut (Figma #3) */}
+        {state === 'con-plan' && activitySlot}
+
         {phaseBannerSlot}
 
         {state === 'b2b' && planName && (
@@ -181,31 +190,25 @@ export default function NutritionPageClient({
           </div>
         )}
 
-        {macroCardsSlot}
-        {initSlot}
-
-        {state === 'sin-plan' && emptyMealPlanSlot}
-
-        {state === 'con-plan' && target && (
-          <DeficitHeroCard
-            consumed={consumedSafe}
-            target={targetSafe}
-            onViewConsumed={() => setModalOpen(true)}
-            onRegister={() => {
-              const el = document.getElementById('tracking-mobile')
-              el?.scrollIntoView({ behavior: 'smooth' })
-            }}
-            activityKcalBonus={activityKcalBonus}
-            activityLabel={activityLabel}
-          />
+        {/* Donut hero (sin-plan: #2, con-plan: #4, b2b: #4) */}
+        {target ? (
+          <CalorieDonutHero consumed={consumedSafe} target={targetSafe} state={state} />
+        ) : (
+          macroCardsSlot
         )}
 
-        {state === 'b2b' && coachBannerSlot}
+        {initSlot}
 
-        {/* Hydration inline */}
+        {/* Hydration — right after donut in all states */}
         {hydrationSlot}
 
-        {/* Meal checklist (mobile — inline list) */}
+        {/* sin-plan & b2b: Activity after hydration (Figma sin-plan #4, b2b #6) */}
+        {state !== 'con-plan' && activitySlot}
+
+        {/* sin-plan: EmptyState (Figma #5) */}
+        {state === 'sin-plan' && emptyMealPlanSlot}
+
+        {/* Meal checklist (con-plan #6, b2b #7) */}
         {hasMealPlan && mealChecklist.length > 0 && (
           <MealListInline
             meals={mealChecklist}
@@ -214,25 +217,40 @@ export default function NutritionPageClient({
           />
         )}
 
-        {/* Next meal highlight */}
+        {/* Next meal highlight (con-plan #7, b2b #8) */}
         {nextMeal && (
-          <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="bg-[#ea580c] text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase">Proxima</span>
-              <span className="text-sm font-bold text-[#1e3a5f]">{nextMeal.label}</span>
-              <span className="ml-auto text-sm font-bold text-[#ea580c]">~{nextMeal.kcal} kcal</span>
-            </div>
-            <p className="text-xs text-gray-500">{nextMeal.foods}</p>
-            <button
-              onClick={() => {
-                const el = document.getElementById('tracking-mobile')
-                el?.scrollIntoView({ behavior: 'smooth' })
-              }}
-              className="w-full h-10 rounded-xl bg-[#ea580c] text-white text-sm font-bold hover:opacity-90 transition-opacity"
-            >
-              + Registrar {nextMeal.label.toLowerCase()}
-            </button>
-          </div>
+          <ProximaComidaCard
+            mealLabel={nextMeal.label}
+            scheduledTime={nextMeal.time}
+            foods={nextMeal.foods}
+            kcal={nextMeal.kcal}
+            proteinG={nextMeal.proteinG}
+          />
+        )}
+
+        {/* Tip/Weekly order varies by state:
+            con-plan: Weekly → Tip (Figma #8 → #9)
+            sin-plan & b2b: Tip → Weekly (Figma sin-plan #6→#7, b2b #9→#11) */}
+        {state === 'con-plan' ? (
+          <>
+            {adherenceSlot}
+            {tipSlot}
+          </>
+        ) : (
+          <>
+            {tipSlot}
+            {/* b2b: CoachCTA between Tip and Weekly (Figma #10) */}
+            {state === 'b2b' && (
+              <Link
+                href="/mensajes"
+                className="flex items-center justify-center gap-2 h-10 rounded-full border border-[#d0d7e1] bg-white text-sm font-semibold text-[#1e3a5f] hover:bg-gray-50 transition-colors"
+              >
+                <span className="text-sm">📩</span>
+                Mensaje al coach
+              </Link>
+            )}
+            {adherenceSlot}
+          </>
         )}
 
         {weeklyMenuSlot}
@@ -240,12 +258,6 @@ export default function NutritionPageClient({
         {mealCardsSlot}
         {mealPlanSlot}
         {menuLinksSlot}
-
-        {/* Adherence */}
-        {adherenceSlot}
-
-        {/* Tip */}
-        {tipSlot}
 
         <div id="tracking-mobile">{trackingSectionSlot}</div>
 

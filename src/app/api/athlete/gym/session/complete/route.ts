@@ -397,7 +397,8 @@ export async function POST(req: NextRequest) {
 
   const newPRs = collectPRsByWeId(sets, weNameMap, weExIdMap, maxPerExercise)
 
-  autoCompleteStrengthSession({ athleteId, rpe, durationMin, notes }).catch(() => {})
+  // DAT-5: no llamar autoCompleteStrengthSession aquí — el atleta completó una sesión
+  // de assignedWorkout, no de plan. autoComplete solo aplica en el plan-based path.
   persistProgression(sets)
   notifyCoach(athleteId, userRecord.name, 'Sesión de gym completada 💪').catch(() => {})
 

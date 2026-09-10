@@ -1,52 +1,40 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-
 type Props = {
   mealLabel: string
-  scheduledTime: string // "12:30" 24h format
+  scheduledTime: string
   foods: string
   kcal: number
   proteinG: number
 }
 
-export default function ProximaComidaCard({ mealLabel, scheduledTime, foods, kcal, proteinG }: Props) {
-  const [countdown, setCountdown] = useState('')
-
-  useEffect(() => {
-    function calc() {
-      const now = new Date()
-      const [h, m] = scheduledTime.split(':').map(Number)
-      const target = new Date(now)
-      target.setHours(h, m, 0, 0)
-      const diff = target.getTime() - now.getTime()
-      if (diff <= 0) { setCountdown('Ahora'); return }
-      const hours = Math.floor(diff / 3600000)
-      const mins = Math.floor((diff % 3600000) / 60000)
-      setCountdown(hours > 0 ? `En ${hours}h ${mins} min` : `En ${mins} min`)
-    }
-    calc()
-    const id = setInterval(calc, 60000)
-    return () => clearInterval(id)
-  }, [scheduledTime])
+export default function ProximaComidaCard({ mealLabel, foods, kcal }: Props) {
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-2">
-      <div className="flex items-center gap-2 text-gray-400">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        <span className="text-xs font-bold">
-          {countdown} — {scheduledTime.replace(/^(\d+):(\d+)$/, (_, hh, mm) => {
-            const h = parseInt(hh)
-            return `${h > 12 ? h - 12 : h}:${mm} ${h >= 12 ? 'pm' : 'am'}`
-          })}
-        </span>
+    <div className="bg-[#fffaf5] rounded-[16px] border border-[rgba(235,89,13,0.2)] px-3.5 py-3 space-y-2">
+      <div className="flex items-center gap-2">
+        <div className="w-[18px] h-[18px] rounded-[9px] bg-[rgba(235,89,13,0.15)] flex items-center justify-center shrink-0">
+          <span className="text-[12px] font-bold text-[#eb590d] leading-none">›</span>
+        </div>
+        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+          <span className="bg-[rgba(235,89,13,0.12)] text-[#eb590d] text-[7px] font-bold w-[52px] h-4 flex items-center justify-center rounded-[4px] uppercase shrink-0" style={{ letterSpacing: '0.35px' }}>Proxima</span>
+          <span className="text-[13px] font-semibold text-[#26262b]">{mealLabel}</span>
+        </div>
+        <span className="text-[11px] font-semibold text-[#eb590d] shrink-0">~{kcal} kcal</span>
       </div>
-      <p className="text-base font-bold text-[#1e3a5f]">{mealLabel}</p>
-      <p className="text-xs text-gray-500 leading-relaxed">{foods}</p>
-      <div className="flex items-center gap-3">
-        <span className="text-xs font-bold text-[#ea580c]">{kcal} kcal</span>
-        <span className="text-xs font-bold text-blue-500">{proteinG}g prot</span>
+      <div className="flex items-center gap-1.5 pl-[26px]">
+        <span className="text-[10px]">🥣</span>
+        <p className="text-[10px] font-normal text-[#808791] flex-1 min-w-0">{foods}</p>
       </div>
+      <button
+        onClick={() => {
+          const el = document.getElementById('tracking-mobile') ?? document.getElementById('tracking')
+          el?.scrollIntoView({ behavior: 'smooth' })
+        }}
+        className="w-full h-8 rounded-[10px] bg-[#eb590d] text-white text-[11px] font-bold hover:opacity-90 transition-opacity"
+      >
+        + Registrar {mealLabel.toLowerCase()}
+      </button>
     </div>
   )
 }

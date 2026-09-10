@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import { buildCustomPlanWeeks, calcPlanEndDate } from '@/domain/plan/custom_plan'
+import { forceMonday } from '@/lib/core/date_utils'
 
 export async function POST(
   req: NextRequest,
@@ -25,8 +26,9 @@ export async function POST(
   if (!totalWeeks || totalWeeks < 1 || totalWeeks > 52) return NextResponse.json({ error: 'totalWeeks debe estar entre 1 y 52.' }, { status: 400 })
   if (!startDate) return NextResponse.json({ error: 'startDate es requerido.' }, { status: 400 })
 
-  const start = new Date(startDate)
-  if (isNaN(start.getTime())) return NextResponse.json({ error: 'startDate inválido.' }, { status: 400 })
+  const rawStart = new Date(startDate)
+  if (isNaN(rawStart.getTime())) return NextResponse.json({ error: 'startDate inválido.' }, { status: 400 })
+  const start = forceMonday(rawStart)
 
   const end = calcPlanEndDate(start, totalWeeks)
 

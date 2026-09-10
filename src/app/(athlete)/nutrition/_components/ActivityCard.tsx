@@ -1,7 +1,7 @@
 // NUT-DASH-01 — Sesión del día visible en pantalla de nutrición
 // Muestra tipo, duración y kcal estimadas quemadas cuando el atleta tiene sesión planificada o de gym hoy.
 
-import { Dumbbell, Timer, Flame } from 'lucide-react'
+import { Dumbbell } from 'lucide-react'
 
 type Props = {
   sessionType: string | null   // PlannedSession.type (e.g. RODAJE_Z2, FUERZA)
@@ -30,45 +30,31 @@ const INTENSITY_KCAL: Record<string, number> = {
   LOW:      200,
 }
 
-const INTENSITY_COLOR: Record<string, string> = {
-  HIGH:     'border-red-200 bg-red-50',
-  MODERATE: 'border-orange-200 bg-orange-50',
-  LOW:      'border-blue-200 bg-blue-50',
-}
-
 export default function ActivityCard({ sessionType, intensity, durationMin, isGymDay }: Props) {
-  const label = sessionType ? (SESSION_LABELS[sessionType] ?? 'Sesión de entrenamiento') : (isGymDay ? 'Entrenamiento de fuerza' : null)
+  const label = sessionType ? (SESSION_LABELS[sessionType] ?? 'Sesion de entrenamiento') : (isGymDay ? 'Entrenamiento de fuerza' : null)
 
   if (!label) return null
 
   const estKcal = intensity ? (INTENSITY_KCAL[intensity] ?? null) : (isGymDay ? 360 : null)
-  const borderBg = intensity ? (INTENSITY_COLOR[intensity] ?? 'border-gray-200 bg-gray-50') : 'border-orange-200 bg-orange-50'
 
   return (
-    <div className={`rounded-2xl border px-4 py-3 flex items-center gap-3 ${borderBg}`}>
-      <div className="w-9 h-9 rounded-xl bg-white/70 flex items-center justify-center shrink-0">
-        <Dumbbell size={18} className="text-gray-600" />
+    <div className="rounded-[14px] border border-[#f0f2f5] bg-white px-3.5 py-2.5 flex items-center gap-2.5 h-14">
+      <div className="w-9 h-9 rounded-[10px] bg-[#f2f7ff] flex items-center justify-center shrink-0">
+        <Dumbbell size={18} className="text-[#1f3b5e]" />
       </div>
 
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">Día de entrenamiento</p>
-        <p className="text-sm font-bold text-gray-900 truncate">{label}</p>
+        <p className="text-[12px] font-semibold text-[#1f1f24] truncate">{label}</p>
+        <p className="text-[9px] font-normal text-[#8c99a6] mt-0.5">
+          {durationMin && durationMin > 0 ? `${durationMin} min · ` : ''}Dia de entrenamiento
+        </p>
       </div>
 
-      <div className="flex items-center gap-3 shrink-0 text-xs text-gray-500">
-        {durationMin && durationMin > 0 && (
-          <span className="flex items-center gap-1">
-            <Timer size={13} />
-            {durationMin} min
-          </span>
-        )}
-        {estKcal && (
-          <span className="flex items-center gap-1 text-orange-600 font-semibold">
-            <Flame size={13} />
-            ~{estKcal} kcal
-          </span>
-        )}
-      </div>
+      {estKcal && (
+        <div className="shrink-0 bg-[#fff2e5] rounded-[12px] h-6 w-[70px] flex items-center justify-center">
+          <span className="text-[10px] font-bold text-[#eb590d]">~{estKcal} kcal</span>
+        </div>
+      )}
     </div>
   )
 }
