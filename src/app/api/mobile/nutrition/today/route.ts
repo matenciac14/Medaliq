@@ -170,6 +170,13 @@ export async function GET(req: NextRequest) {
   // Compute targets
   const targets = nutritionPlan ? getDailyNutritionTarget(sessionIntensity, nutritionPlan) : null
 
+  // Pre-computed targets per day type (constructor/planner screens need all 3)
+  const dayTargets = nutritionPlan ? {
+    hard: getDailyNutritionTarget('HIGH', nutritionPlan),
+    easy: getDailyNutritionTarget('MODERATE', nutritionPlan),
+    rest: getDailyNutritionTarget('REST', nutritionPlan),
+  } : null
+
   // Resolve template meals for today's dayType
   const dbDayType = sessionIntensity === 'HIGH' ? 'HARD' : sessionIntensity === 'REST' || !sessionIntensity ? 'REST' : 'EASY'
   const templateDay = assignedNutritionPlan?.template.days.find(d => d.dayType === dbDayType) ?? null
@@ -333,6 +340,7 @@ export async function GET(req: NextRequest) {
     dayType: intensity,
     macros,
     targets,
+    dayTargets,
     intensity,
 
     // Today's data

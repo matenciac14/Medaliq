@@ -8,6 +8,8 @@ type Props = {
   intensity: string | null     // PlannedSession.intensity (HIGH/MODERATE/LOW/REST)
   durationMin: number | null
   isGymDay: boolean
+  zoneTarget: string | null
+  weekNumber: number | null
 }
 
 const SESSION_LABELS: Record<string, string> = {
@@ -30,12 +32,18 @@ const INTENSITY_KCAL: Record<string, number> = {
   LOW:      200,
 }
 
-export default function ActivityCard({ sessionType, intensity, durationMin, isGymDay }: Props) {
+export default function ActivityCard({ sessionType, intensity, durationMin, isGymDay, zoneTarget, weekNumber }: Props) {
   const label = sessionType ? (SESSION_LABELS[sessionType] ?? 'Sesion de entrenamiento') : (isGymDay ? 'Entrenamiento de fuerza' : null)
 
   if (!label) return null
 
   const estKcal = intensity ? (INTENSITY_KCAL[intensity] ?? null) : (isGymDay ? 360 : null)
+
+  const details = [
+    durationMin && durationMin > 0 ? `${durationMin} min` : null,
+    zoneTarget,
+    weekNumber ? `Sem. ${weekNumber}` : null,
+  ].filter(Boolean).join(' · ')
 
   return (
     <div className="rounded-[14px] border border-[#f0f2f5] bg-white px-3.5 py-2.5 flex items-center gap-2.5 h-14">
@@ -46,7 +54,7 @@ export default function ActivityCard({ sessionType, intensity, durationMin, isGy
       <div className="flex-1 min-w-0">
         <p className="text-[12px] font-semibold text-[#1f1f24] truncate">{label}</p>
         <p className="text-[9px] font-normal text-[#8c99a6] mt-0.5">
-          {durationMin && durationMin > 0 ? `${durationMin} min · ` : ''}Dia de entrenamiento
+          {details || 'Dia de entrenamiento'}
         </p>
       </div>
 

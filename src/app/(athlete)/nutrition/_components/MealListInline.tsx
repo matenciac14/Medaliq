@@ -12,18 +12,21 @@ type Props = {
   meals: MealItem[]
   totalLogged: number
   totalPlanned: number
+  isB2B?: boolean
   onRegister?: (mealType: string) => void
 }
 
 const MEAL_ORDER = ['BREAKFAST', 'LUNCH', 'SNACK', 'DINNER', 'PRE_WORKOUT', 'POST_WORKOUT']
 
-export default function MealListInline({ meals, totalLogged, totalPlanned, onRegister }: Props) {
+export default function MealListInline({ meals, totalLogged, totalPlanned, isB2B, onRegister }: Props) {
   const sorted = [...meals].sort((a, b) => MEAL_ORDER.indexOf(a.mealType) - MEAL_ORDER.indexOf(b.mealType))
 
   return (
     <div className="bg-white rounded-[16px] border border-[#f0f2f5] overflow-hidden">
       <div className="flex items-center justify-between px-3.5 pt-2.5 pb-1.5">
-        <p className="text-[9px] font-bold text-[#8c99a6] uppercase" style={{ letterSpacing: '0.72px' }}>Comidas de hoy</p>
+        <p className="text-[9px] font-bold text-[#8c99a6] uppercase" style={{ letterSpacing: '0.72px' }}>
+          {isB2B ? 'Plan de comidas · Coach' : 'Comidas de hoy'}
+        </p>
         <p className="text-[9px] font-semibold text-[#eb590d]">{totalLogged}/{totalPlanned}</p>
       </div>
 

@@ -24,10 +24,23 @@ export default async function NutritionBuilderIndexPage() {
   })
   if (existing) redirect(`/nutrition/builder/${existing.id}`)
 
-  // Sin plantillas → mostrar pantalla de creación
+  // Metas diarias para el sidebar
+  const nutritionPlan = await prisma.nutritionPlan.findUnique({
+    where: { userId },
+    select: {
+      targetKcalHard: true,
+      targetKcalEasy: true,
+      targetKcalRest: true,
+    },
+  })
+
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <CreateTemplateClient />
-    </div>
+    <CreateTemplateClient
+      targets={nutritionPlan ? {
+        hard: nutritionPlan.targetKcalHard,
+        easy: nutritionPlan.targetKcalEasy,
+        rest: nutritionPlan.targetKcalRest,
+      } : null}
+    />
   )
 }

@@ -26,10 +26,11 @@ export async function POST(_req: Request) {
 
   // Calcular TDEE con fórmulas
   const tdee = calculateTDEE(profile.weightKg, profile.heightCm, profile.age, (profile.gender === 'female' ? 'female' : 'male') as 'male' | 'female', 5)
-  const macros = calculateMacros(tdee, profile.weightKg, !!profile.weightGoalKg)
+  // Leer kcalAdjustment existente o derivar del perfil
+  const existingPlan = await prisma.nutritionPlan.findUnique({ where: { userId }, select: { kcalAdjustment: true } })
+  const kcalAdjustment = existingPlan?.kcalAdjustment ?? (profile.weightGoalKg ? -500 : 0)
+  const macros = calculateMacros(tdee, profile.weightKg, kcalAdjustment)
 
-  // PERSIST-04: upsert + enableFeatures en una sola tx — si enableFeatures falla,
-  // el plan no queda sin features activas.
   const nutritionPlanData = {
     tdee,
     targetKcalHard: macros.hard.kcal,
@@ -39,6 +40,7 @@ export async function POST(_req: Request) {
     carbsHardG: macros.hard.carbs,
     carbsEasyG: macros.easy.carbs,
     fatG: macros.hard.fat,
+    kcalAdjustment,
   }
   const [nutritionPlan] = await prisma.$transaction([
     prisma.nutritionPlan.upsert({

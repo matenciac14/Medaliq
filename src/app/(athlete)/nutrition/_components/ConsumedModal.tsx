@@ -138,7 +138,7 @@ export default function ConsumedModal({ open, onClose }: Props) {
         <div className="px-5 py-4 border-t border-gray-100">
           <button
             onClick={onClose}
-            className="w-full h-12 rounded-xl bg-[#ea580c] text-white text-sm font-bold hover:opacity-90 transition-opacity"
+            className="w-full h-12 rounded-xl bg-[#1e3a5f] text-white text-sm font-bold hover:bg-[#162d4a] transition-colors"
           >
             + Agregar comida
           </button>

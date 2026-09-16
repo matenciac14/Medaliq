@@ -501,7 +501,9 @@ export default function PlannedMealPlannerClient({ weekStart, initialMeals, week
                     className={`flex flex-col items-center py-2 px-1 rounded-xl border transition-all ${
                       isSelected
                         ? 'bg-[#1e3a5f] border-[#1e3a5f] text-white'
-                        : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50'
+                        : isToday
+                          ? 'border-[#ea580c] bg-orange-50/50 hover:bg-orange-50'
+                          : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50'
                     }`}
                   >
                     <span className={`text-[10px] font-medium ${isSelected ? 'text-blue-200' : 'text-gray-400'}`}>

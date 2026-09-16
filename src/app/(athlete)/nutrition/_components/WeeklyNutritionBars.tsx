@@ -27,7 +27,7 @@ export default function WeeklyNutritionBars({ days }: { days: DayBar[] }) {
               <div
                 className="w-full rounded-[4px] transition-all"
                 style={{
-                  height: 24,
+                  height: barH,
                   backgroundColor: day.pct === null ? '#f2f5f7' : color,
                   opacity: day.pct === null ? 0.5 : 1,
                 }}

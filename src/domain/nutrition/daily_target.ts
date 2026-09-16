@@ -2,6 +2,8 @@
 // daily-target.ts — Target nutricional del día según la sesión planificada
 // ---------------------------------------------------------------------------
 
+import { LOW_KCAL_MULTIPLIER, LOW_CARBS_MULTIPLIER, REST_CARBS_MULTIPLIER } from './nutrition_constants'
+
 export type DailyNutritionTarget = {
   kcal: number
   proteinG: number
@@ -64,8 +66,8 @@ export function getDailyNutritionTarget(
       }
     }
     case 'LOW': {
-      const kcal = Math.round(plan.targetKcalEasy * 0.88)
-      const carbsG = Math.round(plan.carbsEasyG * 0.75)
+      const kcal = Math.round(plan.targetKcalEasy * LOW_KCAL_MULTIPLIER)
+      const carbsG = Math.round(plan.carbsEasyG * LOW_CARBS_MULTIPLIER)
       return {
         kcal,
         proteinG: plan.proteinG,
@@ -78,7 +80,7 @@ export function getDailyNutritionTarget(
     case 'REST':
     default: {
       const kcal = plan.targetKcalRest
-      const carbsG = Math.round(plan.carbsEasyG * 0.7)
+      const carbsG = Math.round(plan.carbsEasyG * REST_CARBS_MULTIPLIER)
       return {
         kcal,
         proteinG: plan.proteinG,

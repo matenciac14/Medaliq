@@ -11,16 +11,22 @@ export default function EmptyMealPlanCard({ tdee, isB2B }: Props) {
       {/* Illustration */}
       <div className="flex flex-col items-center text-center mb-6">
         <div className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center mb-4">
-          <span className="text-3xl">🍽️</span>
+          <span className="text-3xl">🥗</span>
         </div>
-        <h2 className="text-xl font-bold text-[#1e3a5f] mb-2">Disena tu menu</h2>
-        <p className="text-sm text-gray-500 max-w-md">
+        {/* Mobile: simple message per Figma 4523:550 */}
+        <h2 className="text-xl font-bold text-[#1e3a5f] mb-2 md:hidden">Sin plan de comidas</h2>
+        <p className="text-sm text-gray-500 max-w-md md:hidden">
+          Disena tu menu para dias duros, faciles y de descanso desde el constructor.
+        </p>
+        {/* Desktop: detailed message with feature pills */}
+        <h2 className="text-xl font-bold text-[#1e3a5f] mb-2 hidden md:block">Disena tu menu</h2>
+        <p className="text-sm text-gray-500 max-w-md hidden md:block">
           Tus macros ya estan calculados. Elige como distribuirlos en comidas reales.
         </p>
       </div>
 
-      {/* Feature pills */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+      {/* Feature pills — desktop only */}
+      <div className="hidden md:grid md:grid-cols-3 gap-3 mb-6">
         {[
           { emoji: '🎯', title: 'Por tipo de dia', desc: 'Ajusta calorias segun entreno, descanso o competencia' },
           { emoji: '🥗', title: 'Alimentos reales', desc: 'Elige de nuestra base de +500 alimentos LatAm' },

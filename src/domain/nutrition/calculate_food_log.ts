@@ -3,6 +3,7 @@
  */
 
 import { intensityToDayType, type DayType } from '@/domain/nutrition/day_type'
+import { LOW_KCAL_MULTIPLIER, LOW_CARBS_MULTIPLIER, REST_CARBS_MULTIPLIER } from '@/domain/nutrition/nutrition_constants'
 
 export const VALID_MEAL_TYPES = ['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK', 'PRE_WORKOUT', 'POST_WORKOUT'] as const
 export type MealType = typeof VALID_MEAL_TYPES[number]
@@ -43,12 +44,12 @@ export function calcNutritionTarget(
   const kcal =
     dayType === 'hard' ? nutritionPlan.targetKcalHard
     : dayType === 'rest' ? nutritionPlan.targetKcalRest
-    : dayType === 'low'  ? Math.round(nutritionPlan.targetKcalEasy * 0.88)
+    : dayType === 'low'  ? Math.round(nutritionPlan.targetKcalEasy * LOW_KCAL_MULTIPLIER)
     : nutritionPlan.targetKcalEasy
   const carbsG =
     dayType === 'hard' ? nutritionPlan.carbsHardG
-    : dayType === 'rest' ? Math.round(nutritionPlan.carbsEasyG * 0.7)
-    : dayType === 'low'  ? Math.round(nutritionPlan.carbsEasyG * 0.75)
+    : dayType === 'rest' ? Math.round(nutritionPlan.carbsEasyG * REST_CARBS_MULTIPLIER)
+    : dayType === 'low'  ? Math.round(nutritionPlan.carbsEasyG * LOW_CARBS_MULTIPLIER)
     : nutritionPlan.carbsEasyG
   return { kcal, proteinG: nutritionPlan.proteinG, carbsG, fatG: nutritionPlan.fatG }
 }

@@ -20,6 +20,7 @@ import HydrationWidget from './_components/HydrationWidget'
 import MealSummaryCards from './_components/MealSummaryCards'
 import TipCard from './_components/TipCard'
 import NutritionPageClient from './_components/NutritionPageClient'
+import AthleteKcalStrategy from './_components/AthleteKcalStrategy'
 import EmptyMealPlanCard from './_components/EmptyMealPlanCard'
 import CoachNutritionBanner from './_components/CoachNutritionBanner'
 import PendingMealsBanner from './_components/PendingMealsBanner'
@@ -72,6 +73,7 @@ export default async function NutritionPage() {
     weekFoodLogs,
     coachProposals,
     currentPlanWeek,
+    activeCoachRelation,
     assignedNutritionPlan,
     weekSessions,
     athleteTemplate,
@@ -87,7 +89,7 @@ export default async function NutritionPage() {
             week: { planId: activePlan.id, weekNumber: currentWeek },
             dayOfWeek: todayDow,
           },
-          select: { intensity: true, type: true, durationMin: true },
+          select: { intensity: true, type: true, durationMin: true, zoneTarget: true },
         })
       : Promise.resolve(null),
     prisma.assignedWorkout.findFirst({
@@ -130,6 +132,10 @@ export default async function NutritionPage() {
           select: { isRecoveryWeek: true, sessions: { select: { intensity: true } } },
         })
       : Promise.resolve(null),
+    prisma.coachAthlete.findFirst({
+      where: { athleteId: userId, status: 'ACTIVE' },
+      select: { coach: { select: { name: true } } },
+    }),
     prisma.assignedNutritionPlan.findUnique({
       where: { athleteId: userId },
       include: {
@@ -549,6 +555,8 @@ export default async function NutritionPage() {
               intensity={todaySession?.intensity ?? null}
               durationMin={todaySession?.durationMin ?? null}
               isGymDay={hasGymSessionToday}
+              zoneTarget={todaySession?.zoneTarget ?? null}
+              weekNumber={currentWeek}
             />
           ) : null
         }
@@ -621,7 +629,7 @@ export default async function NutritionPage() {
         coachBannerSlot={
           assignedNutritionPlan ? (
             <CoachNutritionBanner
-              coachName={null}
+              coachName={activeCoachRelation?.coach?.name ?? null}
               planName={assignedNutritionPlan.template.name}
             />
           ) : null
@@ -703,6 +711,12 @@ export default async function NutritionPage() {
         }
 
         initSlot={needsNutritionInit ? <NutritionInitClient /> : null}
+
+        kcalStrategySlot={
+          !isB2B && nutritionPlan ? (
+            <AthleteKcalStrategy currentAdjustment={nutritionPlan.kcalAdjustment} />
+          ) : null
+        }
 
         foodGuideSlot={
           allFoods.length > 0 && effectiveNutritionPlan ? (

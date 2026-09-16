@@ -8,7 +8,7 @@ type Props = {
   proteinG: number
 }
 
-export default function ProximaComidaCard({ mealLabel, foods, kcal }: Props) {
+export default function ProximaComidaCard({ mealLabel, scheduledTime, foods, kcal, proteinG }: Props) {
 
   return (
     <div className="bg-[#fffaf5] rounded-[16px] border border-[rgba(235,89,13,0.2)] px-3.5 py-3 space-y-2">
@@ -26,6 +26,12 @@ export default function ProximaComidaCard({ mealLabel, foods, kcal }: Props) {
         <span className="text-[10px]">🥣</span>
         <p className="text-[10px] font-normal text-[#808791] flex-1 min-w-0">{foods}</p>
       </div>
+      {(scheduledTime || proteinG > 0) && (
+        <div className="flex items-center gap-2 pl-[26px]">
+          {scheduledTime && <span className="text-[9px] text-[#8c99a6]">⏰ {scheduledTime}</span>}
+          {proteinG > 0 && <span className="text-[9px] text-[#3b82f6] font-medium">💪 {proteinG}g prot</span>}
+        </div>
+      )}
       <button
         onClick={() => {
           const el = document.getElementById('tracking-mobile') ?? document.getElementById('tracking')

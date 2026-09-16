@@ -34,6 +34,7 @@ type Props = {
   weeklyMenuSlot: ReactNode
   initSlot: ReactNode
   foodGuideSlot: ReactNode
+  kcalStrategySlot: ReactNode
   // Data for client-only components
   consumed: ConsumedData | null
   target: TargetData | null
@@ -50,7 +51,7 @@ export default function NutritionPageClient({
   headerSlot, proposalSlot, activitySlot, phaseBannerSlot, macroCardsSlot,
   mealPlanSlot, pendingBannerSlot, mealCardsSlot, menuLinksSlot, trackingSectionSlot,
   hydrationSlot, adherenceSlot, tipSlot, emptyMealPlanSlot, coachBannerSlot,
-  weeklyMenuSlot, initSlot, foodGuideSlot,
+  weeklyMenuSlot, initSlot, foodGuideSlot, kcalStrategySlot,
   consumed, target, nextMeal, mealChecklist, hasMealPlan, state, planName,
   activityKcalBonus, activityLabel,
 }: Props) {
@@ -95,6 +96,9 @@ export default function NutritionPageClient({
       {/* Tip */}
       {tipSlot}
 
+      {/* Kcal strategy (B2C Pro only) */}
+      {kcalStrategySlot}
+
       {/* Next meal */}
       {nextMeal && (
         <div>
@@ -121,16 +125,28 @@ export default function NutritionPageClient({
           {proposalSlot}
           {/* Activity in main column only for con-plan and b2b (sin-plan shows it in sidebar) */}
           {state !== 'sin-plan' && activitySlot}
-          {phaseBannerSlot}
 
-          {state === 'b2b' && planName && (
-            <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 flex items-center gap-3">
-              <span className="text-lg">🏆</span>
-              <p className="text-sm font-semibold text-amber-800">Plan asignado: {planName}</p>
-            </div>
+          {/* sin-plan: MacroCards before PhaseBanner (Figma 4523:46)
+              con-plan/b2b: PhaseBanner before MacroCards (Figma 4523:185) */}
+          {state === 'sin-plan' ? (
+            <>
+              {macroCardsSlot}
+              {phaseBannerSlot}
+            </>
+          ) : (
+            <>
+              {phaseBannerSlot}
+
+              {state === 'b2b' && planName && (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 flex items-center gap-3">
+                  <span className="text-lg">🏆</span>
+                  <p className="text-sm font-semibold text-amber-800">Plan asignado: {planName}</p>
+                </div>
+              )}
+
+              {macroCardsSlot}
+            </>
           )}
-
-          {macroCardsSlot}
           {initSlot}
 
           {/* State-specific content */}
@@ -214,6 +230,7 @@ export default function NutritionPageClient({
             meals={mealChecklist}
             totalLogged={mealChecklist.filter(m => m.isLogged).length}
             totalPlanned={mealChecklist.length}
+            isB2B={state === 'b2b'}
           />
         )}
 
@@ -252,6 +269,9 @@ export default function NutritionPageClient({
             {adherenceSlot}
           </>
         )}
+
+        {/* Kcal strategy (B2C Pro only — mobile) */}
+        {kcalStrategySlot}
 
         {weeklyMenuSlot}
         {pendingBannerSlot}
