@@ -1,35 +1,87 @@
-// DEV ONLY — seed de desarrollo con usuarios de prueba.
-// Para producción usar: tsx prisma/seed.prod.ts
+/**
+ * seed.ts — Seed unificado (prod + dev)
+ *
+ * Crea:
+ *   1. Admin
+ *   2. Coach Carlos (coach@medaliq.com) + invite code
+ *   3. Coach Demo Carlos Medina (coach_demo@medaliq.com)
+ *   4. Atleta Miguel (miguel@medaliq.com) — B2B de Carlos, running+gym, data completa
+ *   5. Atleta Ana (ana@medaliq.com) — B2C Free sin onboarding (empty state, sin rutinas)
+ *   6. Atleta Laura (pro@medaliq.com) — B2B de Carlos, gym-focused, data completa
+ *   7. Atleta Diego (pending@medaliq.com) — B2B pendiente de activación
+ *   8. Ejercicios globales
+ *   9. Rutinas públicas del sistema
+ *  10. Alimentos LatAm
+ *  11. Template de nutrición del coach + asignación a atletas
+ *
+ * Idempotente — usa upsert. Safe re-run.
+ * Uso: pnpm prisma db seed   (o:  tsx prisma/seed.ts)
+ *
+ * Credenciales:
+ *   admin@medaliq.com        / admin123!
+ *   coach@medaliq.com        / coach123
+ *   coach_demo@medaliq.com   / Coach2026!
+ *   miguel@medaliq.com       / atleta123
+ *   ana@medaliq.com          / atleta123
+ *   pro@medaliq.com          / atleta123
+ *   pending@medaliq.com      / atleta123
+ */
 import 'dotenv/config'
-import { PrismaClient, UserRole, GoalType, PlanStatus, PlanSource, Phase, SessionType, SubscriptionTier, CoachSubscriptionTier } from '../src/generated/prisma/client'
+import {
+  PrismaClient, UserRole, SubscriptionTier, CoachSubscriptionTier,
+  GoalType, PlanStatus, PlanSource, Phase, SessionType, SessionIntensity,
+  SessionDiscipline, MealType, NutritionSource, SetLogType, NutritionDayType,
+} from '../src/generated/prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import bcrypt from 'bcryptjs'
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
 const prisma = new PrismaClient({ adapter } as any)
 
-function weeksAgo(n: number): Date {
-  const d = new Date('2026-05-29')
-  d.setDate(d.getDate() - n * 7)
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function daysAgo(n: number): Date {
+  const d = new Date()
+  d.setUTCDate(d.getUTCDate() - n)
+  d.setUTCHours(6, 0, 0, 0)
   return d
 }
 
-function addDays(date: Date, days: number): Date {
-  const d = new Date(date)
-  d.setDate(d.getDate() + days)
-  return d
+function dateOnly(d: Date): Date {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
+}
+
+function mondayOf(d: Date): Date {
+  const dt = new Date(d)
+  const day = dt.getUTCDay()
+  const diff = day === 0 ? -6 : 1 - day
+  dt.setUTCDate(dt.getUTCDate() + diff)
+  dt.setUTCHours(0, 0, 0, 0)
+  return dt
 }
 
 async function main() {
   console.log('🌱 Seeding...')
 
-  const athletePassword = await bcrypt.hash('atleta123', 12)
-  const coachPassword   = await bcrypt.hash('coach123', 12)
+  // ── 1. Admin ───────────────────────────────────────────────────────────────
+  await prisma.user.upsert({
+    where: { email: 'admin@medaliq.com' },
+    update: { role: UserRole.ADMIN },
+    create: {
+      email: 'admin@medaliq.com',
+      name: 'Admin Medaliq',
+      password: await bcrypt.hash('admin123!', 12),
+      role: UserRole.ADMIN,
+      onboardingCompleted: true,
+    },
+  })
+  console.log('✅ Admin:         admin@medaliq.com')
 
-  // ── Coach 1 ───────────────────────────────────────────────────────────────
+  // ── 2. Coach Carlos ────────────────────────────────────────────────────────
+  const coachPassword = await bcrypt.hash('coach123', 12)
   const coach1 = await prisma.user.upsert({
     where: { email: 'coach@medaliq.com' },
-    update: { featureCoach: true, featurePlan: false, featureCheckin: false, featureNutrition: false, featureProgress: false, featureLog: false, featureGym: false, onboardingCompleted: true, needsRoleSelection: false },
+    update: { featureCoach: true, onboardingCompleted: true, needsRoleSelection: false },
     create: {
       email: 'coach@medaliq.com',
       name: 'Carlos Entrenador',
@@ -42,8 +94,6 @@ async function main() {
     },
   })
 
-
-  // UserSubscription + perfil público para coach1
   await prisma.userSubscription.upsert({
     where: { userId: coach1.id },
     update: {},
@@ -56,12 +106,12 @@ async function main() {
     create: {
       coachId: coach1.id,
       slug: 'carlos-entrenador',
-      headline: 'Especialista en media maratón y running de fondo',
-      bio: 'Entrenador certificado con 8 años de experiencia. Ayudo a corredores de todos los niveles a alcanzar sus metas de carrera con planes periodizados y seguimiento cercano.',
+      headline: 'Especialista en running y fuerza',
+      bio: 'Entrenador certificado con 8 años de experiencia.',
       specialties: ['RUNNING', 'GYM'],
       city: 'Bogotá', country: 'CO',
       yearsExp: 8,
-      certifications: ['IAAF Level 1', 'Running Coach ASEP'],
+      certifications: ['IAAF Level 1'],
       isPublic: true,
     },
   })
@@ -72,18 +122,19 @@ async function main() {
     create: {
       code: 'CARLOS2026',
       coachId: coach1.id,
-      expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 año en seed
+      expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
     },
   })
+  console.log('✅ Coach:         coach@medaliq.com')
 
-  // ── Coach 2 ───────────────────────────────────────────────────────────────
-  const coach2 = await prisma.user.upsert({
-    where: { email: 'maria.coach@medaliq.com' },
-    update: { featureCoach: true, featurePlan: false, featureCheckin: false, featureNutrition: false, featureProgress: false, featureLog: false, featureGym: false, onboardingCompleted: true, needsRoleSelection: false },
+  // ── 3. Coach Demo ──────────────────────────────────────────────────────────
+  const coachDemo = await prisma.user.upsert({
+    where: { email: 'coach_demo@medaliq.com' },
+    update: { featureCoach: true, onboardingCompleted: true, needsRoleSelection: false },
     create: {
-      email: 'maria.coach@medaliq.com',
-      name: 'María González',
-      password: coachPassword,
+      email: 'coach_demo@medaliq.com',
+      name: 'Carlos Medina',
+      password: await bcrypt.hash('Coach2026!', 12),
       role: UserRole.COACH,
       featureCoach: true,
       featurePlan: false, featureCheckin: false, featureNutrition: false,
@@ -92,26 +143,46 @@ async function main() {
     },
   })
 
-  // ── Admin ─────────────────────────────────────────────────────────────────
-  await prisma.user.upsert({
-    where: { email: 'admin@medaliq.com' },
-    update: { role: UserRole.ADMIN },
+  await prisma.userSubscription.upsert({
+    where: { userId: coachDemo.id },
+    update: {},
+    create: { userId: coachDemo.id, tier: SubscriptionTier.PRO, coachTier: CoachSubscriptionTier.GROWTH },
+  })
+
+  await prisma.coachProfile.upsert({
+    where: { coachId: coachDemo.id },
+    update: {},
     create: {
-      email: 'admin@medaliq.com',
-      name: 'Admin Medaliq',
-      password: await bcrypt.hash('admin123!', 12),
-      role: UserRole.ADMIN,
-      onboardingCompleted: true,
+      coachId: coachDemo.id,
+      slug: 'carlos-medina-demo',
+      headline: 'Coach demo para presentaciones',
+      bio: 'Cuenta de demostración.',
+      specialties: ['RUNNING', 'GYM'],
+      city: 'Medellín', country: 'CO',
+      yearsExp: 5,
+      isPublic: true,
     },
   })
 
-  // ── Atleta 1 — miguel (B2B coach1, running half marathon) ────────────────
-  const athlete1 = await prisma.user.upsert({
+  await prisma.inviteCode.upsert({
+    where: { code: 'DEMO2026' },
+    update: {},
+    create: {
+      code: 'DEMO2026',
+      coachId: coachDemo.id,
+      expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+    },
+  })
+  console.log('✅ Coach Demo:    coach_demo@medaliq.com')
+
+  // ── 4. Atleta Miguel (B2B de Carlos — running + gym completo) ─────────────
+  const athletePassword = await bcrypt.hash('atleta123', 12)
+  const miguel = await prisma.user.upsert({
     where: { email: 'miguel@medaliq.com' },
     update: { featurePlan: true, featureCheckin: true, featureNutrition: true, featureProgress: true, featureLog: true, featureGym: true, onboardingCompleted: true },
     create: {
       email: 'miguel@medaliq.com',
-      name: 'Miguel Atleta',
+      name: 'Miguel',
       password: athletePassword,
       role: UserRole.ATHLETE,
       featurePlan: true, featureCheckin: true, featureNutrition: true,
@@ -121,7 +192,7 @@ async function main() {
         create: {
           age: 30, heightCm: 175, weightKg: 75, weightGoalKg: 70,
           hrResting: 55, hrMax: 185, altitudeMeters: 2600,
-          gender: 'male', sport: 'RUNNING', sportGoal: 'RACE_HALF_MARATHON', experienceLevel: 'INTERMEDIATE',
+          gender: 'male', sport: 'RUNNING', sportGoal: 'RACE_10K', experienceLevel: 'INTERMEDIATE',
           injuries: [], conditions: [], medications: [],
           sleepHoursAvg: 7, sleepScoreAvg: 78,
         },
@@ -129,132 +200,20 @@ async function main() {
     },
   })
 
-
-  // UserSubscription para miguel
   await prisma.userSubscription.upsert({
-    where: { userId: athlete1.id },
+    where: { userId: miguel.id },
     update: {},
-    create: { userId: athlete1.id, tier: SubscriptionTier.PRO },
+    create: { userId: miguel.id, tier: SubscriptionTier.PRO },
   })
 
   await prisma.coachAthlete.upsert({
-    where: { coachId_athleteId: { coachId: coach1.id, athleteId: athlete1.id } },
+    where: { coachId_athleteId: { coachId: coach1.id, athleteId: miguel.id } },
     update: {},
-    create: { coachId: coach1.id, athleteId: athlete1.id },
+    create: { coachId: coach1.id, athleteId: miguel.id },
   })
+  console.log('✅ Atleta:        miguel@medaliq.com (B2B running+gym → Carlos)')
 
-  const plan1Start = weeksAgo(6)
-  const plan1 = await prisma.trainingPlan.upsert({
-    where: { id: 'seed-plan-1' },
-    update: {},
-    create: {
-      id: 'seed-plan-1',
-      userId: athlete1.id,
-      name: 'Media Maratón — 18 semanas',
-      totalWeeks: 18,
-      startDate: plan1Start,
-      endDate: addDays(plan1Start, 18 * 7),
-      status: PlanStatus.ACTIVE,
-      generatedBy: PlanSource.COACH,
-      goalType: GoalType.RACE_HALF_MARATHON,
-      hrZones: { z1: { min: 95, max: 114 }, z2: { min: 115, max: 133 }, z3: { min: 134, max: 152 }, z4: { min: 153, max: 171 }, z5: { min: 172, max: 185 } },
-    },
-  })
-
-  for (const [wi, weekData] of [
-    { wn: 1, phase: Phase.BASE, vol: 30, focus: 'Adaptación — rodajes suaves Z2', recovery: false },
-    { wn: 2, phase: Phase.BASE, vol: 34, focus: 'Base aeróbica — incremento progresivo', recovery: false },
-    { wn: 3, phase: Phase.BASE, vol: 38, focus: 'Consolidación base — primer fartlek', recovery: false },
-    { wn: 4, phase: Phase.BASE, vol: 28, focus: 'Semana recuperación activa', recovery: true },
-    { wn: 5, phase: Phase.DESARROLLO, vol: 42, focus: 'Desarrollo — tempo runs', recovery: false },
-    { wn: 6, phase: Phase.DESARROLLO, vol: 45, focus: 'Desarrollo — intervalos Z4', recovery: false },
-  ].entries()) {
-    const wStart = addDays(plan1Start, weekData.wn * 7 - 7)
-    const week = await prisma.planWeek.upsert({
-      where: { planId_weekNumber: { planId: plan1.id, weekNumber: weekData.wn } },
-      update: {},
-      create: {
-        planId: plan1.id, weekNumber: weekData.wn, phase: weekData.phase,
-        volumeKm: weekData.vol, focusDescription: weekData.focus,
-        isRecoveryWeek: weekData.recovery,
-        startDate: wStart, endDate: addDays(wStart, 6),
-      },
-    })
-    const sessDefs = weekData.recovery
-      ? [
-          { d: 1, type: SessionType.RODAJE_Z2, dur: 30, zone: 'Z1-Z2', detail: 'Rodaje muy suave de recuperación' },
-          { d: 3, type: SessionType.RODAJE_Z2, dur: 25, zone: 'Z1', detail: 'Trote ligero 25 min' },
-          { d: 6, type: SessionType.RODAJE_Z2, dur: 40, zone: 'Z2', detail: 'Tirada corta fácil' },
-        ]
-      : weekData.wn <= 3
-        ? [
-            { d: 1, type: SessionType.RODAJE_Z2, dur: 40, zone: 'Z2', detail: '40 min fácil Z2 — conversacional' },
-            { d: 3, type: SessionType.FARTLEK, dur: 50, zone: 'Z2-Z3', detail: '10 cal + 6×2 min Z3/2 min Z2 + 10 vuelta' },
-            { d: 5, type: SessionType.RODAJE_Z2, dur: 35, zone: 'Z2', detail: '35 min rodaje suave' },
-            { d: 6, type: SessionType.TIRADA_LARGA, dur: 75, zone: 'Z2', detail: 'Tirada larga 75 min — Z2 todo, hidratación c/20 min' },
-          ]
-        : [
-            { d: 1, type: SessionType.RODAJE_Z2, dur: 45, zone: 'Z2', detail: '45 min Z2 activación' },
-            { d: 2, type: SessionType.TEMPO, dur: 55, zone: 'Z3-Z4', detail: '15 cal + 20 min tempo Z3 + 10 vuelta' },
-            { d: 4, type: SessionType.INTERVALOS, dur: 60, zone: 'Z4-Z5', detail: '15 cal + 8×600m Z4 / 200m trote + 15 vuelta' },
-            { d: 6, type: SessionType.TIRADA_LARGA, dur: 90, zone: 'Z2', detail: 'Tirada larga 90 min — todo Z2, gel c/30 min' },
-          ]
-    for (const s of sessDefs) {
-      await prisma.plannedSession.upsert({
-        where: { id: `seed-p1-w${weekData.wn}-d${s.d}` },
-        update: {},
-        create: {
-          id: `seed-p1-w${weekData.wn}-d${s.d}`,
-          weekId: week.id, dayOfWeek: s.d, type: s.type,
-          durationMin: s.dur, zoneTarget: s.zone, detailText: s.detail,
-          date: addDays(wStart, s.d - 1),
-        },
-      })
-    }
-  }
-
-  // NutritionPlan para Miguel — calculado con Mifflin-St Jeor (age=30, 175cm, 75kg, male, 4d/sem, déficit -500)
-  await prisma.nutritionPlan.upsert({
-    where: { userId: athlete1.id },
-    update: {},
-    create: {
-      userId: athlete1.id,
-      tdee: 2633,
-      targetKcalHard: 2133,
-      targetKcalEasy: 1933,
-      targetKcalRest: 1733,
-      proteinG: 150,
-      carbsHardG: 267,
-      carbsEasyG: 169,
-      fatG: 52,
-    },
-  })
-
-  for (const ci of [
-    { wn: 1, wkg: 75.2, hr: 55, sleep: 7.5, score: 82, rpe: 7, adh: 85, pain: false, energy: 4, notes: 'Semana bien, piernas respondieron al volumen' },
-    { wn: 2, wkg: 74.8, hr: 54, sleep: 7.0, score: 79, rpe: 7, adh: 80, pain: false, energy: 4, notes: 'Un poco de cansancio acumulado en el fartlek' },
-    { wn: 3, wkg: 74.5, hr: 53, sleep: 7.8, score: 85, rpe: 8, adh: 90, pain: false, energy: 5, notes: 'Excelente semana, marcas bajando en el fartlek' },
-    { wn: 4, wkg: 74.3, hr: 52, sleep: 8.2, score: 88, rpe: 5, adh: 95, pain: false, energy: 5, notes: 'Semana recuperación — piernas frescas' },
-    { wn: 5, wkg: 74.0, hr: 52, sleep: 7.5, score: 83, rpe: 8, adh: 88, pain: false, energy: 4, notes: 'Tempo duro pero bien. Ritmo manejable' },
-    { wn: 6, wkg: 73.8, hr: 53, sleep: 7.2, score: 80, rpe: 9, adh: 85, pain: false, energy: 3, notes: 'Intervalos muy exigentes — mañana descansaré bien' },
-  ]) {
-    const _existsCi1 = await prisma.weeklyCheckIn.findFirst({
-      where: { userId: athlete1.id, planId: plan1.id, weekNumber: ci.wn },
-      select: { id: true },
-    })
-    if (!_existsCi1) {
-      await prisma.weeklyCheckIn.create({
-        data: {
-          userId: athlete1.id, planId: plan1.id, weekNumber: ci.wn,
-          weightKg: ci.wkg, hrResting: ci.hr, sleepHours: ci.sleep, sleepScore: ci.score,
-          hardestSessionRpe: ci.rpe, painFlag: ci.pain,
-          dietAdherencePct: ci.adh, energyLevel: ci.energy, notes: ci.notes, adjustmentsTriggered: [],
-        },
-      })
-    }
-  }
-
-  // ── Atleta 2 — ana (B2C, recién registrada, sin plan) ────────────────────
+  // ── 5. Atleta Ana (B2C Free sin onboarding — sin rutinas) ─────────────────
   await prisma.user.upsert({
     where: { email: 'ana@medaliq.com' },
     update: {},
@@ -276,14 +235,15 @@ async function main() {
       },
     },
   })
+  console.log('✅ Atleta:        ana@medaliq.com (B2C Free — sin onboarding, sin rutinas)')
 
-  // ── Atleta 3 — Juan Pérez (B2B coach1, running 10K) ──────────────────────
-  const a3 = await prisma.user.upsert({
-    where: { email: 'juan.perez@medaliq.com' },
+  // ── 6. Atleta Laura (B2B de Carlos — gym-focused) ─────────────────────────
+  const pro = await prisma.user.upsert({
+    where: { email: 'pro@medaliq.com' },
     update: { featurePlan: true, featureCheckin: true, featureNutrition: true, featureProgress: true, featureLog: true, featureGym: true, onboardingCompleted: true },
     create: {
-      email: 'juan.perez@medaliq.com',
-      name: 'Juan Pérez',
+      email: 'pro@medaliq.com',
+      name: 'Laura Fitness',
       password: athletePassword,
       role: UserRole.ATHLETE,
       featurePlan: true, featureCheckin: true, featureNutrition: true,
@@ -291,742 +251,272 @@ async function main() {
       onboardingCompleted: true,
       profile: {
         create: {
-          age: 34, heightCm: 172, weightKg: 72, weightGoalKg: 70,
-          hrResting: 58, hrMax: 181, altitudeMeters: 2600,
+          age: 25, heightCm: 165, weightKg: 58, weightGoalKg: 56,
+          hrResting: 50, hrMax: 195, altitudeMeters: 0,
+          gender: 'female', sport: 'RUNNING', sportGoal: 'GENERAL_FITNESS', experienceLevel: 'INTERMEDIATE',
           injuries: [], conditions: [], medications: [],
-          sleepHoursAvg: 7, sleepScoreAvg: 75,
+          sleepHoursAvg: 8, sleepScoreAvg: 82,
         },
       },
     },
   })
+
+  await prisma.userSubscription.upsert({
+    where: { userId: pro.id },
+    update: {},
+    create: { userId: pro.id, tier: SubscriptionTier.PRO },
+  })
+
   await prisma.coachAthlete.upsert({
-    where: { coachId_athleteId: { coachId: coach1.id, athleteId: a3.id } },
-    update: {}, create: { coachId: coach1.id, athleteId: a3.id },
+    where: { coachId_athleteId: { coachId: coach1.id, athleteId: pro.id } },
+    update: {},
+    create: { coachId: coach1.id, athleteId: pro.id },
   })
-  await seedRunningPlan(prisma, a3.id, 'seed-plan-3', '10K — 12 semanas', 12, weeksAgo(5), GoalType.RACE_10K, [
-    { wn: 1, phase: Phase.BASE, vol: 22, focus: 'Base aeróbica inicial', recovery: false },
-    { wn: 2, phase: Phase.BASE, vol: 25, focus: 'Consolidación base', recovery: false },
-    { wn: 3, phase: Phase.BASE, vol: 28, focus: 'Primer fartlek', recovery: false },
-    { wn: 4, phase: Phase.BASE, vol: 20, focus: 'Recuperación', recovery: true },
-    { wn: 5, phase: Phase.DESARROLLO, vol: 30, focus: 'Desarrollo ritmo 10K', recovery: false },
-  ], [
-    { wn: 1, wkg: 72.1, hr: 58, sleep: 7.0, score: 76, rpe: 6, adh: 80, pain: false, energy: 4, notes: 'Bien, adaptando al volumen' },
-    { wn: 2, wkg: 71.8, hr: 57, sleep: 7.5, score: 80, rpe: 7, adh: 85, pain: false, energy: 4, notes: 'Fartlek muy bien' },
-    { wn: 3, wkg: 71.5, hr: 57, sleep: 6.8, score: 72, rpe: 8, adh: 78, pain: false, energy: 3, notes: 'Semana exigente, piernas pesadas el viernes' },
-    { wn: 4, wkg: 71.3, hr: 56, sleep: 8.0, score: 86, rpe: 5, adh: 90, pain: false, energy: 5, notes: 'Recuperación perfecta' },
-    { wn: 5, wkg: 71.0, hr: 56, sleep: 7.2, score: 78, rpe: 8, adh: 85, pain: false, energy: 4, notes: 'Primer tempo 10K — ritmo 4:32/km' },
-  ])
+  console.log('✅ Atleta:        pro@medaliq.com (B2B gym → Carlos)')
 
-  // ── Atleta 4 — Sofía Ramírez (B2B coach2, recomposición corporal) ─────────
-  const a4 = await prisma.user.upsert({
-    where: { email: 'sofia.ramirez@medaliq.com' },
-    update: { featurePlan: true, featureCheckin: true, featureNutrition: true, featureProgress: true, featureLog: true, featureGym: true, onboardingCompleted: true },
+  // ── 7. Atleta Pending (B2B sin activar) ───────────────────────────────────
+  const pending = await prisma.user.upsert({
+    where: { email: 'pending@medaliq.com' },
+    update: {},
     create: {
-      email: 'sofia.ramirez@medaliq.com',
-      name: 'Sofía Ramírez',
+      email: 'pending@medaliq.com',
+      name: 'Diego Nuevo',
       password: athletePassword,
       role: UserRole.ATHLETE,
-      featurePlan: true, featureCheckin: true, featureNutrition: true,
-      featureProgress: true, featureLog: true, featureGym: true,
-      onboardingCompleted: true,
-      profile: {
-        create: {
-          age: 26, heightCm: 160, weightKg: 68, weightGoalKg: 60,
-          hrResting: 65, hrMax: 190, altitudeMeters: 1600,
-          injuries: [], conditions: [], medications: [],
-          sleepHoursAvg: 7, sleepScoreAvg: 72,
-        },
-      },
+      featurePlan: false, featureCheckin: false, featureNutrition: false,
+      featureProgress: false, featureLog: false, featureGym: false,
+      onboardingCompleted: false,
     },
   })
+
   await prisma.coachAthlete.upsert({
-    where: { coachId_athleteId: { coachId: coach2.id, athleteId: a4.id } },
-    update: {}, create: { coachId: coach2.id, athleteId: a4.id },
+    where: { coachId_athleteId: { coachId: coach1.id, athleteId: pending.id } },
+    update: {},
+    create: { coachId: coach1.id, athleteId: pending.id },
   })
-  await seedBodyPlan(prisma, a4.id, 'seed-plan-4', 'Recomposición Corporal — 16 semanas', 16, weeksAgo(8), [
-    { wn: 1, wkg: 68.2, hr: 65, sleep: 7.0, score: 70, rpe: 6, adh: 75, pain: false, energy: 3, notes: 'Primera semana de gym — DOMS en piernas' },
-    { wn: 2, wkg: 67.9, hr: 64, sleep: 7.2, score: 74, rpe: 7, adh: 80, pain: false, energy: 4, notes: 'Mejor adaptación, cargas subieron' },
-    { wn: 3, wkg: 67.6, hr: 63, sleep: 7.5, score: 78, rpe: 7, adh: 82, pain: false, energy: 4, notes: 'Sentadilla llegó a 50kg' },
-    { wn: 4, wkg: 67.4, hr: 63, sleep: 8.0, score: 82, rpe: 5, adh: 88, pain: false, energy: 5, notes: 'Semana leve — cuerpo agradecido' },
-    { wn: 5, wkg: 67.2, hr: 62, sleep: 7.3, score: 76, rpe: 8, adh: 85, pain: false, energy: 4, notes: 'Progresión de cargas muy bien' },
-    { wn: 6, wkg: 67.0, hr: 62, sleep: 7.0, score: 74, rpe: 8, adh: 83, pain: false, energy: 3, notes: 'Hip thrust a 70kg esta semana' },
-    { wn: 7, wkg: 66.7, hr: 61, sleep: 7.8, score: 80, rpe: 7, adh: 87, pain: false, energy: 4, notes: 'Muy bien — ya se notan cambios' },
-    { wn: 8, wkg: 66.5, hr: 61, sleep: 8.2, score: 85, rpe: 5, adh: 92, pain: false, energy: 5, notes: 'Recuperación activa — sentadilla sin dolor' },
-  ])
+  console.log('✅ Atleta:        pending@medaliq.com (B2B pendiente)')
 
-  // ── Atleta 5 — Andrés Moreno (B2C trial, ciclismo) ───────────────────────
-  const a5 = await prisma.user.upsert({
-    where: { email: 'andres.moreno@medaliq.com' },
-    update: { featurePlan: true, featureCheckin: true, featureNutrition: true, featureProgress: true, featureLog: true, featureGym: true, onboardingCompleted: true },
+  // ── 8. Ejercicios globales ────────────────────────────────────────────────
+  await seedExercises()
+
+  // ── 9. Rutinas públicas del sistema ───────────────────────────────────────
+  await seedPublicTemplates()
+
+  // ── 10. Alimentos LatAm ───────────────────────────────────────────────────
+  await seedLatamFoods()
+
+  // ── 11. Data histórica de atletas ─────────────────────────────────────────
+  await seedMiguelData(miguel.id, coach1.id)
+  await seedLauraData(pro.id, coach1.id)
+
+  // ── 12. Template de nutrición del coach + asignaciones ────────────────────
+  await seedCoachNutritionTemplate(coach1.id, miguel.id, pro.id)
+
+  console.log('\n🎉 Seed completado.')
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MIGUEL — B2B running + gym, 4 semanas completadas + semana actual con futuras
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function seedMiguelData(userId: string, coachId: string) {
+  // ── Nutrition Plan ─────────────────────────────────────────────────────────
+  await prisma.nutritionPlan.upsert({
+    where: { userId },
+    update: {},
     create: {
-      email: 'andres.moreno@medaliq.com',
-      name: 'Andrés Moreno',
-      password: athletePassword,
-      role: UserRole.ATHLETE,
-      featurePlan: true, featureCheckin: true, featureNutrition: true,
-      featureProgress: true, featureLog: true, featureGym: true,
-      onboardingCompleted: true,
-      profile: {
-        create: {
-          age: 35, heightCm: 178, weightKg: 80, weightGoalKg: 76,
-          hrResting: 52, hrMax: 179, altitudeMeters: 2600,
-          injuries: [], conditions: [], medications: [],
-          sleepHoursAvg: 6.5, sleepScoreAvg: 70,
-        },
-      },
+      userId, source: NutritionSource.COACH, tdee: 2750,
+      targetKcalHard: 2900, targetKcalEasy: 2500, targetKcalRest: 2200,
+      proteinG: 150, carbsHardG: 350, carbsEasyG: 280, fatG: 80, waterMlTarget: 3000,
     },
   })
-  await seedCyclingPlan(prisma, a5.id, 'seed-plan-5', 'Ciclismo — 18 semanas', 18, weeksAgo(4), [
-    { wn: 1, wkg: 80.3, hr: 52, sleep: 6.5, score: 68, rpe: 7, adh: 75, pain: false, energy: 3, notes: 'Primera semana, piernas aún adaptando al sillín' },
-    { wn: 2, wkg: 80.0, hr: 51, sleep: 6.8, score: 72, rpe: 7, adh: 78, pain: false, energy: 4, notes: 'Sweet spot estuvo bien' },
-    { wn: 3, wkg: 79.7, hr: 51, sleep: 7.0, score: 75, rpe: 8, adh: 80, pain: false, energy: 4, notes: 'Primer intervalo VO2max — muy exigente' },
-    { wn: 4, wkg: 79.5, hr: 51, sleep: 7.5, score: 80, rpe: 5, adh: 88, pain: false, energy: 5, notes: 'Semana recuperación — buenas sensaciones' },
-  ])
 
-  // ── Atleta 6 — Valentina Castro (B2C trial, running half) ─────────────────
-  const a6 = await prisma.user.upsert({
-    where: { email: 'valentina.castro@medaliq.com' },
-    update: { featurePlan: true, featureCheckin: true, featureNutrition: true, featureProgress: true, featureLog: true, featureGym: true, onboardingCompleted: true },
-    create: {
-      email: 'valentina.castro@medaliq.com',
-      name: 'Valentina Castro',
-      password: athletePassword,
-      role: UserRole.ATHLETE,
-      featurePlan: true, featureCheckin: true, featureNutrition: true,
-      featureProgress: true, featureLog: true, featureGym: true,
-      onboardingCompleted: true,
-      profile: {
-        create: {
-          age: 29, heightCm: 165, weightKg: 58, weightGoalKg: 56,
-          hrResting: 54, hrMax: 188, altitudeMeters: 0,
-          injuries: ['Fascitis plantar izq (2025)'], conditions: [], medications: [],
-          sleepHoursAvg: 7.5, sleepScoreAvg: 80,
-        },
-      },
-    },
-  })
-  await seedRunningPlan(prisma, a6.id, 'seed-plan-6', 'Media Maratón — 18 semanas', 18, weeksAgo(3), GoalType.RACE_HALF_MARATHON, [
-    { wn: 1, phase: Phase.BASE, vol: 28, focus: 'Adaptación — cuidado fascitis plantar', recovery: false },
-    { wn: 2, phase: Phase.BASE, vol: 32, focus: 'Consolidación base aeróbica', recovery: false },
-    { wn: 3, phase: Phase.BASE, vol: 35, focus: 'Primer fartlek — monitorear pie', recovery: false },
-  ], [
-    { wn: 1, wkg: 58.1, hr: 54, sleep: 7.5, score: 80, rpe: 6, adh: 82, pain: true, energy: 4, notes: 'Leve molestia pie al final del long run — usé plantillas' },
-    { wn: 2, wkg: 57.8, hr: 53, sleep: 7.8, score: 83, rpe: 7, adh: 85, pain: false, energy: 4, notes: 'Pie sin molestias — seguí con ejercicios excéntricos' },
-    { wn: 3, wkg: 57.6, hr: 53, sleep: 7.2, score: 79, rpe: 7, adh: 88, pain: false, energy: 4, notes: 'Fartlek muy bien, 5:10/km en bloques Z3' },
-  ])
+  // ── Training Plan (8 semanas, hoy = semana 5) ─────────────────────────────
+  // planStart = lunes de hace 4 semanas
+  const today = new Date()
+  const thisMon = mondayOf(today)
+  const planStart = new Date(thisMon)
+  planStart.setUTCDate(planStart.getUTCDate() - 28) // 4 semanas atrás
 
-  // ── Atleta 7 — Camilo Torres (B2B coach2, fuerza) ─────────────────────────
-  const a7 = await prisma.user.upsert({
-    where: { email: 'camilo.torres@medaliq.com' },
-    update: { featurePlan: true, featureCheckin: true, featureNutrition: true, featureProgress: true, featureLog: true, featureGym: true, onboardingCompleted: true },
-    create: {
-      email: 'camilo.torres@medaliq.com',
-      name: 'Camilo Torres',
-      password: athletePassword,
-      role: UserRole.ATHLETE,
-      featurePlan: true, featureCheckin: true, featureNutrition: true,
-      featureProgress: true, featureLog: true, featureGym: true,
-      onboardingCompleted: true,
-      profile: {
-        create: {
-          age: 32, heightCm: 182, weightKg: 88, weightGoalKg: 85,
-          hrResting: 62, hrMax: 183, altitudeMeters: 2600,
-          injuries: [], conditions: [], medications: [],
-          sleepHoursAvg: 7, sleepScoreAvg: 74,
-        },
-      },
-    },
-  })
-  await prisma.coachAthlete.upsert({
-    where: { coachId_athleteId: { coachId: coach2.id, athleteId: a7.id } },
-    update: {}, create: { coachId: coach2.id, athleteId: a7.id },
-  })
-  await seedBodyPlan(prisma, a7.id, 'seed-plan-7', 'Fuerza & Composición — 16 semanas', 16, weeksAgo(6), [
-    { wn: 1, wkg: 88.1, hr: 62, sleep: 7.0, score: 73, rpe: 7, adh: 78, pain: false, energy: 4, notes: 'Reanudé entrenamiento después de 3 meses — bien' },
-    { wn: 2, wkg: 87.8, hr: 61, sleep: 7.2, score: 76, rpe: 8, adh: 82, pain: false, energy: 4, notes: 'Peso muerto volvió a 120kg' },
-    { wn: 3, wkg: 87.5, hr: 61, sleep: 7.5, score: 78, rpe: 8, adh: 80, pain: false, energy: 3, notes: 'Sentadilla 100kg — técnica mejorando' },
-    { wn: 4, wkg: 87.2, hr: 60, sleep: 8.0, score: 84, rpe: 5, adh: 90, pain: false, energy: 5, notes: 'Semana descarga — piernas muy frescas' },
-    { wn: 5, wkg: 87.0, hr: 60, sleep: 7.3, score: 79, rpe: 8, adh: 85, pain: false, energy: 4, notes: 'Press banca 90kg x5 — nuevo récord personal' },
-    { wn: 6, wkg: 86.8, hr: 59, sleep: 7.0, score: 76, rpe: 9, adh: 83, pain: false, energy: 3, notes: 'Semana pesada — volumen alto, buena adherencia' },
-  ])
+  const planEnd = new Date(planStart)
+  planEnd.setUTCDate(planEnd.getUTCDate() + 8 * 7 - 1) // 8 semanas totales
 
-  // ── Atleta 8 — Laura Gómez (B2C trial, recomposición) ────────────────────
-  const a8 = await prisma.user.upsert({
-    where: { email: 'laura.gomez@medaliq.com' },
-    update: { featurePlan: true, featureCheckin: true, featureNutrition: true, featureProgress: true, featureLog: true, featureGym: true, onboardingCompleted: true },
-    create: {
-      email: 'laura.gomez@medaliq.com',
-      name: 'Laura Gómez',
-      password: athletePassword,
-      role: UserRole.ATHLETE,
-      featurePlan: true, featureCheckin: true, featureNutrition: true,
-      featureProgress: true, featureLog: true, featureGym: true,
-      onboardingCompleted: true,
-      profile: {
-        create: {
-          age: 24, heightCm: 158, weightKg: 65, weightGoalKg: 58,
-          hrResting: 68, hrMax: 193, altitudeMeters: 2600,
-          injuries: [], conditions: [], medications: [],
-          sleepHoursAvg: 6.5, sleepScoreAvg: 68,
-        },
-      },
-    },
-  })
-  await seedBodyPlan(prisma, a8.id, 'seed-plan-8', 'Recomposición Corporal — 16 semanas', 16, weeksAgo(3), [
-    { wn: 1, wkg: 65.2, hr: 68, sleep: 6.5, score: 66, rpe: 6, adh: 70, pain: false, energy: 3, notes: 'Primera semana en gym — emocionada pero cansada' },
-    { wn: 2, wkg: 64.8, hr: 67, sleep: 6.8, score: 70, rpe: 7, adh: 75, pain: false, energy: 3, notes: 'DOMS menos, cargas subiendo poco a poco' },
-    { wn: 3, wkg: 64.5, hr: 66, sleep: 7.0, score: 73, rpe: 7, adh: 78, pain: false, energy: 4, notes: 'Hip thrust 45kg — buena activación glúteos' },
-  ])
-
-  // ── Atleta 9 — Sebastián Ríos (B2B coach1, running 5K) ───────────────────
-  const a9 = await prisma.user.upsert({
-    where: { email: 'sebastian.rios@medaliq.com' },
-    update: { featurePlan: true, featureCheckin: true, featureNutrition: true, featureProgress: true, featureLog: true, featureGym: true, onboardingCompleted: true },
-    create: {
-      email: 'sebastian.rios@medaliq.com',
-      name: 'Sebastián Ríos',
-      password: athletePassword,
-      role: UserRole.ATHLETE,
-      featurePlan: true, featureCheckin: true, featureNutrition: true,
-      featureProgress: true, featureLog: true, featureGym: true,
-      onboardingCompleted: true,
-      profile: {
-        create: {
-          age: 22, heightCm: 170, weightKg: 65, weightGoalKg: 63,
-          hrResting: 50, hrMax: 196, altitudeMeters: 0,
-          injuries: [], conditions: [], medications: [],
-          sleepHoursAvg: 8, sleepScoreAvg: 85,
-        },
-      },
-    },
-  })
-  await prisma.coachAthlete.upsert({
-    where: { coachId_athleteId: { coachId: coach1.id, athleteId: a9.id } },
-    update: {}, create: { coachId: coach1.id, athleteId: a9.id },
-  })
-  await seedRunningPlan(prisma, a9.id, 'seed-plan-9', '5K — 8 semanas', 8, weeksAgo(4), GoalType.RACE_5K, [
-    { wn: 1, phase: Phase.BASE, vol: 20, focus: 'Base aeróbica 5K', recovery: false },
-    { wn: 2, phase: Phase.BASE, vol: 23, focus: 'Fartlek cortos', recovery: false },
-    { wn: 3, phase: Phase.ESPECIFICO, vol: 25, focus: 'Ritmo 5K específico', recovery: false },
-    { wn: 4, phase: Phase.ESPECIFICO, vol: 18, focus: 'Recuperación + test 3K', recovery: true },
-  ], [
-    { wn: 1, wkg: 65.0, hr: 50, sleep: 8.0, score: 85, rpe: 6, adh: 90, pain: false, energy: 5, notes: 'Muy bien — base sólida' },
-    { wn: 2, wkg: 64.8, hr: 50, sleep: 7.8, score: 84, rpe: 7, adh: 88, pain: false, energy: 4, notes: 'Fartleks de 1 min al tope — muy intenso' },
-    { wn: 3, wkg: 64.5, hr: 49, sleep: 8.2, score: 87, rpe: 8, adh: 92, pain: false, energy: 5, notes: 'Tempo a 4:25/km — nuevo nivel' },
-    { wn: 4, wkg: 64.3, hr: 49, sleep: 8.5, score: 90, rpe: 5, adh: 95, pain: false, energy: 5, notes: 'Test 3K en 12:45 — en camino al sub-22' },
-  ])
-
-  // ── Atleta 10 — Daniela Vargas (B2C trial, triatlón) ─────────────────────
-  const a10 = await prisma.user.upsert({
-    where: { email: 'daniela.vargas@medaliq.com' },
-    update: { featurePlan: true, featureCheckin: true, featureNutrition: true, featureProgress: true, featureLog: true, featureGym: true, onboardingCompleted: true },
-    create: {
-      email: 'daniela.vargas@medaliq.com',
-      name: 'Daniela Vargas',
-      password: athletePassword,
-      role: UserRole.ATHLETE,
-      featurePlan: true, featureCheckin: true, featureNutrition: true,
-      featureProgress: true, featureLog: true, featureGym: true,
-      onboardingCompleted: true,
-      profile: {
-        create: {
-          age: 31, heightCm: 167, weightKg: 60, weightGoalKg: 58,
-          hrResting: 48, hrMax: 186, altitudeMeters: 0,
-          injuries: [], conditions: [], medications: [],
-          sleepHoursAvg: 7.5, sleepScoreAvg: 82,
-        },
-      },
-    },
-  })
-  await seedTriathlonPlan(prisma, a10.id, 'seed-plan-10', 'Triatlón Olímpico — 18 semanas', 18, weeksAgo(5), [
-    { wn: 1, wkg: 60.1, hr: 48, sleep: 7.5, score: 82, rpe: 7, adh: 85, pain: false, energy: 4, notes: 'Primera semana multi-disciplina — natación la más débil' },
-    { wn: 2, wkg: 59.9, hr: 48, sleep: 7.8, score: 84, rpe: 7, adh: 87, pain: false, energy: 4, notes: 'CSS mejoró — técnica de nado avanzando' },
-    { wn: 3, wkg: 59.6, hr: 47, sleep: 7.5, score: 81, rpe: 8, adh: 85, pain: false, energy: 4, notes: 'Brick run duro pero bien' },
-    { wn: 4, wkg: 59.4, hr: 47, sleep: 8.0, score: 86, rpe: 5, adh: 90, pain: false, energy: 5, notes: 'Semana recuperación — bicicleta suave' },
-    { wn: 5, wkg: 59.2, hr: 46, sleep: 7.3, score: 80, rpe: 8, adh: 88, pain: false, energy: 4, notes: 'Intervalos en piscina — mejora de tiempo notable' },
-  ])
-
-  // ── Atleta 11 — Felipe Herrera (B2C trial, ciclismo) ─────────────────────
-  const a11 = await prisma.user.upsert({
-    where: { email: 'felipe.herrera@medaliq.com' },
-    update: { featurePlan: true, featureCheckin: true, featureNutrition: true, featureProgress: true, featureLog: true, featureGym: true, onboardingCompleted: true },
-    create: {
-      email: 'felipe.herrera@medaliq.com',
-      name: 'Felipe Herrera',
-      password: athletePassword,
-      role: UserRole.ATHLETE,
-      featurePlan: true, featureCheckin: true, featureNutrition: true,
-      featureProgress: true, featureLog: true, featureGym: true,
-      onboardingCompleted: true,
-      profile: {
-        create: {
-          age: 28, heightCm: 180, weightKg: 76, weightGoalKg: 73,
-          hrResting: 55, hrMax: 186, altitudeMeters: 2600,
-          injuries: [], conditions: [], medications: [],
-          sleepHoursAvg: 7, sleepScoreAvg: 76,
-        },
-      },
-    },
-  })
-  await seedCyclingPlan(prisma, a11.id, 'seed-plan-11', 'Ciclismo — 18 semanas', 18, weeksAgo(7), [
-    { wn: 1, wkg: 76.2, hr: 55, sleep: 7.0, score: 75, rpe: 7, adh: 80, pain: false, energy: 4, notes: 'Bien — FTP estimado 230W' },
-    { wn: 2, wkg: 75.9, hr: 54, sleep: 7.2, score: 78, rpe: 7, adh: 82, pain: false, energy: 4, notes: 'Sweet spot x30 min — aguanté bien' },
-    { wn: 3, wkg: 75.6, hr: 54, sleep: 7.5, score: 80, rpe: 8, adh: 83, pain: false, energy: 3, notes: 'VO2max muy exigente — pero progresando' },
-    { wn: 4, wkg: 75.4, hr: 53, sleep: 8.0, score: 85, rpe: 5, adh: 88, pain: false, energy: 5, notes: 'Semana ligera — piernas perfectas' },
-    { wn: 5, wkg: 75.1, hr: 53, sleep: 7.0, score: 76, rpe: 8, adh: 84, pain: false, energy: 4, notes: 'Test FTP — subió a 242W' },
-    { wn: 6, wkg: 74.9, hr: 52, sleep: 7.3, score: 78, rpe: 8, adh: 85, pain: false, energy: 4, notes: 'Entrenamiento de umbral — buen control' },
-    { wn: 7, wkg: 74.6, hr: 52, sleep: 7.8, score: 82, rpe: 7, adh: 86, pain: false, energy: 4, notes: 'Gran rodada del sábado — 3h Z2' },
-  ])
-
-  // ── Atleta 12 — Isabella Méndez (B2B coach2, recomposición) ──────────────
-  const a12 = await prisma.user.upsert({
-    where: { email: 'isabella.mendez@medaliq.com' },
-    update: { featurePlan: true, featureCheckin: true, featureNutrition: true, featureProgress: true, featureLog: true, featureGym: true, onboardingCompleted: true },
-    create: {
-      email: 'isabella.mendez@medaliq.com',
-      name: 'Isabella Méndez',
-      password: athletePassword,
-      role: UserRole.ATHLETE,
-      featurePlan: true, featureCheckin: true, featureNutrition: true,
-      featureProgress: true, featureLog: true, featureGym: true,
-      onboardingCompleted: true,
-      profile: {
-        create: {
-          age: 33, heightCm: 162, weightKg: 70, weightGoalKg: 63,
-          hrResting: 66, hrMax: 184, altitudeMeters: 2600,
-          injuries: [], conditions: ['Hipotiroidismo'], medications: ['Levotiroxina 50mcg'],
-          sleepHoursAvg: 7.5, sleepScoreAvg: 73,
-        },
-      },
-    },
-  })
-  await prisma.coachAthlete.upsert({
-    where: { coachId_athleteId: { coachId: coach2.id, athleteId: a12.id } },
-    update: {}, create: { coachId: coach2.id, athleteId: a12.id },
-  })
-  await seedBodyPlan(prisma, a12.id, 'seed-plan-12', 'Recomposición Corporal — 16 semanas', 16, weeksAgo(4), [
-    { wn: 1, wkg: 70.1, hr: 66, sleep: 7.5, score: 73, rpe: 6, adh: 76, pain: false, energy: 3, notes: 'Inicio bien — tiroides controlada' },
-    { wn: 2, wkg: 69.8, hr: 65, sleep: 7.8, score: 76, rpe: 7, adh: 80, pain: false, energy: 4, notes: 'Cargas mejorando — más energía que la semana pasada' },
-    { wn: 3, wkg: 69.5, hr: 65, sleep: 7.3, score: 74, rpe: 7, adh: 82, pain: false, energy: 3, notes: 'Sentadilla llegó a 45kg — progreso notable' },
-    { wn: 4, wkg: 69.2, hr: 64, sleep: 8.0, score: 80, rpe: 5, adh: 88, pain: false, energy: 4, notes: 'Semana suave — buena recuperación' },
-  ])
-
-  // ── Atleta 13 — Nicolás Gutiérrez (B2B coach1, half marathon) ────────────
-  const a13 = await prisma.user.upsert({
-    where: { email: 'nicolas.gutierrez@medaliq.com' },
-    update: { featurePlan: true, featureCheckin: true, featureNutrition: true, featureProgress: true, featureLog: true, featureGym: true, onboardingCompleted: true },
-    create: {
-      email: 'nicolas.gutierrez@medaliq.com',
-      name: 'Nicolás Gutiérrez',
-      password: athletePassword,
-      role: UserRole.ATHLETE,
-      featurePlan: true, featureCheckin: true, featureNutrition: true,
-      featureProgress: true, featureLog: true, featureGym: true,
-      onboardingCompleted: true,
-      profile: {
-        create: {
-          age: 38, heightCm: 176, weightKg: 78, weightGoalKg: 74,
-          hrResting: 56, hrMax: 177, altitudeMeters: 0,
-          injuries: [], conditions: [], medications: [],
-          sleepHoursAvg: 7, sleepScoreAvg: 75,
-        },
-      },
-    },
-  })
-  await prisma.coachAthlete.upsert({
-    where: { coachId_athleteId: { coachId: coach1.id, athleteId: a13.id } },
-    update: {}, create: { coachId: coach1.id, athleteId: a13.id },
-  })
-  await seedRunningPlan(prisma, a13.id, 'seed-plan-13', 'Media Maratón — 18 semanas', 18, weeksAgo(2), GoalType.RACE_HALF_MARATHON, [
-    { wn: 1, phase: Phase.BASE, vol: 25, focus: 'Adaptación inicial — regreso al running', recovery: false },
-    { wn: 2, phase: Phase.BASE, vol: 28, focus: 'Base aeróbica — sin lesiones', recovery: false },
-  ], [
-    { wn: 1, wkg: 78.2, hr: 56, sleep: 7.0, score: 74, rpe: 6, adh: 78, pain: false, energy: 3, notes: 'De vuelta después de 2 meses de pausa — bien' },
-    { wn: 2, wkg: 78.0, hr: 55, sleep: 7.3, score: 77, rpe: 7, adh: 82, pain: false, energy: 4, notes: 'Ritmos mejorando — Z2 a 5:50/km' },
-  ])
-
-  // ── Atleta 14 — Catalina Jiménez (B2C trial, running 10K) ────────────────
-  const a14 = await prisma.user.upsert({
-    where: { email: 'catalina.jimenez@medaliq.com' },
-    update: { featurePlan: true, featureCheckin: true, featureNutrition: true, featureProgress: true, featureLog: true, featureGym: true, onboardingCompleted: true },
-    create: {
-      email: 'catalina.jimenez@medaliq.com',
-      name: 'Catalina Jiménez',
-      password: athletePassword,
-      role: UserRole.ATHLETE,
-      featurePlan: true, featureCheckin: true, featureNutrition: true,
-      featureProgress: true, featureLog: true, featureGym: true,
-      onboardingCompleted: true,
-      profile: {
-        create: {
-          age: 25, heightCm: 161, weightKg: 55, weightGoalKg: 54,
-          hrResting: 57, hrMax: 191, altitudeMeters: 2600,
-          injuries: [], conditions: [], medications: [],
-          sleepHoursAvg: 8, sleepScoreAvg: 85,
-        },
-      },
-    },
-  })
-  await seedRunningPlan(prisma, a14.id, 'seed-plan-14', '10K — 12 semanas', 12, weeksAgo(4), GoalType.RACE_10K, [
-    { wn: 1, phase: Phase.BASE, vol: 20, focus: 'Base aeróbica 10K', recovery: false },
-    { wn: 2, phase: Phase.BASE, vol: 23, focus: 'Fartleks suaves', recovery: false },
-    { wn: 3, phase: Phase.DESARROLLO, vol: 26, focus: 'Tempo + volumen', recovery: false },
-    { wn: 4, phase: Phase.DESARROLLO, vol: 18, focus: 'Recuperación activa', recovery: true },
-  ], [
-    { wn: 1, wkg: 55.1, hr: 57, sleep: 8.0, score: 85, rpe: 6, adh: 88, pain: false, energy: 5, notes: 'Excelente primera semana — muy motivada' },
-    { wn: 2, wkg: 54.9, hr: 56, sleep: 8.2, score: 87, rpe: 7, adh: 90, pain: false, energy: 5, notes: 'Fartlek a 4:48/km en bloques Z3' },
-    { wn: 3, wkg: 54.7, hr: 56, sleep: 7.8, score: 83, rpe: 8, adh: 87, pain: false, energy: 4, notes: 'Tempo muy bien — aguanté 5 km a 4:55/km' },
-    { wn: 4, wkg: 54.6, hr: 55, sleep: 8.5, score: 90, rpe: 4, adh: 93, pain: false, energy: 5, notes: 'Semana fácil — piernas como nuevas' },
-  ])
-
-  // ── Atleta 15 — Santiago Rodríguez (B2B coach1, maratón) ─────────────────
-  const a15 = await prisma.user.upsert({
-    where: { email: 'santiago.rodriguez@medaliq.com' },
-    update: { featurePlan: true, featureCheckin: true, featureNutrition: true, featureProgress: true, featureLog: true, featureGym: true, onboardingCompleted: true },
-    create: {
-      email: 'santiago.rodriguez@medaliq.com',
-      name: 'Santiago Rodríguez',
-      password: athletePassword,
-      role: UserRole.ATHLETE,
-      featurePlan: true, featureCheckin: true, featureNutrition: true,
-      featureProgress: true, featureLog: true, featureGym: true,
-      onboardingCompleted: true,
-      profile: {
-        create: {
-          age: 41, heightCm: 174, weightKg: 74, weightGoalKg: 71,
-          hrResting: 54, hrMax: 174, altitudeMeters: 2600,
-          injuries: ['Banda iliotibial derecha (2024 — resuelta)'], conditions: [], medications: [],
-          sleepHoursAvg: 7, sleepScoreAvg: 76,
-        },
-      },
-    },
-  })
-  await prisma.coachAthlete.upsert({
-    where: { coachId_athleteId: { coachId: coach1.id, athleteId: a15.id } },
-    update: {}, create: { coachId: coach1.id, athleteId: a15.id },
-  })
-  await seedRunningPlan(prisma, a15.id, 'seed-plan-15', 'Maratón — 18 semanas', 18, weeksAgo(10), GoalType.RACE_MARATHON, [
-    { wn: 1,  phase: Phase.BASE,      vol: 40,  focus: 'Base aeróbica — rodajes suaves',         recovery: false },
-    { wn: 2,  phase: Phase.BASE,      vol: 45,  focus: 'Consolidación base',                     recovery: false },
-    { wn: 3,  phase: Phase.BASE,      vol: 50,  focus: 'Primer tempo maratón',                   recovery: false },
-    { wn: 4,  phase: Phase.BASE,      vol: 35,  focus: 'Recuperación activa',                    recovery: true  },
-    { wn: 5,  phase: Phase.DESARROLLO, vol: 55, focus: 'Desarrollo — ritmo maratón 5:08/km',     recovery: false },
-    { wn: 6,  phase: Phase.DESARROLLO, vol: 58, focus: 'Volumen alto — tirada 28km',             recovery: false },
-    { wn: 7,  phase: Phase.DESARROLLO, vol: 60, focus: 'Pico de volumen — tirada 30km',          recovery: false },
-    { wn: 8,  phase: Phase.DESARROLLO, vol: 42, focus: 'Recuperación medio ciclo',               recovery: true  },
-    { wn: 9,  phase: Phase.ESPECIFICO, vol: 58, focus: 'Específico maratón — tiradas largas',    recovery: false },
-    { wn: 10, phase: Phase.ESPECIFICO, vol: 60, focus: 'Específico — 32km tirada control',       recovery: false },
-  ], [
-    { wn: 1,  wkg: 74.2, hr: 54, sleep: 7.0, score: 76, rpe: 6,  adh: 85, pain: false, energy: 4, notes: 'Base sólida — cuerpo respondió bien al volumen' },
-    { wn: 2,  wkg: 74.0, hr: 53, sleep: 7.2, score: 78, rpe: 7,  adh: 83, pain: false, energy: 4, notes: 'Tirada de 22km a 5:20/km — zona 2 controlada' },
-    { wn: 3,  wkg: 73.7, hr: 53, sleep: 7.5, score: 80, rpe: 8,  adh: 87, pain: false, energy: 4, notes: 'Tempo a 4:55/km — primer contacto ritmo maratón' },
-    { wn: 4,  wkg: 73.5, hr: 52, sleep: 8.0, score: 85, rpe: 5,  adh: 90, pain: false, energy: 5, notes: 'Recuperación — banda iliotibial sin molestias' },
-    { wn: 5,  wkg: 73.3, hr: 52, sleep: 7.3, score: 79, rpe: 8,  adh: 86, pain: false, energy: 4, notes: 'Tirada 26km — último km a ritmo maratón 5:05/km' },
-    { wn: 6,  wkg: 73.0, hr: 51, sleep: 7.5, score: 81, rpe: 8,  adh: 85, pain: false, energy: 4, notes: 'Tirada 28km — volumen más alto hasta ahora' },
-    { wn: 7,  wkg: 72.8, hr: 51, sleep: 7.0, score: 77, rpe: 9,  adh: 83, pain: false, energy: 3, notes: 'Semana brutal — 30km el sábado, piernas explotadas' },
-    { wn: 8,  wkg: 72.6, hr: 50, sleep: 8.2, score: 86, rpe: 5,  adh: 92, pain: false, energy: 5, notes: 'Descarga — cuerpo agradecido. Banda sin molestia' },
-    { wn: 9,  wkg: 72.4, hr: 50, sleep: 7.2, score: 80, rpe: 8,  adh: 87, pain: false, energy: 4, notes: 'Específico — primer 32km en entrenamiento (4:58/km)' },
-    { wn: 10, wkg: 72.2, hr: 50, sleep: 7.5, score: 82, rpe: 9,  adh: 85, pain: false, energy: 3, notes: 'Tirada control 32km en 2:40 — en ruta al sub-4h' },
-  ])
-
-  // ── Ejercicios globales ────────────────────────────────────────────────────
-  const globalExercises: Array<{
-    id: string; name: string; bodyPart: string; target: string; equipment: string; mechanic: string; nameEs: string
-  }> = [
-    { id: 'global-exercise-sentadilla-frontal',         name: 'Sentadilla frontal',              nameEs: 'Sentadilla frontal',              bodyPart: 'upper legs', target: 'quads',      equipment: 'barbell',    mechanic: 'compound'  },
-    { id: 'global-exercise-sentadilla-sumo',            name: 'Sentadilla sumo',                 nameEs: 'Sentadilla sumo',                 bodyPart: 'upper legs', target: 'quads',      equipment: 'barbell',    mechanic: 'compound'  },
-    { id: 'global-exercise-prensa',                     name: 'Prensa',                          nameEs: 'Prensa',                          bodyPart: 'upper legs', target: 'quads',      equipment: 'machine',    mechanic: 'compound'  },
-    { id: 'global-exercise-extension-rodillas',         name: 'Extensión de rodillas',           nameEs: 'Extensión de rodillas',           bodyPart: 'upper legs', target: 'quads',      equipment: 'machine',    mechanic: 'isolation' },
-    { id: 'global-exercise-avanzadas',                  name: 'Avanzadas (Lunges)',               nameEs: 'Avanzadas (Estocadas)',            bodyPart: 'upper legs', target: 'quads',      equipment: 'barbell',    mechanic: 'compound'  },
-    { id: 'global-exercise-sentadilla-hack',            name: 'Sentadilla hack',                 nameEs: 'Sentadilla hack',                 bodyPart: 'upper legs', target: 'quads',      equipment: 'machine',    mechanic: 'compound'  },
-    { id: 'global-exercise-flexion-rodillas-acostado',  name: 'Flexión de rodillas acostado',    nameEs: 'Flexión de rodillas acostado',    bodyPart: 'upper legs', target: 'hamstrings', equipment: 'machine',    mechanic: 'isolation' },
-    { id: 'global-exercise-flexion-rodillas-sentado',   name: 'Flexión de rodillas sentado',     nameEs: 'Flexión de rodillas sentado',     bodyPart: 'upper legs', target: 'hamstrings', equipment: 'machine',    mechanic: 'isolation' },
-    { id: 'global-exercise-peso-muerto',                name: 'Peso muerto',                     nameEs: 'Peso muerto',                     bodyPart: 'upper legs', target: 'hamstrings', equipment: 'barbell',    mechanic: 'compound'  },
-    { id: 'global-exercise-hip-thrust',                 name: 'Hip Thrust',                      nameEs: 'Empuje de cadera',                bodyPart: 'upper legs', target: 'glutes',     equipment: 'barbell',    mechanic: 'compound'  },
-    { id: 'global-exercise-patada-gluteos-maquina',     name: 'Patada de glúteos en máquina',    nameEs: 'Patada de glúteos en máquina',    bodyPart: 'upper legs', target: 'glutes',     equipment: 'machine',    mechanic: 'isolation' },
-    { id: 'global-exercise-abduccion-maquina',          name: 'Abducción en máquina',            nameEs: 'Abducción en máquina',            bodyPart: 'upper legs', target: 'glutes',     equipment: 'machine',    mechanic: 'isolation' },
-    { id: 'global-exercise-aduccion-maquina',           name: 'Aducción en máquina',             nameEs: 'Aducción en máquina',             bodyPart: 'upper legs', target: 'glutes',     equipment: 'machine',    mechanic: 'isolation' },
-    { id: 'global-exercise-press-plano-barra',          name: 'Press plano con barra',           nameEs: 'Press plano con barra',           bodyPart: 'chest',      target: 'pectorals',  equipment: 'barbell',    mechanic: 'compound'  },
-    { id: 'global-exercise-press-inclinado-barra',      name: 'Press inclinado con barra',       nameEs: 'Press inclinado con barra',       bodyPart: 'chest',      target: 'pectorals',  equipment: 'barbell',    mechanic: 'compound'  },
-    { id: 'global-exercise-press-declinado-mancuernas', name: 'Press declinado con mancuernas',  nameEs: 'Press declinado con mancuernas',  bodyPart: 'chest',      target: 'pectorals',  equipment: 'dumbbell',   mechanic: 'compound'  },
-    { id: 'global-exercise-cruces-polea-alta',          name: 'Cruces en polea alta',            nameEs: 'Cruces en polea alta',            bodyPart: 'chest',      target: 'pectorals',  equipment: 'cable',      mechanic: 'isolation' },
-    { id: 'global-exercise-remo-barra',                 name: 'Remo con barra',                  nameEs: 'Remo con barra',                  bodyPart: 'back',       target: 'upper back', equipment: 'barbell',    mechanic: 'compound'  },
-    { id: 'global-exercise-remo-mancuernas',            name: 'Remo con mancuernas',             nameEs: 'Remo con mancuernas',             bodyPart: 'back',       target: 'upper back', equipment: 'dumbbell',   mechanic: 'compound'  },
-    { id: 'global-exercise-jalon-polea-alta',           name: 'Jalón polea alta',                nameEs: 'Jalón en polea alta',             bodyPart: 'back',       target: 'lats',       equipment: 'cable',      mechanic: 'compound'  },
-    { id: 'global-exercise-dominadas',                  name: 'Dominadas',                       nameEs: 'Dominadas',                       bodyPart: 'back',       target: 'lats',       equipment: 'body weight', mechanic: 'compound'  },
-    { id: 'global-exercise-press-militar-barra',        name: 'Press militar con barra',         nameEs: 'Press militar con barra',         bodyPart: 'shoulders',  target: 'delts',      equipment: 'barbell',    mechanic: 'compound'  },
-    { id: 'global-exercise-press-arnold',               name: 'Press Arnold',                    nameEs: 'Press Arnold',                    bodyPart: 'shoulders',  target: 'delts',      equipment: 'dumbbell',   mechanic: 'compound'  },
-    { id: 'global-exercise-elevacion-lateral',          name: 'Elevación lateral',               nameEs: 'Elevación lateral',               bodyPart: 'shoulders',  target: 'delts',      equipment: 'dumbbell',   mechanic: 'isolation' },
-    { id: 'global-exercise-elevacion-frontal',          name: 'Elevación frontal',               nameEs: 'Elevación frontal',               bodyPart: 'shoulders',  target: 'delts',      equipment: 'dumbbell',   mechanic: 'isolation' },
-    { id: 'global-exercise-pajaros',                    name: 'Pájaros (Reverse Fly)',            nameEs: 'Pájaros (Vuelo invertido)',        bodyPart: 'shoulders',  target: 'delts',      equipment: 'dumbbell',   mechanic: 'isolation' },
-    { id: 'global-exercise-flexion-barra-z',            name: 'Flexión de codo con barra Z',     nameEs: 'Flexión de codo con barra Z',     bodyPart: 'upper arms', target: 'biceps',     equipment: 'barbell',    mechanic: 'isolation' },
-    { id: 'global-exercise-martillo-mancuernas',        name: 'Martillo con mancuernas',         nameEs: 'Martillo con mancuernas',         bodyPart: 'upper arms', target: 'biceps',     equipment: 'dumbbell',   mechanic: 'isolation' },
-    { id: 'global-exercise-concentrado-mancuernas',     name: 'Concentrado con mancuernas',      nameEs: 'Curl concentrado con mancuernas', bodyPart: 'upper arms', target: 'biceps',     equipment: 'dumbbell',   mechanic: 'isolation' },
-    { id: 'global-exercise-predicador',                 name: 'Predicador',                      nameEs: 'Curl predicador',                 bodyPart: 'upper arms', target: 'biceps',     equipment: 'barbell',    mechanic: 'isolation' },
-    { id: 'global-exercise-press-frances',              name: 'Press francés',                   nameEs: 'Press francés',                   bodyPart: 'upper arms', target: 'triceps',    equipment: 'barbell',    mechanic: 'isolation' },
-    { id: 'global-exercise-push-down',                  name: 'Push down en polea',              nameEs: 'Jalón de tríceps en polea',       bodyPart: 'upper arms', target: 'triceps',    equipment: 'cable',      mechanic: 'isolation' },
-    { id: 'global-exercise-extension-codo',             name: 'Extensión de codo',               nameEs: 'Extensión de codo en polea',      bodyPart: 'upper arms', target: 'triceps',    equipment: 'cable',      mechanic: 'isolation' },
-    { id: 'global-exercise-patada-triceps',             name: 'Patada de tríceps',               nameEs: 'Patada de tríceps',               bodyPart: 'upper arms', target: 'triceps',    equipment: 'dumbbell',   mechanic: 'isolation' },
-    { id: 'global-exercise-extension-triceps-polea',    name: 'Extensión de tríceps en polea',   nameEs: 'Extensión de tríceps en polea',   bodyPart: 'upper arms', target: 'triceps',    equipment: 'cable',      mechanic: 'isolation' },
-    { id: 'global-exercise-elevacion-talones-maquina',  name: 'Elevación de talones en máquina', nameEs: 'Elevación de talones en máquina', bodyPart: 'lower legs', target: 'calves',     equipment: 'machine',    mechanic: 'isolation' },
-    { id: 'global-exercise-extension-plantar-prensa',   name: 'Extensión plantar en prensa',     nameEs: 'Extensión plantar en prensa',     bodyPart: 'lower legs', target: 'calves',     equipment: 'machine',    mechanic: 'isolation' },
-    { id: 'global-exercise-elevacion-talones-sentado',  name: 'Elevación de talones sentado',    nameEs: 'Elevación de talones sentado',    bodyPart: 'lower legs', target: 'calves',     equipment: 'machine',    mechanic: 'isolation' },
-    { id: 'global-exercise-elevacion-piernas-colgado',  name: 'Elevación de piernas colgado',    nameEs: 'Elevación de piernas colgado',    bodyPart: 'waist',      target: 'abs',        equipment: 'body weight', mechanic: 'isolation' },
-    { id: 'global-exercise-abs-roller',                 name: 'Abs roller',                      nameEs: 'Rueda abdominal',                 bodyPart: 'waist',      target: 'abs',        equipment: 'other',      mechanic: 'isolation' },
-  ]
-
-  for (const ex of globalExercises) {
-    await prisma.exercise.upsert({
-      where: { id: ex.id },
-      update: { name: ex.name, nameEs: ex.nameEs, bodyPart: ex.bodyPart, target: ex.target, equipment: ex.equipment, mechanic: ex.mechanic },
-      create: { id: ex.id, coachId: null, name: ex.name, nameEs: ex.nameEs, bodyPart: ex.bodyPart, target: ex.target, equipment: ex.equipment, mechanic: ex.mechanic, source: 'manual', instructions: [], secondaryMuscles: [], instructionsEs: [] },
-    })
+  const hrZones = {
+    z1: { min: 104, max: 120 }, z2: { min: 120, max: 140 },
+    z3: { min: 140, max: 155 }, z4: { min: 155, max: 170 },
+    z5: { min: 170, max: 185 },
   }
 
-  console.log(`✅ Ejercicios:   ${globalExercises.length} ejercicios globales`)
+  await prisma.trainingPlan.deleteMany({ where: { userId } })
+  const plan = await prisma.trainingPlan.create({
+    data: {
+      id: 'seed-plan-miguel', userId,
+      name: 'Plan 10K — Base a Específico',
+      goalType: GoalType.RACE_10K, totalWeeks: 8,
+      startDate: planStart, endDate: planEnd,
+      status: PlanStatus.ACTIVE, hrZones, generatedBy: PlanSource.COACH,
+    },
+  })
 
-  // ── Rutinas públicas del sistema ────────────────────────────────────────────
-  type PublicTemplate = {
-    id: string; name: string; description: string; goal: string; level: string
-    daysPerWeek: number; category: string
-    days: Array<{
-      dayOfWeek: number; label: string; muscleGroups: string[]; isRestDay: boolean
-      exercises?: Array<{ exerciseId: string; order: number; sets: number; repsScheme: string; restSeconds: number }>
-    }>
-  }
-
-  const publicTemplates: PublicTemplate[] = [
-    {
-      id: 'public-template-ppl-3x',
-      name: 'Push Pull Legs — 3 días',
-      description: 'Divide los músculos en empuje, jalón y piernas. Ideal para ganar músculo con 3 días/semana.',
-      goal: 'HYPERTROPHY', level: 'INTERMEDIATE', daysPerWeek: 3, category: 'PPL',
-      days: [
-        { dayOfWeek: 1, label: 'Lunes — Push (Pecho, Hombros, Tríceps)', muscleGroups: ['CHEST', 'SHOULDERS', 'TRICEPS'], isRestDay: false, exercises: [
-          { exerciseId: 'global-exercise-press-plano-barra',    order: 1, sets: 4, repsScheme: '8-10', restSeconds: 120 },
-          { exerciseId: 'global-exercise-press-inclinado-barra', order: 2, sets: 3, repsScheme: '10-12', restSeconds: 90 },
-          { exerciseId: 'global-exercise-press-arnold',         order: 3, sets: 3, repsScheme: '10-12', restSeconds: 90 },
-          { exerciseId: 'global-exercise-elevacion-lateral',    order: 4, sets: 3, repsScheme: '12-15', restSeconds: 60 },
-          { exerciseId: 'global-exercise-extension-triceps-polea', order: 5, sets: 3, repsScheme: '12-15', restSeconds: 60 },
-        ]},
-        { dayOfWeek: 3, label: 'Miércoles — Pull (Espalda, Bíceps)', muscleGroups: ['BACK', 'BICEPS'], isRestDay: false, exercises: [
-          { exerciseId: 'global-exercise-dominadas',             order: 1, sets: 4, repsScheme: '6-8', restSeconds: 120 },
-          { exerciseId: 'global-exercise-remo-barra',            order: 2, sets: 4, repsScheme: '8-10', restSeconds: 120 },
-          { exerciseId: 'global-exercise-jalon-polea-alta',      order: 3, sets: 3, repsScheme: '10-12', restSeconds: 90 },
-          { exerciseId: 'global-exercise-flexion-barra-z',       order: 4, sets: 3, repsScheme: '10-12', restSeconds: 60 },
-          { exerciseId: 'global-exercise-remo-mancuernas',       order: 5, sets: 3, repsScheme: '12', restSeconds: 60 },
-        ]},
-        { dayOfWeek: 5, label: 'Viernes — Legs (Cuádriceps, Isquios, Glúteos)', muscleGroups: ['QUADRICEPS', 'HAMSTRINGS', 'GLUTES'], isRestDay: false, exercises: [
-          { exerciseId: 'global-exercise-sentadilla-frontal',    order: 1, sets: 4, repsScheme: '8-10', restSeconds: 180 },
-          { exerciseId: 'global-exercise-prensa',                order: 2, sets: 3, repsScheme: '10-12', restSeconds: 120 },
-          { exerciseId: 'global-exercise-peso-muerto',           order: 3, sets: 3, repsScheme: '8-10', restSeconds: 180 },
-          { exerciseId: 'global-exercise-extension-rodillas',    order: 4, sets: 3, repsScheme: '12-15', restSeconds: 60 },
-          { exerciseId: 'global-exercise-hip-thrust',            order: 5, sets: 3, repsScheme: '12-15', restSeconds: 90 },
-        ]},
-        { dayOfWeek: 2, label: 'Martes — Descanso', muscleGroups: [], isRestDay: true },
-        { dayOfWeek: 4, label: 'Jueves — Descanso', muscleGroups: [], isRestDay: true },
-        { dayOfWeek: 6, label: 'Sábado — Descanso', muscleGroups: [], isRestDay: true },
-        { dayOfWeek: 7, label: 'Domingo — Descanso', muscleGroups: [], isRestDay: true },
-      ],
-    },
-    {
-      id: 'public-template-fullbody-3x',
-      name: 'Full Body — 3 días',
-      description: 'Trabaja todo el cuerpo en cada sesión. Perfecto para principiantes o quienes buscan eficiencia.',
-      goal: 'HYPERTROPHY', level: 'BEGINNER', daysPerWeek: 3, category: 'FULL_BODY',
-      days: [
-        { dayOfWeek: 1, label: 'Lunes — Full Body A', muscleGroups: ['CHEST', 'BACK', 'QUADRICEPS'], isRestDay: false, exercises: [
-          { exerciseId: 'global-exercise-sentadilla-frontal',    order: 1, sets: 3, repsScheme: '10-12', restSeconds: 120 },
-          { exerciseId: 'global-exercise-press-plano-barra',     order: 2, sets: 3, repsScheme: '10-12', restSeconds: 90 },
-          { exerciseId: 'global-exercise-remo-barra',            order: 3, sets: 3, repsScheme: '10-12', restSeconds: 90 },
-          { exerciseId: 'global-exercise-press-arnold',          order: 4, sets: 3, repsScheme: '10-12', restSeconds: 60 },
-          { exerciseId: 'global-exercise-hip-thrust',            order: 5, sets: 3, repsScheme: '12-15', restSeconds: 60 },
-        ]},
-        { dayOfWeek: 3, label: 'Miércoles — Full Body B', muscleGroups: ['CHEST', 'BACK', 'HAMSTRINGS'], isRestDay: false, exercises: [
-          { exerciseId: 'global-exercise-peso-muerto',           order: 1, sets: 3, repsScheme: '8-10', restSeconds: 180 },
-          { exerciseId: 'global-exercise-press-inclinado-barra', order: 2, sets: 3, repsScheme: '10-12', restSeconds: 90 },
-          { exerciseId: 'global-exercise-jalon-polea-alta',      order: 3, sets: 3, repsScheme: '10-12', restSeconds: 90 },
-          { exerciseId: 'global-exercise-elevacion-lateral',     order: 4, sets: 3, repsScheme: '12-15', restSeconds: 60 },
-          { exerciseId: 'global-exercise-avanzadas',             order: 5, sets: 3, repsScheme: '12 c/lado', restSeconds: 60 },
-        ]},
-        { dayOfWeek: 5, label: 'Viernes — Full Body C', muscleGroups: ['QUADRICEPS', 'CHEST', 'BACK'], isRestDay: false, exercises: [
-          { exerciseId: 'global-exercise-prensa',                order: 1, sets: 4, repsScheme: '12-15', restSeconds: 120 },
-          { exerciseId: 'global-exercise-press-declinado-mancuernas', order: 2, sets: 3, repsScheme: '10-12', restSeconds: 90 },
-          { exerciseId: 'global-exercise-remo-mancuernas',       order: 3, sets: 3, repsScheme: '10-12', restSeconds: 90 },
-          { exerciseId: 'global-exercise-press-militar-barra',   order: 4, sets: 3, repsScheme: '10-12', restSeconds: 90 },
-          { exerciseId: 'global-exercise-flexion-rodillas-acostado', order: 5, sets: 3, repsScheme: '12-15', restSeconds: 60 },
-        ]},
-        { dayOfWeek: 2, label: 'Martes — Descanso', muscleGroups: [], isRestDay: true },
-        { dayOfWeek: 4, label: 'Jueves — Descanso', muscleGroups: [], isRestDay: true },
-        { dayOfWeek: 6, label: 'Sábado — Descanso', muscleGroups: [], isRestDay: true },
-        { dayOfWeek: 7, label: 'Domingo — Descanso', muscleGroups: [], isRestDay: true },
-      ],
-    },
-    {
-      id: 'public-template-upper-lower-4x',
-      name: 'Upper / Lower — 4 días',
-      description: 'Alterna tren superior e inferior. Mayor frecuencia por músculo con 4 sesiones semanales.',
-      goal: 'HYPERTROPHY', level: 'INTERMEDIATE', daysPerWeek: 4, category: 'UPPER_LOWER',
-      days: [
-        { dayOfWeek: 1, label: 'Lunes — Upper (fuerza)', muscleGroups: ['CHEST', 'BACK', 'SHOULDERS'], isRestDay: false, exercises: [
-          { exerciseId: 'global-exercise-press-plano-barra',    order: 1, sets: 4, repsScheme: '5-6', restSeconds: 180 },
-          { exerciseId: 'global-exercise-remo-barra',           order: 2, sets: 4, repsScheme: '5-6', restSeconds: 180 },
-          { exerciseId: 'global-exercise-press-inclinado-barra', order: 3, sets: 3, repsScheme: '8-10', restSeconds: 120 },
-          { exerciseId: 'global-exercise-dominadas',            order: 4, sets: 3, repsScheme: '6-8', restSeconds: 120 },
-          { exerciseId: 'global-exercise-press-militar-barra',  order: 5, sets: 3, repsScheme: '8-10', restSeconds: 90 },
-        ]},
-        { dayOfWeek: 2, label: 'Martes — Lower (fuerza)', muscleGroups: ['QUADRICEPS', 'HAMSTRINGS', 'GLUTES'], isRestDay: false, exercises: [
-          { exerciseId: 'global-exercise-sentadilla-frontal',   order: 1, sets: 4, repsScheme: '5-6', restSeconds: 180 },
-          { exerciseId: 'global-exercise-peso-muerto',          order: 2, sets: 4, repsScheme: '5-6', restSeconds: 180 },
-          { exerciseId: 'global-exercise-prensa',               order: 3, sets: 3, repsScheme: '10-12', restSeconds: 120 },
-          { exerciseId: 'global-exercise-hip-thrust',           order: 4, sets: 3, repsScheme: '10-12', restSeconds: 90 },
-          { exerciseId: 'global-exercise-flexion-rodillas-acostado', order: 5, sets: 3, repsScheme: '12-15', restSeconds: 60 },
-        ]},
-        { dayOfWeek: 4, label: 'Jueves — Upper (volumen)', muscleGroups: ['CHEST', 'BACK', 'BICEPS', 'TRICEPS'], isRestDay: false, exercises: [
-          { exerciseId: 'global-exercise-press-inclinado-barra', order: 1, sets: 4, repsScheme: '10-12', restSeconds: 90 },
-          { exerciseId: 'global-exercise-jalon-polea-alta',     order: 2, sets: 4, repsScheme: '10-12', restSeconds: 90 },
-          { exerciseId: 'global-exercise-press-arnold',         order: 3, sets: 3, repsScheme: '10-12', restSeconds: 60 },
-          { exerciseId: 'global-exercise-flexion-barra-z',      order: 4, sets: 3, repsScheme: '10-12', restSeconds: 60 },
-          { exerciseId: 'global-exercise-extension-triceps-polea', order: 5, sets: 3, repsScheme: '12-15', restSeconds: 60 },
-        ]},
-        { dayOfWeek: 5, label: 'Viernes — Lower (volumen)', muscleGroups: ['QUADRICEPS', 'GLUTES'], isRestDay: false, exercises: [
-          { exerciseId: 'global-exercise-sentadilla-hack',      order: 1, sets: 4, repsScheme: '10-12', restSeconds: 120 },
-          { exerciseId: 'global-exercise-avanzadas',            order: 2, sets: 3, repsScheme: '12 c/lado', restSeconds: 90 },
-          { exerciseId: 'global-exercise-extension-rodillas',   order: 3, sets: 3, repsScheme: '12-15', restSeconds: 60 },
-          { exerciseId: 'global-exercise-hip-thrust',           order: 4, sets: 3, repsScheme: '12-15', restSeconds: 90 },
-          { exerciseId: 'global-exercise-abduccion-maquina',    order: 5, sets: 3, repsScheme: '15-20', restSeconds: 60 },
-        ]},
-        { dayOfWeek: 3, label: 'Miércoles — Descanso', muscleGroups: [], isRestDay: true },
-        { dayOfWeek: 6, label: 'Sábado — Descanso', muscleGroups: [], isRestDay: true },
-        { dayOfWeek: 7, label: 'Domingo — Descanso', muscleGroups: [], isRestDay: true },
-      ],
-    },
-    {
-      id: 'public-template-fuerza-5x5',
-      name: 'Fuerza 5×5',
-      description: 'Protocolo clásico para ganar fuerza máxima. 3 días, 5 series de 5 repeticiones en los grandes movimientos.',
-      goal: 'STRENGTH', level: 'INTERMEDIATE', daysPerWeek: 3, category: 'STRENGTH',
-      days: [
-        { dayOfWeek: 1, label: 'Lunes — Día A', muscleGroups: ['CHEST', 'BACK', 'QUADRICEPS'], isRestDay: false, exercises: [
-          { exerciseId: 'global-exercise-sentadilla-frontal',   order: 1, sets: 5, repsScheme: '5', restSeconds: 180 },
-          { exerciseId: 'global-exercise-press-plano-barra',    order: 2, sets: 5, repsScheme: '5', restSeconds: 180 },
-          { exerciseId: 'global-exercise-remo-barra',           order: 3, sets: 5, repsScheme: '5', restSeconds: 180 },
-        ]},
-        { dayOfWeek: 3, label: 'Miércoles — Día B', muscleGroups: ['BACK', 'SHOULDERS', 'HAMSTRINGS'], isRestDay: false, exercises: [
-          { exerciseId: 'global-exercise-sentadilla-frontal',   order: 1, sets: 5, repsScheme: '5', restSeconds: 180 },
-          { exerciseId: 'global-exercise-press-militar-barra',  order: 2, sets: 5, repsScheme: '5', restSeconds: 180 },
-          { exerciseId: 'global-exercise-peso-muerto',          order: 3, sets: 1, repsScheme: '5', restSeconds: 300 },
-        ]},
-        { dayOfWeek: 5, label: 'Viernes — Día A (repetir)', muscleGroups: ['CHEST', 'BACK', 'QUADRICEPS'], isRestDay: false, exercises: [
-          { exerciseId: 'global-exercise-sentadilla-frontal',   order: 1, sets: 5, repsScheme: '5', restSeconds: 180 },
-          { exerciseId: 'global-exercise-press-plano-barra',    order: 2, sets: 5, repsScheme: '5', restSeconds: 180 },
-          { exerciseId: 'global-exercise-remo-barra',           order: 3, sets: 5, repsScheme: '5', restSeconds: 180 },
-        ]},
-        { dayOfWeek: 2, label: 'Martes — Descanso', muscleGroups: [], isRestDay: true },
-        { dayOfWeek: 4, label: 'Jueves — Descanso', muscleGroups: [], isRestDay: true },
-        { dayOfWeek: 6, label: 'Sábado — Descanso', muscleGroups: [], isRestDay: true },
-        { dayOfWeek: 7, label: 'Domingo — Descanso', muscleGroups: [], isRestDay: true },
-      ],
-    },
-    {
-      id: 'public-template-ppl-6x',
-      name: 'Push Pull Legs — 6 días',
-      description: 'Versión avanzada del PPL con doble frecuencia. Para quienes pueden entrenar 6 días a la semana.',
-      goal: 'HYPERTROPHY', level: 'ADVANCED', daysPerWeek: 6, category: 'PPL',
-      days: [
-        { dayOfWeek: 1, label: 'Lunes — Push A', muscleGroups: ['CHEST', 'SHOULDERS', 'TRICEPS'], isRestDay: false, exercises: [
-          { exerciseId: 'global-exercise-press-plano-barra',    order: 1, sets: 4, repsScheme: '6-8', restSeconds: 120 },
-          { exerciseId: 'global-exercise-press-inclinado-barra', order: 2, sets: 4, repsScheme: '8-10', restSeconds: 90 },
-          { exerciseId: 'global-exercise-press-arnold',         order: 3, sets: 3, repsScheme: '10-12', restSeconds: 90 },
-          { exerciseId: 'global-exercise-elevacion-lateral',    order: 4, sets: 4, repsScheme: '15-20', restSeconds: 60 },
-          { exerciseId: 'global-exercise-extension-triceps-polea', order: 5, sets: 3, repsScheme: '12-15', restSeconds: 60 },
-        ]},
-        { dayOfWeek: 2, label: 'Martes — Pull A', muscleGroups: ['BACK', 'BICEPS'], isRestDay: false, exercises: [
-          { exerciseId: 'global-exercise-dominadas',            order: 1, sets: 4, repsScheme: '6-8', restSeconds: 120 },
-          { exerciseId: 'global-exercise-remo-barra',           order: 2, sets: 4, repsScheme: '6-8', restSeconds: 120 },
-          { exerciseId: 'global-exercise-jalon-polea-alta',     order: 3, sets: 3, repsScheme: '10-12', restSeconds: 90 },
-          { exerciseId: 'global-exercise-flexion-barra-z',      order: 4, sets: 4, repsScheme: '10-12', restSeconds: 60 },
-          { exerciseId: 'global-exercise-remo-mancuernas',      order: 5, sets: 3, repsScheme: '12', restSeconds: 60 },
-        ]},
-        { dayOfWeek: 3, label: 'Miércoles — Legs A', muscleGroups: ['QUADRICEPS', 'HAMSTRINGS', 'GLUTES'], isRestDay: false, exercises: [
-          { exerciseId: 'global-exercise-sentadilla-frontal',   order: 1, sets: 4, repsScheme: '6-8', restSeconds: 180 },
-          { exerciseId: 'global-exercise-prensa',               order: 2, sets: 4, repsScheme: '10-12', restSeconds: 120 },
-          { exerciseId: 'global-exercise-peso-muerto',          order: 3, sets: 3, repsScheme: '8', restSeconds: 180 },
-          { exerciseId: 'global-exercise-extension-rodillas',   order: 4, sets: 3, repsScheme: '15', restSeconds: 60 },
-          { exerciseId: 'global-exercise-hip-thrust',           order: 5, sets: 3, repsScheme: '12', restSeconds: 90 },
-        ]},
-        { dayOfWeek: 4, label: 'Jueves — Push B', muscleGroups: ['CHEST', 'SHOULDERS', 'TRICEPS'], isRestDay: false, exercises: [
-          { exerciseId: 'global-exercise-press-inclinado-barra', order: 1, sets: 4, repsScheme: '8-10', restSeconds: 120 },
-          { exerciseId: 'global-exercise-press-declinado-mancuernas', order: 2, sets: 3, repsScheme: '10-12', restSeconds: 90 },
-          { exerciseId: 'global-exercise-press-militar-barra',  order: 3, sets: 4, repsScheme: '8-10', restSeconds: 90 },
-          { exerciseId: 'global-exercise-elevacion-frontal',    order: 4, sets: 3, repsScheme: '12-15', restSeconds: 60 },
-          { exerciseId: 'global-exercise-cruces-polea-alta',    order: 5, sets: 3, repsScheme: '15', restSeconds: 60 },
-        ]},
-        { dayOfWeek: 5, label: 'Viernes — Pull B', muscleGroups: ['BACK', 'BICEPS', 'SHOULDERS'], isRestDay: false, exercises: [
-          { exerciseId: 'global-exercise-remo-mancuernas',      order: 1, sets: 4, repsScheme: '10-12', restSeconds: 90 },
-          { exerciseId: 'global-exercise-jalon-polea-alta',     order: 2, sets: 4, repsScheme: '10-12', restSeconds: 90 },
-          { exerciseId: 'global-exercise-dominadas',            order: 3, sets: 3, repsScheme: 'al fallo', restSeconds: 120 },
-          { exerciseId: 'global-exercise-flexion-barra-z',      order: 4, sets: 3, repsScheme: '12', restSeconds: 60 },
-          { exerciseId: 'global-exercise-pajaros',              order: 5, sets: 3, repsScheme: '15', restSeconds: 60 },
-        ]},
-        { dayOfWeek: 6, label: 'Sábado — Legs B', muscleGroups: ['QUADRICEPS', 'GLUTES', 'HAMSTRINGS'], isRestDay: false, exercises: [
-          { exerciseId: 'global-exercise-sentadilla-hack',      order: 1, sets: 4, repsScheme: '10-12', restSeconds: 120 },
-          { exerciseId: 'global-exercise-avanzadas',            order: 2, sets: 3, repsScheme: '12 c/lado', restSeconds: 90 },
-          { exerciseId: 'global-exercise-hip-thrust',           order: 3, sets: 4, repsScheme: '12-15', restSeconds: 90 },
-          { exerciseId: 'global-exercise-abduccion-maquina',    order: 4, sets: 3, repsScheme: '15-20', restSeconds: 60 },
-          { exerciseId: 'global-exercise-flexion-rodillas-sentado', order: 5, sets: 3, repsScheme: '12-15', restSeconds: 60 },
-        ]},
-        { dayOfWeek: 7, label: 'Domingo — Descanso', muscleGroups: [], isRestDay: true },
-      ],
-    },
+  // Sessions blueprint (dayOfWeek 1=Mon ... 7=Sun)
+  const sessions: Array<{ day: number; type: SessionType; intensity: SessionIntensity; dur: number; zone?: string; structure?: string; detail?: string }> = [
+    { day: 1, type: SessionType.RODAJE_Z2,   intensity: SessionIntensity.LOW,      dur: 45, zone: 'Z2', structure: '45 min Z2 continuo', detail: 'Rodaje suave Z2' },
+    { day: 2, type: SessionType.FUERZA,       intensity: SessionIntensity.MODERATE, dur: 50, structure: 'Rutina tren inferior + core', detail: 'Fuerza complementaria' },
+    { day: 3, type: SessionType.FARTLEK,      intensity: SessionIntensity.MODERATE, dur: 40, zone: 'Z3-Z4', structure: '10min Z2 + 6×3min Z3-Z4 / 2min Z1 + 10min Z2', detail: 'Fartlek Z3-Z4' },
+    { day: 4, type: SessionType.DESCANSO,     intensity: SessionIntensity.REST,     dur: 0, detail: 'Descanso' },
+    { day: 5, type: SessionType.TEMPO,        intensity: SessionIntensity.MODERATE, dur: 50, zone: 'Z3', structure: '10min Z2 + 20min Z3 + 10min Z2', detail: 'Tempo Z3' },
+    { day: 6, type: SessionType.TIRADA_LARGA, intensity: SessionIntensity.HIGH,     dur: 70, zone: 'Z2', structure: '70 min Z2 progresivo', detail: 'Tirada larga Z2' },
+    { day: 7, type: SessionType.DESCANSO,     intensity: SessionIntensity.REST,     dur: 0, detail: 'Descanso' },
   ]
 
-  for (const tmpl of publicTemplates) {
-    await prisma.workoutTemplate.upsert({
-      where: { id: tmpl.id },
-      update: {},
+  const weekConfigs: Array<{ wn: number; phase: Phase; volKm: number; focus: string; recovery: boolean }> = [
+    { wn: 1, phase: Phase.BASE,       volKm: 25, focus: 'Adaptación aeróbica, ritmo Z2', recovery: false },
+    { wn: 2, phase: Phase.BASE,       volKm: 28, focus: 'Volumen Z2, fartlek suave', recovery: false },
+    { wn: 3, phase: Phase.BASE,       volKm: 30, focus: 'Base aeróbica + tempo corto', recovery: false },
+    { wn: 4, phase: Phase.DESARROLLO, volKm: 22, focus: 'Recuperación activa', recovery: true },
+    { wn: 5, phase: Phase.DESARROLLO, volKm: 32, focus: 'Intervalos + tirada larga', recovery: false },
+  ]
+
+  const todayDow = today.getUTCDay() === 0 ? 7 : today.getUTCDay() // 1=Mon...7=Sun
+
+  for (const wc of weekConfigs) {
+    const weekStart = new Date(planStart)
+    weekStart.setUTCDate(weekStart.getUTCDate() + (wc.wn - 1) * 7)
+    const weekEnd = new Date(weekStart)
+    weekEnd.setUTCDate(weekEnd.getUTCDate() + 6)
+
+    const week = await prisma.planWeek.upsert({
+      where: { planId_weekNumber: { planId: plan.id, weekNumber: wc.wn } },
+      update: { phase: wc.phase, volumeKm: wc.volKm, startDate: weekStart, endDate: weekEnd },
       create: {
-        id: tmpl.id,
-        name: tmpl.name,
-        description: tmpl.description,
-        goal: tmpl.goal,
-        level: tmpl.level,
-        daysPerWeek: tmpl.daysPerWeek,
-        isPublic: true,
-        category: tmpl.category,
+        id: `seed-pw-miguel-w${wc.wn}`, planId: plan.id, weekNumber: wc.wn,
+        phase: wc.phase, volumeKm: wc.volKm, focusDescription: wc.focus,
+        isRecoveryWeek: wc.recovery, startDate: weekStart, endDate: weekEnd,
       },
     })
 
-    for (const day of tmpl.days) {
-      const dayId = `${tmpl.id}-day-${day.dayOfWeek}`
-      await prisma.workoutDay.upsert({
-        where: { id: dayId },
+    for (const s of sessions) {
+      const sessionDate = new Date(weekStart)
+      sessionDate.setUTCDate(sessionDate.getUTCDate() + s.day - 1)
+
+      const sId = `seed-ps-miguel-w${wc.wn}-d${s.day}`
+      await prisma.plannedSession.upsert({
+        where: { id: sId },
         update: {},
         create: {
-          id: dayId,
-          templateId: tmpl.id,
-          dayOfWeek: day.dayOfWeek,
-          label: day.label,
-          muscleGroups: day.muscleGroups,
-          isRestDay: day.isRestDay,
-          order: day.dayOfWeek,
+          id: sId, weekId: week.id, dayOfWeek: s.day,
+          type: s.type, intensity: s.intensity, durationMin: s.dur,
+          zoneTarget: s.zone ?? null, structure: s.structure ?? null,
+          detailText: s.detail ?? null, date: sessionDate,
         },
       })
 
-      if (!day.isRestDay && day.exercises) {
-        for (const ex of day.exercises) {
-          const exId = `${dayId}-ex-${ex.exerciseId}`
-          await prisma.workoutExercise.upsert({
-            where: { id: exId },
-            update: {},
-            create: {
-              id: exId,
-              dayId,
-              exerciseId: ex.exerciseId,
-              order: ex.order,
-              sets: ex.sets,
-              repsScheme: ex.repsScheme,
-              restSeconds: ex.restSeconds,
+      // Logs: semanas 1-4 completadas. Semana 5: solo sesiones PASADAS (dow < todayDow)
+      const isPastWeek = wc.wn < 5
+      const isPastDayThisWeek = wc.wn === 5 && s.day < todayDow
+      const isTraining = s.type !== SessionType.DESCANSO
+
+      if ((isPastWeek || isPastDayThisWeek) && isTraining) {
+        await prisma.sessionLog.upsert({
+          where: { plannedSessionId: sId },
+          update: {},
+          create: {
+            userId, plannedSessionId: sId,
+            completedAt: sessionDate, sessionDate: dateOnly(sessionDate),
+            rpe: s.intensity === SessionIntensity.HIGH ? 8 : s.intensity === SessionIntensity.MODERATE ? 6 : 4,
+            hrAvg: s.intensity === SessionIntensity.HIGH ? 162 : s.intensity === SessionIntensity.MODERATE ? 145 : 128,
+            hrMax: s.intensity === SessionIntensity.HIGH ? 178 : s.intensity === SessionIntensity.MODERATE ? 160 : 142,
+            distanceKm: s.type === SessionType.FUERZA ? null : +(((s.dur / 60) * 9.5).toFixed(1)),
+            durationMin: s.dur + Math.floor(Math.random() * 6) - 3,
+            energyState: 'NORMAL', discomfort: 'NONE',
+            discipline: s.type === SessionType.FUERZA ? SessionDiscipline.STRENGTH : SessionDiscipline.RUNNING,
+            dataSource: 'MANUAL',
+          },
+        })
+      }
+    }
+  }
+
+  // ── Weekly Check-ins (semanas 1-4) ────────────────────────────────────────
+  for (let wn = 1; wn <= 4; wn++) {
+    const recordDate = new Date(planStart)
+    recordDate.setUTCDate(recordDate.getUTCDate() + wn * 7 - 1) // domingo de cada semana
+    await prisma.weeklyCheckIn.upsert({
+      where: { id: `seed-ci-miguel-w${wn}` },
+      update: {},
+      create: {
+        id: `seed-ci-miguel-w${wn}`, userId, planId: plan.id, weekNumber: wn,
+        recordedAt: recordDate,
+        weightKg: 75 - wn * 0.3, hrResting: 55 - wn,
+        sleepHours: 7 + (wn % 2 === 0 ? 0.5 : 0), sleepScore: 78 + wn,
+        hardestSessionRpe: 7 + (wn % 2), dietAdherencePct: 80 + wn * 3,
+        painLevel: wn === 3 ? 4 : 1, painFlag: false,
+        energyLevel: 7, stressLevel: 4, motivationLevel: 8,
+        nutritionAdherencePct: 75 + wn * 4, adjustmentsTriggered: [],
+      },
+    })
+  }
+
+  // ── Daily Logs (últimos 14 días) ──────────────────────────────────────────
+  for (let d = 0; d < 14; d++) {
+    const date = dateOnly(daysAgo(d))
+    await prisma.dailyLog.upsert({
+      where: { userId_date: { userId, date } },
+      update: {},
+      create: { userId, date, weightKg: 73.8 + Math.random() * 0.8, hrResting: 52 + Math.floor(Math.random() * 4), sleepHours: 6.5 + Math.random() * 2, energyLevel: 3 + Math.floor(Math.random() * 3) },
+    })
+  }
+
+  // ── Water Logs (últimos 7 días) ───────────────────────────────────────────
+  for (let d = 0; d < 7; d++) {
+    const date = dateOnly(daysAgo(d))
+    await prisma.waterLog.upsert({
+      where: { userId_date: { userId, date } },
+      update: {},
+      create: { userId, date, mlLogged: 2000 + Math.floor(Math.random() * 1500) },
+    })
+  }
+
+  // ── Food Logs (últimos 7 días, 3 comidas/día) ────────────────────────────
+  await seedFoodLogs(userId, 7)
+
+  // ── Assigned Workout PPL + GymSessions (4 semanas de gym) ─────────────────
+  const templateId = 'public-template-ppl-3x'
+  const awId = 'seed-aw-miguel'
+  await prisma.assignedWorkout.upsert({
+    where: { id: awId },
+    update: {},
+    create: { id: awId, templateId, athleteId: userId, coachId, startDate: planStart, isActive: true },
+  })
+
+  // Gym sessions: martes de cada semana pasada (4 semanas) — coincide con sesión FUERZA del plan
+  for (let w = 0; w < 4; w++) {
+    const gymDate = new Date(planStart)
+    gymDate.setUTCDate(gymDate.getUTCDate() + w * 7 + 1) // martes = día 2 = offset +1
+    const gsId = `seed-gs-miguel-w${w + 1}`
+    const exists = await prisma.gymSession.findFirst({ where: { id: gsId } })
+    if (!exists) {
+      await prisma.gymSession.create({
+        data: {
+          id: gsId, athleteId: userId, assignedWorkoutId: awId,
+          dayOfWeek: 2, date: dateOnly(gymDate), durationMin: 55,
+          rpe: 6 + (w % 2), energyState: 'NORMAL', discomfort: 'NONE', completed: true,
+        },
+      })
+      const exercises = [
+        { name: 'sentadilla frontal', weight: 75 + w * 2.5 },
+        { name: 'prensa', weight: 120 + w * 5 },
+        { name: 'hip thrust', weight: 70 + w * 2.5 },
+      ]
+      for (let ei = 0; ei < exercises.length; ei++) {
+        for (let s = 1; s <= 4; s++) {
+          await prisma.setLog.create({
+            data: {
+              sessionId: gsId, exerciseName: exercises[ei].name,
+              setNumber: s, weightKg: exercises[ei].weight,
+              repsCompleted: 10 - s + 1, completed: true,
+              isPR: w === 3 && s === 1 && ei === 0, // PR en la última semana, primer set de sentadilla
+              setLogType: SetLogType.WORK,
             },
           })
         }
@@ -1034,570 +524,503 @@ async function main() {
     }
   }
 
-  console.log(`✅ Rutinas:      ${publicTemplates.length} plantillas públicas del sistema`)
-
-  // ── Sistema: WorkoutTemplate "Fuerza corredor" ─────────────────────────────
-  // Plantilla interna usada por generate-plan para vincular sesiones FUERZA
-  // en planes de running (5K, 10K, Media, Maratón) al gym tracker.
-  // isPublic: false — el atleta no la selecciona manualmente.
-  // Dos WorkoutDays (por fase, no por día de semana):
-  //   BASE:       fuerza funcional 3×12-15 (sentadillas, lunges, hip thrust)
-  //   ESPECÍFICO: fuerza específica 4×8-10 + talones
-  await prisma.workoutTemplate.upsert({
-    where: { id: 'system-fuerza-corredor' },
-    update: {},
-    create: {
-      id: 'system-fuerza-corredor',
-      name: 'Fuerza corredor',
-      description: 'Rutina de fuerza complementaria para atletas de running. Se vincula automáticamente al plan de entrenamiento.',
-      goal: 'RUNNING_STRENGTH',
-      level: 'INTERMEDIATE',
-      daysPerWeek: 1,
-      isPublic: false,
-      category: 'RUNNER_STRENGTH',
-    },
-  })
-
-  // BASE — sentadilla, lunges, hip thrust, talones (fuerza funcional)
-  await prisma.workoutDay.upsert({
-    where: { id: 'system-fuerza-corredor-base' },
-    update: {},
-    create: {
-      id: 'system-fuerza-corredor-base',
-      templateId: 'system-fuerza-corredor',
-      dayOfWeek: 1,
-      label: 'Fuerza Base — Funcional corredor',
-      muscleGroups: ['QUADRICEPS', 'GLUTES', 'HAMSTRINGS', 'CALVES'],
-      isRestDay: false,
-      order: 1,
-      warmupNotes: '5 min movilidad de cadera y rodilla. Activación glúteos con banda.',
-    },
-  })
-
-  const baseFuerzaExercises = [
-    { exerciseId: 'global-exercise-sentadilla-frontal',        order: 1, sets: 3, repsScheme: '12-15', restSeconds: 90  },
-    { exerciseId: 'global-exercise-avanzadas',                 order: 2, sets: 3, repsScheme: '12 c/lado', restSeconds: 60  },
-    { exerciseId: 'global-exercise-hip-thrust',                order: 3, sets: 3, repsScheme: '15',     restSeconds: 60  },
-    { exerciseId: 'global-exercise-elevacion-talones-maquina', order: 4, sets: 3, repsScheme: '20',     restSeconds: 45  },
-  ]
-  for (const ex of baseFuerzaExercises) {
-    await prisma.workoutExercise.upsert({
-      where: { id: `system-fuerza-corredor-base-ex-${ex.exerciseId}` },
-      update: {},
-      create: {
-        id: `system-fuerza-corredor-base-ex-${ex.exerciseId}`,
-        dayId: 'system-fuerza-corredor-base',
-        exerciseId: ex.exerciseId,
-        order: ex.order,
-        sets: ex.sets,
-        repsScheme: ex.repsScheme,
-        restSeconds: ex.restSeconds,
-      },
-    })
-  }
-
-  // ESPECÍFICO — carga más alta, talones con más volumen (fuerza específica)
-  await prisma.workoutDay.upsert({
-    where: { id: 'system-fuerza-corredor-especifico' },
-    update: {},
-    create: {
-      id: 'system-fuerza-corredor-especifico',
-      templateId: 'system-fuerza-corredor',
-      dayOfWeek: 2,
-      label: 'Fuerza Específica — Potencia y reactividad',
-      muscleGroups: ['QUADRICEPS', 'GLUTES', 'HAMSTRINGS', 'CALVES'],
-      isRestDay: false,
-      order: 2,
-      warmupNotes: '5 min rodillo espuma. Skipping progresivo + talones al glúteo.',
-    },
-  })
-
-  const especificoFuerzaExercises = [
-    { exerciseId: 'global-exercise-sentadilla-frontal',        order: 1, sets: 4, repsScheme: '8-10',      restSeconds: 120 },
-    { exerciseId: 'global-exercise-peso-muerto',               order: 2, sets: 4, repsScheme: '8',          restSeconds: 180 },
-    { exerciseId: 'global-exercise-avanzadas',                 order: 3, sets: 3, repsScheme: '10 c/lado',  restSeconds: 90  },
-    { exerciseId: 'global-exercise-elevacion-talones-maquina', order: 4, sets: 4, repsScheme: '15',          restSeconds: 45  },
-  ]
-  for (const ex of especificoFuerzaExercises) {
-    await prisma.workoutExercise.upsert({
-      where: { id: `system-fuerza-corredor-especifico-ex-${ex.exerciseId}` },
-      update: {},
-      create: {
-        id: `system-fuerza-corredor-especifico-ex-${ex.exerciseId}`,
-        dayId: 'system-fuerza-corredor-especifico',
-        exerciseId: ex.exerciseId,
-        order: ex.order,
-        sets: ex.sets,
-        repsScheme: ex.repsScheme,
-        restSeconds: ex.restSeconds,
-      },
-    })
-  }
-
-  console.log('✅ Fuerza corredor: plantilla de sistema (BASE + ESPECÍFICO)')
-  console.log(`✅ Coaches:      coach@medaliq.com / coach123`)
-  console.log(`                maria.coach@medaliq.com / coach123`)
-  console.log(`✅ Admin:        admin@medaliq.com / admin123!`)
-  console.log(`✅ Atletas (15):`)
-  console.log(`   1  miguel@medaliq.com         (B2B coach1 · half marathon · semana 7)`)
-  console.log(`   2  ana@medaliq.com             (B2C sin plan · recién registrada)`)
-  console.log(`   3  juan.perez@medaliq.com      (B2B coach1 · 10K · semana 6)`)
-  console.log(`   4  sofia.ramirez@medaliq.com   (B2B coach2 · recomposición · semana 9)`)
-  console.log(`   5  andres.moreno@medaliq.com   (B2C trial · ciclismo · semana 5)`)
-  console.log(`   6  valentina.castro@medaliq.com(B2C trial · half marathon · semana 4)`)
-  console.log(`   7  camilo.torres@medaliq.com   (B2B coach2 · fuerza · semana 7)`)
-  console.log(`   8  laura.gomez@medaliq.com     (B2C trial · recomposición · semana 4)`)
-  console.log(`   9  sebastian.rios@medaliq.com  (B2B coach1 · 5K · semana 5)`)
-  console.log(`   10 daniela.vargas@medaliq.com  (B2C trial · triatlón · semana 6)`)
-  console.log(`   11 felipe.herrera@medaliq.com  (B2C trial · ciclismo · semana 8)`)
-  console.log(`   12 isabella.mendez@medaliq.com (B2B coach2 · recomposición · semana 5)`)
-  console.log(`   13 nicolas.gutierrez@medaliq.com(B2B coach1 · half marathon · semana 3)`)
-  console.log(`   14 catalina.jimenez@medaliq.com(B2C trial · 10K · semana 5)`)
-  console.log(`   15 santiago.rodriguez@medaliq.com(B2B coach1 · maratón · semana 11)`)
-  console.log(`\n🎉 Seed completo. Contraseña atletas: atleta123`)
+  console.log('   📊 Miguel: plan 10K sem 5/8 + 4 sem gym + nutrición + check-ins')
 }
 
-// ── Helpers de plan ────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// LAURA — B2B gym-focused, 4 semanas de gym completadas, sin plan running
+// ═══════════════════════════════════════════════════════════════════════════════
 
-async function seedRunningPlan(
-  prisma: PrismaClient,
-  userId: string,
-  planId: string,
-  name: string,
-  totalWeeks: number,
-  startDate: Date,
-  goalType: GoalType,
-  weekDefs: Array<{ wn: number; phase: Phase; vol: number; focus: string; recovery: boolean }>,
-  checkIns: Array<{ wn: number; wkg: number; hr: number; sleep: number; score: number; rpe: number; adh: number; pain: boolean; energy: number; notes: string }>,
-) {
-  const plan = await prisma.trainingPlan.upsert({
-    where: { id: planId },
+async function seedLauraData(userId: string, coachId: string) {
+  // ── Nutrition Plan ─────────────────────────────────────────────────────────
+  await prisma.nutritionPlan.upsert({
+    where: { userId },
     update: {},
     create: {
-      id: planId, userId, name, totalWeeks,
-      startDate, endDate: addDays(startDate, totalWeeks * 7),
-      status: PlanStatus.ACTIVE, generatedBy: PlanSource.COACH,
-      hrZones: { z1: { min: 90, max: 115 }, z2: { min: 116, max: 135 }, z3: { min: 136, max: 155 }, z4: { min: 156, max: 172 }, z5: { min: 173, max: 195 } },
+      userId, source: NutritionSource.COACH, tdee: 2100,
+      targetKcalHard: 2250, targetKcalEasy: 1950, targetKcalRest: 1800,
+      proteinG: 115, carbsHardG: 260, carbsEasyG: 210, fatG: 60, waterMlTarget: 2500,
     },
   })
 
-  for (const wd of weekDefs) {
-    const wStart = addDays(startDate, (wd.wn - 1) * 7)
-    const week = await prisma.planWeek.upsert({
-      where: { planId_weekNumber: { planId: plan.id, weekNumber: wd.wn } },
-      update: {},
-      create: {
-        planId: plan.id, weekNumber: wd.wn, phase: wd.phase,
-        volumeKm: wd.vol, focusDescription: wd.focus, isRecoveryWeek: wd.recovery,
-        startDate: wStart, endDate: addDays(wStart, 6),
-      },
-    })
-
-    const sessDefs = wd.recovery
-      ? [
-          { d: 1, type: SessionType.RODAJE_Z2, dur: 30, zone: 'Z1-Z2', detail: 'Rodaje suave recuperación' },
-          { d: 3, type: SessionType.RODAJE_Z2, dur: 25, zone: 'Z1',    detail: 'Trote ligero 25 min' },
-          { d: 6, type: SessionType.RODAJE_Z2, dur: 40, zone: 'Z2',    detail: 'Tirada corta fácil' },
-        ]
-      : wd.wn <= 2
-        ? [
-            { d: 1, type: SessionType.RODAJE_Z2,   dur: 40, zone: 'Z2',    detail: '40 min Z2 activación' },
-            { d: 3, type: SessionType.FARTLEK,       dur: 50, zone: 'Z2-Z3', detail: '10 cal + 5×2 min Z3 / 2 min Z2 + 10 vuelta' },
-            { d: 6, type: SessionType.TIRADA_LARGA,  dur: 70, zone: 'Z2',    detail: 'Tirada larga Z2 — hidratación c/20 min' },
-          ]
-        : [
-            { d: 1, type: SessionType.RODAJE_Z2,   dur: 45, zone: 'Z2',    detail: '45 min Z2 activación' },
-            { d: 2, type: SessionType.TEMPO,         dur: 55, zone: 'Z3-Z4', detail: '15 cal + 20 min tempo + 10 vuelta' },
-            { d: 4, type: SessionType.INTERVALOS,    dur: 60, zone: 'Z4-Z5', detail: '15 cal + 6×800m Z4 / 400m trote + 15 vuelta' },
-            { d: 6, type: SessionType.TIRADA_LARGA,  dur: 90, zone: 'Z2',    detail: 'Tirada larga 90 min — gel c/30 min' },
-          ]
-
-    for (const s of sessDefs) {
-      await prisma.plannedSession.upsert({
-        where: { id: `${planId}-w${wd.wn}-d${s.d}` },
-        update: {},
-        create: {
-          id: `${planId}-w${wd.wn}-d${s.d}`,
-          weekId: week.id, dayOfWeek: s.d, type: s.type,
-          durationMin: s.dur, zoneTarget: s.zone, detailText: s.detail,
-          date: addDays(wStart, s.d - 1),
-        },
-      })
-    }
-  }
-
-  for (const ci of checkIns) {
-    const _existsCi = await prisma.weeklyCheckIn.findFirst({
-      where: { userId, planId: null, weekNumber: ci.wn },
-      select: { id: true },
-    })
-    if (!_existsCi) {
-      await prisma.weeklyCheckIn.create({
-        data: {
-          userId, planId: null, weekNumber: ci.wn,
-          weightKg: ci.wkg, hrResting: ci.hr, sleepHours: ci.sleep, sleepScore: ci.score,
-          hardestSessionRpe: ci.rpe, painFlag: ci.pain,
-          dietAdherencePct: ci.adh, energyLevel: ci.energy, notes: ci.notes, adjustmentsTriggered: [],
-        },
-      })
-    }
-  }
-}
-
-async function seedBodyPlan(
-  prisma: PrismaClient,
-  userId: string,
-  planId: string,
-  name: string,
-  totalWeeks: number,
-  startDate: Date,
-  checkIns: Array<{ wn: number; wkg: number; hr: number; sleep: number; score: number; rpe: number; adh: number; pain: boolean; energy: number; notes: string }>,
-) {
-  const plan = await prisma.trainingPlan.upsert({
-    where: { id: planId },
+  // ── Assigned Workout Upper/Lower + 4 semanas de GymSessions ───────────────
+  const templateId = 'public-template-upper-lower-4x'
+  const awId = 'seed-aw-laura'
+  const startDate = daysAgo(28)
+  await prisma.assignedWorkout.upsert({
+    where: { id: awId },
     update: {},
-    create: {
-      id: planId, userId, name, totalWeeks,
-      startDate, endDate: addDays(startDate, totalWeeks * 7),
-      status: PlanStatus.ACTIVE, generatedBy: PlanSource.COACH,
-      hrZones: {},
-    },
+    create: { id: awId, templateId, athleteId: userId, coachId, startDate, isActive: true },
   })
 
-  const weekCount = Math.min(checkIns.length, Math.ceil((Date.now() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000)))
+  // Upper/Lower 4x: Lun, Mar, Jue, Vie → dayOfWeek 1,2,4,5
+  const gymDows = [1, 2, 4, 5]
+  const exercisesByDay: Record<number, Array<{ name: string; weight: number }>> = {
+    1: [{ name: 'press plano con barra', weight: 35 }, { name: 'remo con barra', weight: 30 }, { name: 'press arnold', weight: 10 }],
+    2: [{ name: 'sentadilla frontal', weight: 45 }, { name: 'peso muerto', weight: 50 }, { name: 'hip thrust', weight: 40 }],
+    4: [{ name: 'press inclinado con barra', weight: 30 }, { name: 'jalón polea alta', weight: 35 }, { name: 'flexión de codo con barra z', weight: 15 }],
+    5: [{ name: 'sentadilla hack', weight: 50 }, { name: 'avanzadas (lunges)', weight: 20 }, { name: 'extensión de rodillas', weight: 30 }],
+  }
 
-  for (let wn = 1; wn <= weekCount; wn++) {
-    const phase = wn <= 4 ? Phase.BASE : wn <= 8 ? Phase.DESARROLLO : wn <= 12 ? Phase.ESPECIFICO : Phase.AFINAMIENTO
-    const isRecovery = wn % 4 === 0
-    const wStart = addDays(startDate, (wn - 1) * 7)
+  for (let w = 0; w < 4; w++) {
+    const weekStart = new Date(startDate)
+    weekStart.setUTCDate(weekStart.getUTCDate() + w * 7)
+    const weekMon = mondayOf(weekStart)
 
-    const week = await prisma.planWeek.upsert({
-      where: { planId_weekNumber: { planId: plan.id, weekNumber: wn } },
-      update: {},
-      create: {
-        planId: plan.id, weekNumber: wn, phase,
-        focusDescription: isRecovery ? 'Semana de descarga — cargas reducidas' : 'Hipertrofia + cardio metabólico',
-        isRecoveryWeek: isRecovery,
-        startDate: wStart, endDate: addDays(wStart, 6),
+    for (const dow of gymDows) {
+      const gymDate = new Date(weekMon)
+      gymDate.setUTCDate(gymDate.getUTCDate() + dow - 1)
+
+      // No crear sesiones futuras
+      if (gymDate > new Date()) continue
+
+      const gsId = `seed-gs-laura-w${w + 1}-d${dow}`
+      const exists = await prisma.gymSession.findFirst({ where: { id: gsId } })
+      if (!exists) {
+        await prisma.gymSession.create({
+          data: {
+            id: gsId, athleteId: userId, assignedWorkoutId: awId,
+            dayOfWeek: dow, date: dateOnly(gymDate), durationMin: 50 + Math.floor(Math.random() * 15),
+            rpe: 5 + Math.floor(Math.random() * 3), energyState: w < 2 ? 'NORMAL' : 'ENERGIZED',
+            discomfort: 'NONE', completed: true,
+          },
+        })
+        const exercises = exercisesByDay[dow] || exercisesByDay[1]
+        for (let ei = 0; ei < exercises.length; ei++) {
+          for (let s = 1; s <= 3; s++) {
+            await prisma.setLog.create({
+              data: {
+                sessionId: gsId, exerciseName: exercises[ei].name,
+                setNumber: s, weightKg: exercises[ei].weight + w * 2.5,
+                repsCompleted: 12 - s, completed: true,
+                isPR: w === 3 && s === 1 && ei === 0,
+                setLogType: SetLogType.WORK,
+              },
+            })
+          }
+        }
+      }
+    }
+  }
+
+  // ── Weekly Check-ins (4 semanas) ──────────────────────────────────────────
+  // Partial index: (userId, weekNumber) WHERE planId IS NULL — can't upsert by id
+  await prisma.weeklyCheckIn.deleteMany({ where: { userId, planId: null } })
+  for (let wn = 1; wn <= 4; wn++) {
+    await prisma.weeklyCheckIn.create({
+      data: {
+        id: `seed-ci-laura-w${wn}`, userId, planId: null, weekNumber: wn,
+        recordedAt: daysAgo(28 - wn * 7 + 6),
+        weightKg: 58.5 - wn * 0.15, hrResting: 50 - Math.floor(wn / 2),
+        sleepHours: 7.5 + (wn % 2 === 0 ? 0.5 : 0), sleepScore: 82 + wn,
+        hardestSessionRpe: 6 + (wn % 2), dietAdherencePct: 85 + wn * 2,
+        painLevel: 1, painFlag: false,
+        energyLevel: 8, stressLevel: 3, motivationLevel: 9,
+        nutritionAdherencePct: 80 + wn * 3, adjustmentsTriggered: [],
       },
     })
-
-    const sessDefs = isRecovery
-      ? [
-          { d: 1, type: SessionType.FUERZA,    dur: 40, zone: null, detail: 'Fuerza ligera — técnica' },
-          { d: 3, type: SessionType.RODAJE_Z2,  dur: 30, zone: 'Z1', detail: 'Cardio suave 30 min' },
-          { d: 5, type: SessionType.FUERZA,    dur: 40, zone: null, detail: 'Fuerza complementaria' },
-        ]
-      : [
-          { d: 1, type: SessionType.FUERZA,    dur: 60, zone: null, detail: 'Tren inferior — sentadilla + hip thrust + extensión' },
-          { d: 2, type: SessionType.RODAJE_Z2,  dur: 35, zone: 'Z2', detail: 'Cardio LISS 35 min' },
-          { d: 3, type: SessionType.FUERZA,    dur: 60, zone: null, detail: 'Tren superior — press + jalón + remo' },
-          { d: 5, type: SessionType.FUERZA,    dur: 55, zone: null, detail: 'Full body metabólico + cardio HIIT 15 min' },
-        ]
-
-    for (const s of sessDefs) {
-      await prisma.plannedSession.upsert({
-        where: { id: `${planId}-w${wn}-d${s.d}` },
-        update: {},
-        create: {
-          id: `${planId}-w${wn}-d${s.d}`,
-          weekId: week.id, dayOfWeek: s.d, type: s.type,
-          durationMin: s.dur, zoneTarget: s.zone ?? undefined, detailText: s.detail,
-          date: addDays(wStart, s.d - 1),
-        },
-      })
-    }
   }
 
-  for (const ci of checkIns) {
-    const _existsCi = await prisma.weeklyCheckIn.findFirst({
-      where: { userId, planId: null, weekNumber: ci.wn },
-      select: { id: true },
-    })
-    if (!_existsCi) {
-      await prisma.weeklyCheckIn.create({
-        data: {
-          userId, planId: null, weekNumber: ci.wn,
-          weightKg: ci.wkg, hrResting: ci.hr, sleepHours: ci.sleep, sleepScore: ci.score,
-          hardestSessionRpe: ci.rpe, painFlag: ci.pain,
-          dietAdherencePct: ci.adh, energyLevel: ci.energy, notes: ci.notes, adjustmentsTriggered: [],
-        },
-      })
-    }
-  }
-}
-
-async function seedCyclingPlan(
-  prisma: PrismaClient,
-  userId: string,
-  planId: string,
-  name: string,
-  totalWeeks: number,
-  startDate: Date,
-  checkIns: Array<{ wn: number; wkg: number; hr: number; sleep: number; score: number; rpe: number; adh: number; pain: boolean; energy: number; notes: string }>,
-) {
-  const plan = await prisma.trainingPlan.upsert({
-    where: { id: planId },
-    update: {},
-    create: {
-      id: planId, userId, name, totalWeeks,
-      startDate, endDate: addDays(startDate, totalWeeks * 7),
-      status: PlanStatus.ACTIVE, generatedBy: PlanSource.COACH,
-      hrZones: { z1: { min: 88, max: 110 }, z2: { min: 111, max: 130 }, z3: { min: 131, max: 150 }, z4: { min: 151, max: 168 }, z5: { min: 169, max: 190 } },
-    },
-  })
-
-  const weekCount = Math.min(checkIns.length, Math.ceil((Date.now() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000)))
-
-  for (let wn = 1; wn <= weekCount; wn++) {
-    const phase = wn <= 4 ? Phase.BASE : wn <= 8 ? Phase.DESARROLLO : Phase.ESPECIFICO
-    const isRecovery = wn % 4 === 0
-    const wStart = addDays(startDate, (wn - 1) * 7)
-
-    const week = await prisma.planWeek.upsert({
-      where: { planId_weekNumber: { planId: plan.id, weekNumber: wn } },
+  // ── Daily Logs (últimos 14 días) ──────────────────────────────────────────
+  for (let d = 0; d < 14; d++) {
+    const date = dateOnly(daysAgo(d))
+    await prisma.dailyLog.upsert({
+      where: { userId_date: { userId, date } },
       update: {},
-      create: {
-        planId: plan.id, weekNumber: wn, phase,
-        volumeKm: isRecovery ? 80 : 100 + wn * 8,
-        focusDescription: isRecovery ? 'Semana recuperación — rodadas suaves' : wn <= 4 ? 'Base aeróbica — Z2 extenso' : 'Sweet spot y VO2max',
-        isRecoveryWeek: isRecovery,
-        startDate: wStart, endDate: addDays(wStart, 6),
-      },
+      create: { userId, date, weightKg: 58.2 - d * 0.01 + Math.random() * 0.3, hrResting: 49 + Math.floor(Math.random() * 3), sleepHours: 7 + Math.random() * 1.5, energyLevel: 3 + Math.floor(Math.random() * 3) },
     })
-
-    const sessDefs = isRecovery
-      ? [
-          { d: 2, type: SessionType.CICLA, dur: 60, zone: 'Z1-Z2', detail: 'Rodada suave recuperación — 60 min Z1-Z2' },
-          { d: 5, type: SessionType.CICLA, dur: 90, zone: 'Z2',    detail: 'Rodada fácil 90 min Z2' },
-        ]
-      : wn <= 4
-        ? [
-            { d: 1, type: SessionType.CICLA,    dur: 90,  zone: 'Z2',    detail: '90 min Z2 extenso — cadencia 85-90 rpm' },
-            { d: 3, type: SessionType.FARTLEK,   dur: 75,  zone: 'Z2-Z3', detail: '10 cal + 4×10 min sweet spot / 5 min Z2 + 10 vuelta' },
-            { d: 5, type: SessionType.RODAJE_Z2, dur: 45,  zone: 'Z2',    detail: 'Run Z2 45 min — entrenamiento cruzado' },
-            { d: 6, type: SessionType.CICLA,    dur: 180, zone: 'Z2',    detail: 'Gran rodada 3h Z2 — salida larga' },
-          ]
-        : [
-            { d: 1, type: SessionType.CICLA,    dur: 90,  zone: 'Z2',    detail: '90 min Z2 activación' },
-            { d: 2, type: SessionType.INTERVALOS, dur: 75, zone: 'Z4-Z5', detail: '15 cal + 5×4 min VO2max / 4 min Z2 + 15 vuelta' },
-            { d: 4, type: SessionType.TEMPO,     dur: 80,  zone: 'Z3-Z4', detail: '15 cal + 40 min sweet spot + 15 vuelta' },
-            { d: 6, type: SessionType.CICLA,    dur: 210, zone: 'Z2',    detail: 'Gran rodada 3.5h — últimos 30 min a ritmo competencia' },
-          ]
-
-    for (const s of sessDefs) {
-      await prisma.plannedSession.upsert({
-        where: { id: `${planId}-w${wn}-d${s.d}` },
-        update: {},
-        create: {
-          id: `${planId}-w${wn}-d${s.d}`,
-          weekId: week.id, dayOfWeek: s.d, type: s.type,
-          durationMin: s.dur, zoneTarget: s.zone, detailText: s.detail,
-          date: addDays(wStart, s.d - 1),
-        },
-      })
-    }
   }
 
-  for (const ci of checkIns) {
-    const _existsCi = await prisma.weeklyCheckIn.findFirst({
-      where: { userId, planId: null, weekNumber: ci.wn },
-      select: { id: true },
-    })
-    if (!_existsCi) {
-      await prisma.weeklyCheckIn.create({
-        data: {
-          userId, planId: null, weekNumber: ci.wn,
-          weightKg: ci.wkg, hrResting: ci.hr, sleepHours: ci.sleep, sleepScore: ci.score,
-          hardestSessionRpe: ci.rpe, painFlag: ci.pain,
-          dietAdherencePct: ci.adh, energyLevel: ci.energy, notes: ci.notes, adjustmentsTriggered: [],
-        },
-      })
-    }
-  }
-}
-
-async function seedTriathlonPlan(
-  prisma: PrismaClient,
-  userId: string,
-  planId: string,
-  name: string,
-  totalWeeks: number,
-  startDate: Date,
-  checkIns: Array<{ wn: number; wkg: number; hr: number; sleep: number; score: number; rpe: number; adh: number; pain: boolean; energy: number; notes: string }>,
-) {
-  const plan = await prisma.trainingPlan.upsert({
-    where: { id: planId },
-    update: {},
-    create: {
-      id: planId, userId, name, totalWeeks,
-      startDate, endDate: addDays(startDate, totalWeeks * 7),
-      status: PlanStatus.ACTIVE, generatedBy: PlanSource.COACH,
-      hrZones: { z1: { min: 88, max: 111 }, z2: { min: 112, max: 131 }, z3: { min: 132, max: 151 }, z4: { min: 152, max: 170 }, z5: { min: 171, max: 190 } },
-    },
-  })
-
-  const weekCount = Math.min(checkIns.length, Math.ceil((Date.now() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000)))
-
-  for (let wn = 1; wn <= weekCount; wn++) {
-    const phase = wn <= 4 ? Phase.BASE : wn <= 9 ? Phase.DESARROLLO : Phase.ESPECIFICO
-    const isRecovery = wn % 4 === 0
-    const wStart = addDays(startDate, (wn - 1) * 7)
-
-    const week = await prisma.planWeek.upsert({
-      where: { planId_weekNumber: { planId: plan.id, weekNumber: wn } },
+  // ── Water Logs (últimos 7 días) ───────────────────────────────────────────
+  for (let d = 0; d < 7; d++) {
+    const date = dateOnly(daysAgo(d))
+    await prisma.waterLog.upsert({
+      where: { userId_date: { userId, date } },
       update: {},
-      create: {
-        planId: plan.id, weekNumber: wn, phase,
-        focusDescription: isRecovery ? 'Semana recuperación — volumen reducido' : 'Multidisciplina — nado + bici + run',
-        isRecoveryWeek: isRecovery,
-        startDate: wStart, endDate: addDays(wStart, 6),
-      },
+      create: { userId, date, mlLogged: 1800 + Math.floor(Math.random() * 1200) },
     })
-
-    const sessDefs = isRecovery
-      ? [
-          { d: 1, type: SessionType.NATACION, dur: 40, zone: 'Z1-Z2', detail: 'Nado técnico — 2000m suave' },
-          { d: 3, type: SessionType.CICLA,    dur: 60, zone: 'Z2',    detail: 'Bici suave 60 min Z2' },
-          { d: 5, type: SessionType.RODAJE_Z2, dur: 30, zone: 'Z2',   detail: 'Run fácil 30 min' },
-        ]
-      : [
-          { d: 1, type: SessionType.NATACION, dur: 60, zone: 'Z2-Z3', detail: 'Nado 3000m — series 100m Z3 + 200m Z2' },
-          { d: 2, type: SessionType.CICLA,    dur: 90, zone: 'Z2',    detail: 'Bici 90 min Z2 + 15 min Z3 al final' },
-          { d: 4, type: SessionType.INTERVALOS, dur: 60, zone: 'Z4',  detail: 'Bici intervalos + brick run 20 min Z3' },
-          { d: 5, type: SessionType.NATACION, dur: 50, zone: 'Z3-Z4', detail: 'Nado 2500m — series 400m a ritmo competencia' },
-          { d: 6, type: SessionType.TIRADA_LARGA, dur: 75, zone: 'Z2', detail: 'Long run 75 min Z2' },
-        ]
-
-    for (const s of sessDefs) {
-      await prisma.plannedSession.upsert({
-        where: { id: `${planId}-w${wn}-d${s.d}` },
-        update: {},
-        create: {
-          id: `${planId}-w${wn}-d${s.d}`,
-          weekId: week.id, dayOfWeek: s.d, type: s.type,
-          durationMin: s.dur, zoneTarget: s.zone, detailText: s.detail,
-          date: addDays(wStart, s.d - 1),
-        },
-      })
-    }
   }
 
-  for (const ci of checkIns) {
-    const _existsCi = await prisma.weeklyCheckIn.findFirst({
-      where: { userId, planId: null, weekNumber: ci.wn },
-      select: { id: true },
-    })
-    if (!_existsCi) {
-      await prisma.weeklyCheckIn.create({
-        data: {
-          userId, planId: null, weekNumber: ci.wn,
-          weightKg: ci.wkg, hrResting: ci.hr, sleepHours: ci.sleep, sleepScore: ci.score,
-          hardestSessionRpe: ci.rpe, painFlag: ci.pain,
-          dietAdherencePct: ci.adh, energyLevel: ci.energy, notes: ci.notes, adjustmentsTriggered: [],
-        },
-      })
-    }
-  }
+  // ── Food Logs (últimos 5 días) ────────────────────────────────────────────
+  await seedFoodLogs(userId, 5)
 
-  // Librería de alimentos
-  await seedFoods()
-
-  console.log('✅ Seed completo')
+  console.log('   📊 Laura: 4 sem gym (Upper/Lower 4x) + nutrición + check-ins')
 }
 
-// ─── LIBRERÍA DE ALIMENTOS ──────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// NUTRITION TEMPLATE del coach — asignado a Miguel y Laura
+// ═══════════════════════════════════════════════════════════════════════════════
 
-async function seedFoods() {
-  const existing = await prisma.food.count()
-  if (existing > 0) {
-    console.log(`  ✓ Alimentos ya sembrados (${existing} registros) — saltando`)
+async function seedCoachNutritionTemplate(coachId: string, miguelId: string, lauraId: string) {
+  const foods = await prisma.food.findMany({ take: 9, where: { isActive: true }, select: { id: true, kcalPer100g: true, proteinPer100g: true, carbsPer100g: true, fatPer100g: true } })
+  if (foods.length < 9) {
+    console.log('   ⚠️  No hay suficientes alimentos para crear template de nutrición')
     return
   }
 
-  // Macros y micronutrientes por 100g, basados en tablas USDA / ICBF
-  const foods = [
-    // ── PROTEÍNAS ──
-    { name: 'Pechuga de pollo cocida',     category: 'PROTEIN', kcalPer100g: 165, proteinPer100g: 31.0, carbsPer100g: 0.0,  fatPer100g: 3.6,  fiberPer100g: 0,    calciumMg: 15,  ironMg: 1.0, potassiumMg: 256, vitaminCMg: 0,    magnesiumMg: 29,  servingG: 200, servingLabel: '1 pechuga mediana' },
-    { name: 'Muslo de pollo cocido',        category: 'PROTEIN', kcalPer100g: 209, proteinPer100g: 26.0, carbsPer100g: 0.0,  fatPer100g: 11.0, fiberPer100g: 0,    calciumMg: 12,  ironMg: 1.0, potassiumMg: 238, vitaminCMg: 0,    magnesiumMg: 23,  servingG: 150, servingLabel: '1 muslo mediano' },
-    { name: 'Carne de res magra (lomo)',    category: 'PROTEIN', kcalPer100g: 215, proteinPer100g: 26.0, carbsPer100g: 0.0,  fatPer100g: 12.0, fiberPer100g: 0,    calciumMg: 18,  ironMg: 2.6, potassiumMg: 318, vitaminCMg: 0,    magnesiumMg: 21,  servingG: 150, servingLabel: '1 porción mediana' },
-    { name: 'Atún en agua (escurrido)',     category: 'PROTEIN', kcalPer100g: 99,  proteinPer100g: 22.0, carbsPer100g: 0.0,  fatPer100g: 1.0,  fiberPer100g: 0,    calciumMg: 12,  ironMg: 1.4, potassiumMg: 214, vitaminCMg: 0,    magnesiumMg: 35,  servingG: 120, servingLabel: '1 lata estándar' },
-    { name: 'Salmón cocido',               category: 'PROTEIN', kcalPer100g: 208, proteinPer100g: 28.0, carbsPer100g: 0.0,  fatPer100g: 10.0, fiberPer100g: 0,    calciumMg: 12,  ironMg: 0.8, potassiumMg: 490, vitaminCMg: 3.5,  magnesiumMg: 29,  servingG: 150, servingLabel: '1 filete mediano' },
-    { name: 'Tilapia cocida',              category: 'PROTEIN', kcalPer100g: 128, proteinPer100g: 26.0, carbsPer100g: 0.0,  fatPer100g: 2.7,  fiberPer100g: 0,    calciumMg: 10,  ironMg: 0.6, potassiumMg: 380, vitaminCMg: 0,    magnesiumMg: 27,  servingG: 150, servingLabel: '1 filete mediano' },
-    { name: 'Sardinas en agua',            category: 'PROTEIN', kcalPer100g: 185, proteinPer100g: 25.0, carbsPer100g: 0.0,  fatPer100g: 10.0, fiberPer100g: 0,    calciumMg: 382, ironMg: 2.9, potassiumMg: 397, vitaminCMg: 0,    magnesiumMg: 39,  servingG: 100, servingLabel: '1 lata pequeña' },
-    { name: 'Huevo entero',                category: 'PROTEIN', kcalPer100g: 155, proteinPer100g: 13.0, carbsPer100g: 1.1,  fatPer100g: 11.0, fiberPer100g: 0,    calciumMg: 56,  ironMg: 1.8, potassiumMg: 138, vitaminCMg: 0,    magnesiumMg: 12,  servingG: 50,  servingLabel: '1 huevo grande' },
-    { name: 'Clara de huevo',              category: 'PROTEIN', kcalPer100g: 52,  proteinPer100g: 11.0, carbsPer100g: 0.7,  fatPer100g: 0.2,  fiberPer100g: 0,    calciumMg: 7,   ironMg: 0.1, potassiumMg: 163, vitaminCMg: 0,    magnesiumMg: 11,  servingG: 120, servingLabel: '4 claras' },
-    { name: 'Proteína whey (polvo)',        category: 'PROTEIN', kcalPer100g: 370, proteinPer100g: 80.0, carbsPer100g: 7.0,  fatPer100g: 5.0,  fiberPer100g: 0,    calciumMg: 130, ironMg: 1.0, potassiumMg: 500, vitaminCMg: 0,    magnesiumMg: 55,  servingG: 30,  servingLabel: '1 medida (30g)' },
+  // Template del coach
+  const tmplId = 'seed-nt-carlos'
+  const tmpl = await prisma.nutritionTemplate.upsert({
+    where: { id: tmplId },
+    update: {},
+    create: { id: tmplId, coachId, name: 'Plan Rendimiento LatAm', description: 'Plan nutricional adaptado para atletas en entrenamiento activo.', goal: 'RENDIMIENTO' },
+  })
 
-    // ── LÁCTEOS ──
-    { name: 'Yogur griego 0% grasa',       category: 'DAIRY', kcalPer100g: 59,  proteinPer100g: 10.0, carbsPer100g: 3.6,  fatPer100g: 0.4,  fiberPer100g: 0,    calciumMg: 110, ironMg: 0.1, potassiumMg: 141, vitaminCMg: 0,    magnesiumMg: 11,  servingG: 200, servingLabel: '1 taza' },
-    { name: 'Yogur griego entero',         category: 'DAIRY', kcalPer100g: 97,  proteinPer100g: 9.0,  carbsPer100g: 3.9,  fatPer100g: 5.0,  fiberPer100g: 0,    calciumMg: 100, ironMg: 0.1, potassiumMg: 141, vitaminCMg: 0,    magnesiumMg: 11,  servingG: 200, servingLabel: '1 taza' },
-    { name: 'Queso cottage 1% grasa',      category: 'DAIRY', kcalPer100g: 72,  proteinPer100g: 12.0, carbsPer100g: 3.0,  fatPer100g: 1.0,  fiberPer100g: 0,    calciumMg: 83,  ironMg: 0.1, potassiumMg: 84,  vitaminCMg: 0,    magnesiumMg: 8,   servingG: 150, servingLabel: '¾ taza' },
-    { name: 'Leche descremada',            category: 'DAIRY', kcalPer100g: 35,  proteinPer100g: 3.4,  carbsPer100g: 5.0,  fatPer100g: 0.1,  fiberPer100g: 0,    calciumMg: 122, ironMg: 0.1, potassiumMg: 156, vitaminCMg: 1.0,  magnesiumMg: 11,  servingG: 250, servingLabel: '1 vaso' },
-    { name: 'Leche entera',                category: 'DAIRY', kcalPer100g: 61,  proteinPer100g: 3.2,  carbsPer100g: 4.8,  fatPer100g: 3.3,  fiberPer100g: 0,    calciumMg: 113, ironMg: 0.1, potassiumMg: 150, vitaminCMg: 0.9,  magnesiumMg: 10,  servingG: 250, servingLabel: '1 vaso' },
+  // 3 días: HARD, EASY, REST — 3 comidas cada uno (BREAKFAST, LUNCH, DINNER)
+  const dayTypes: NutritionDayType[] = [NutritionDayType.HARD, NutritionDayType.EASY, NutritionDayType.REST]
+  const mealTypes: MealType[] = [MealType.BREAKFAST, MealType.LUNCH, MealType.DINNER]
 
-    // ── LEGUMBRES ──
-    { name: 'Lentejas cocidas',            category: 'LEGUME', kcalPer100g: 116, proteinPer100g: 9.0,  carbsPer100g: 20.0, fatPer100g: 0.4,  fiberPer100g: 7.9,  calciumMg: 19,  ironMg: 3.3, potassiumMg: 369, vitaminCMg: 1.5,  magnesiumMg: 36,  servingG: 200, servingLabel: '1 taza cocida' },
-    { name: 'Frijoles negros cocidos',     category: 'LEGUME', kcalPer100g: 132, proteinPer100g: 8.9,  carbsPer100g: 24.0, fatPer100g: 0.5,  fiberPer100g: 8.7,  calciumMg: 27,  ironMg: 2.1, potassiumMg: 355, vitaminCMg: 0,    magnesiumMg: 70,  servingG: 180, servingLabel: '1 taza cocida' },
-    { name: 'Frijoles rojos cocidos',      category: 'LEGUME', kcalPer100g: 127, proteinPer100g: 8.7,  carbsPer100g: 23.0, fatPer100g: 0.5,  fiberPer100g: 7.4,  calciumMg: 28,  ironMg: 2.2, potassiumMg: 405, vitaminCMg: 1.4,  magnesiumMg: 45,  servingG: 180, servingLabel: '1 taza cocida' },
-    { name: 'Garbanzos cocidos',           category: 'LEGUME', kcalPer100g: 164, proteinPer100g: 8.9,  carbsPer100g: 27.0, fatPer100g: 2.6,  fiberPer100g: 7.6,  calciumMg: 49,  ironMg: 2.9, potassiumMg: 291, vitaminCMg: 1.3,  magnesiumMg: 48,  servingG: 180, servingLabel: '1 taza cocida' },
-    { name: 'Edamame cocido',              category: 'LEGUME', kcalPer100g: 122, proteinPer100g: 11.0, carbsPer100g: 10.0, fatPer100g: 5.0,  fiberPer100g: 5.2,  calciumMg: 63,  ironMg: 2.3, potassiumMg: 436, vitaminCMg: 6.1,  magnesiumMg: 64,  servingG: 150, servingLabel: '1 taza' },
+  for (let di = 0; di < dayTypes.length; di++) {
+    const dayId = `seed-ntd-${dayTypes[di].toLowerCase()}`
+    const day = await prisma.nutritionTemplateDay.upsert({
+      where: { templateId_dayType: { templateId: tmpl.id, dayType: dayTypes[di] } },
+      update: {},
+      create: { id: dayId, templateId: tmpl.id, dayType: dayTypes[di] },
+    })
 
-    // ── CARBOHIDRATOS ──
-    { name: 'Arroz blanco cocido',         category: 'CARB', kcalPer100g: 130, proteinPer100g: 2.7,  carbsPer100g: 28.0, fatPer100g: 0.3,  fiberPer100g: 0.4,  calciumMg: 2,   ironMg: 0.2, potassiumMg: 35,  vitaminCMg: 0,    magnesiumMg: 12,  servingG: 180, servingLabel: '1 taza cocida' },
-    { name: 'Arroz integral cocido',       category: 'CARB', kcalPer100g: 111, proteinPer100g: 2.6,  carbsPer100g: 23.0, fatPer100g: 0.9,  fiberPer100g: 1.8,  calciumMg: 10,  ironMg: 0.5, potassiumMg: 79,  vitaminCMg: 0,    magnesiumMg: 44,  servingG: 180, servingLabel: '1 taza cocida' },
-    { name: 'Avena en hojuelas (cruda)',   category: 'CARB', kcalPer100g: 389, proteinPer100g: 17.0, carbsPer100g: 66.0, fatPer100g: 7.0,  fiberPer100g: 10.6, calciumMg: 54,  ironMg: 4.7, potassiumMg: 429, vitaminCMg: 0,    magnesiumMg: 177, servingG: 80,  servingLabel: '½ taza cruda' },
-    { name: 'Pasta de trigo cocida',       category: 'CARB', kcalPer100g: 158, proteinPer100g: 5.8,  carbsPer100g: 31.0, fatPer100g: 0.9,  fiberPer100g: 1.8,  calciumMg: 7,   ironMg: 1.3, potassiumMg: 44,  vitaminCMg: 0,    magnesiumMg: 18,  servingG: 200, servingLabel: '1 taza cocida' },
-    { name: 'Papa blanca cocida',          category: 'CARB', kcalPer100g: 87,  proteinPer100g: 1.9,  carbsPer100g: 20.0, fatPer100g: 0.1,  fiberPer100g: 1.8,  calciumMg: 12,  ironMg: 0.3, potassiumMg: 379, vitaminCMg: 13.0, magnesiumMg: 22,  servingG: 200, servingLabel: '1 papa mediana' },
-    { name: 'Batata / camote cocida',      category: 'CARB', kcalPer100g: 90,  proteinPer100g: 2.0,  carbsPer100g: 21.0, fatPer100g: 0.1,  fiberPer100g: 3.0,  calciumMg: 30,  ironMg: 0.6, potassiumMg: 337, vitaminCMg: 19.0, magnesiumMg: 25,  servingG: 200, servingLabel: '1 unidad mediana' },
-    { name: 'Quinoa cocida',               category: 'CARB', kcalPer100g: 120, proteinPer100g: 4.4,  carbsPer100g: 21.0, fatPer100g: 1.9,  fiberPer100g: 2.8,  calciumMg: 17,  ironMg: 1.5, potassiumMg: 172, vitaminCMg: 0,    magnesiumMg: 64,  servingG: 180, servingLabel: '1 taza cocida' },
-    { name: 'Arepa de maíz (sin relleno)', category: 'CARB', kcalPer100g: 175, proteinPer100g: 4.0,  carbsPer100g: 34.0, fatPer100g: 2.0,  fiberPer100g: 2.5,  calciumMg: 3,   ironMg: 1.8, potassiumMg: 142, vitaminCMg: 0,    magnesiumMg: 25,  servingG: 100, servingLabel: '1 arepa mediana' },
-    { name: 'Yuca / mandioca cocida',      category: 'CARB', kcalPer100g: 112, proteinPer100g: 0.7,  carbsPer100g: 27.0, fatPer100g: 0.3,  fiberPer100g: 1.0,  calciumMg: 16,  ironMg: 0.3, potassiumMg: 271, vitaminCMg: 20.0, magnesiumMg: 21,  servingG: 200, servingLabel: '1 porción mediana' },
-    { name: 'Pan integral',                category: 'CARB', kcalPer100g: 247, proteinPer100g: 13.0, carbsPer100g: 41.0, fatPer100g: 3.4,  fiberPer100g: 6.9,  calciumMg: 73,  ironMg: 2.7, potassiumMg: 248, vitaminCMg: 0,    magnesiumMg: 76,  servingG: 60,  servingLabel: '2 rebanadas' },
-    { name: 'Maíz en grano cocido',        category: 'CARB', kcalPer100g: 108, proteinPer100g: 3.3,  carbsPer100g: 25.0, fatPer100g: 1.2,  fiberPer100g: 2.7,  calciumMg: 3,   ironMg: 0.5, potassiumMg: 270, vitaminCMg: 6.8,  magnesiumMg: 37,  servingG: 150, servingLabel: '1 mazorca mediana' },
-    { name: 'Plátano verde cocido',        category: 'CARB', kcalPer100g: 116, proteinPer100g: 1.2,  carbsPer100g: 28.0, fatPer100g: 0.2,  fiberPer100g: 1.5,  calciumMg: 3,   ironMg: 0.3, potassiumMg: 260, vitaminCMg: 9.0,  magnesiumMg: 25,  servingG: 150, servingLabel: '½ plátano mediano' },
+    for (let mi = 0; mi < mealTypes.length; mi++) {
+      const mealId = `seed-ntm-${dayTypes[di].toLowerCase()}-${mealTypes[mi].toLowerCase()}`
+      const meal = await prisma.nutritionTemplateMeal.upsert({
+        where: { dayId_mealType: { dayId: day.id, mealType: mealTypes[mi] } },
+        update: {},
+        create: { id: mealId, dayId: day.id, mealType: mealTypes[mi], order: mi },
+      })
 
-    // ── FRUTAS ──
-    { name: 'Banano / plátano maduro',     category: 'FRUIT', kcalPer100g: 89,  proteinPer100g: 1.1,  carbsPer100g: 23.0, fatPer100g: 0.3,  fiberPer100g: 2.6,  calciumMg: 5,   ironMg: 0.3, potassiumMg: 358, vitaminCMg: 8.7,  magnesiumMg: 27,  servingG: 120, servingLabel: '1 banano mediano' },
-    { name: 'Mango',                       category: 'FRUIT', kcalPer100g: 60,  proteinPer100g: 0.8,  carbsPer100g: 15.0, fatPer100g: 0.4,  fiberPer100g: 1.6,  calciumMg: 11,  ironMg: 0.2, potassiumMg: 168, vitaminCMg: 36.0, magnesiumMg: 10,  servingG: 200, servingLabel: '1 mango mediano' },
-    { name: 'Naranja',                     category: 'FRUIT', kcalPer100g: 47,  proteinPer100g: 0.9,  carbsPer100g: 12.0, fatPer100g: 0.1,  fiberPer100g: 2.4,  calciumMg: 40,  ironMg: 0.1, potassiumMg: 181, vitaminCMg: 53.0, magnesiumMg: 10,  servingG: 150, servingLabel: '1 naranja mediana' },
-    { name: 'Manzana',                     category: 'FRUIT', kcalPer100g: 52,  proteinPer100g: 0.3,  carbsPer100g: 14.0, fatPer100g: 0.2,  fiberPer100g: 2.4,  calciumMg: 6,   ironMg: 0.1, potassiumMg: 107, vitaminCMg: 4.6,  magnesiumMg: 5,   servingG: 180, servingLabel: '1 manzana mediana' },
-    { name: 'Piña',                        category: 'FRUIT', kcalPer100g: 50,  proteinPer100g: 0.5,  carbsPer100g: 13.0, fatPer100g: 0.1,  fiberPer100g: 1.4,  calciumMg: 13,  ironMg: 0.3, potassiumMg: 109, vitaminCMg: 47.8, magnesiumMg: 12,  servingG: 200, servingLabel: '2 tazas en trozos' },
-    { name: 'Papaya',                      category: 'FRUIT', kcalPer100g: 43,  proteinPer100g: 0.5,  carbsPer100g: 11.0, fatPer100g: 0.3,  fiberPer100g: 1.7,  calciumMg: 20,  ironMg: 0.3, potassiumMg: 182, vitaminCMg: 60.0, magnesiumMg: 10,  servingG: 200, servingLabel: '2 tazas en trozos' },
-    { name: 'Fresas',                      category: 'FRUIT', kcalPer100g: 32,  proteinPer100g: 0.7,  carbsPer100g: 7.7,  fatPer100g: 0.3,  fiberPer100g: 2.0,  calciumMg: 16,  ironMg: 0.4, potassiumMg: 153, vitaminCMg: 58.8, magnesiumMg: 13,  servingG: 150, servingLabel: '1 taza' },
-    { name: 'Uvas',                        category: 'FRUIT', kcalPer100g: 69,  proteinPer100g: 0.7,  carbsPer100g: 18.0, fatPer100g: 0.2,  fiberPer100g: 0.9,  calciumMg: 10,  ironMg: 0.4, potassiumMg: 191, vitaminCMg: 3.2,  magnesiumMg: 7,   servingG: 150, servingLabel: '1 racimo pequeño' },
-    { name: 'Maracuyá / granadilla',       category: 'FRUIT', kcalPer100g: 97,  proteinPer100g: 2.2,  carbsPer100g: 23.0, fatPer100g: 0.7,  fiberPer100g: 10.4, calciumMg: 12,  ironMg: 1.6, potassiumMg: 348, vitaminCMg: 30.0, magnesiumMg: 29,  servingG: 80,  servingLabel: '2 maracuyás' },
+      // 1 alimento por comida (3 alimentos distintos por día = 9 total)
+      const food = foods[di * 3 + mi]
+      const grams = mealTypes[mi] === MealType.BREAKFAST ? 150 : 250
+      const factor = grams / 100
+      const itemId = `seed-ntfi-${dayTypes[di].toLowerCase()}-${mealTypes[mi].toLowerCase()}`
+      const existing = await prisma.nutritionTemplateFoodItem.findFirst({ where: { id: itemId } })
+      if (!existing) {
+        await prisma.nutritionTemplateFoodItem.create({
+          data: {
+            id: itemId, mealId: meal.id, foodId: food.id, grams, order: 0,
+            kcal: Math.round(food.kcalPer100g * factor),
+            proteinG: Math.round(food.proteinPer100g * factor * 10) / 10,
+            carbsG: Math.round(food.carbsPer100g * factor * 10) / 10,
+            fatG: Math.round(food.fatPer100g * factor * 10) / 10,
+          },
+        })
+      }
+    }
+  }
 
-    // ── GRASAS SALUDABLES ──
-    { name: 'Aguacate',                    category: 'FAT', kcalPer100g: 160, proteinPer100g: 2.0,  carbsPer100g: 9.0,  fatPer100g: 15.0, fiberPer100g: 6.7,  calciumMg: 12,  ironMg: 0.6, potassiumMg: 485, vitaminCMg: 10.0, magnesiumMg: 29,  servingG: 100, servingLabel: '½ aguacate mediano' },
-    { name: 'Almendras',                   category: 'FAT', kcalPer100g: 579, proteinPer100g: 21.0, carbsPer100g: 22.0, fatPer100g: 50.0, fiberPer100g: 12.5, calciumMg: 264, ironMg: 3.7, potassiumMg: 733, vitaminCMg: 0,    magnesiumMg: 270, servingG: 30,  servingLabel: '1 puñado (30g)' },
-    { name: 'Maní tostado sin sal',        category: 'FAT', kcalPer100g: 567, proteinPer100g: 26.0, carbsPer100g: 16.0, fatPer100g: 49.0, fiberPer100g: 8.5,  calciumMg: 92,  ironMg: 2.3, potassiumMg: 705, vitaminCMg: 0,    magnesiumMg: 168, servingG: 30,  servingLabel: '1 puñado (30g)' },
-    { name: 'Nueces',                      category: 'FAT', kcalPer100g: 654, proteinPer100g: 15.0, carbsPer100g: 14.0, fatPer100g: 65.0, fiberPer100g: 6.7,  calciumMg: 98,  ironMg: 2.9, potassiumMg: 441, vitaminCMg: 1.3,  magnesiumMg: 158, servingG: 30,  servingLabel: '1 puñado (30g)' },
-    { name: 'Semillas de chía',            category: 'FAT', kcalPer100g: 486, proteinPer100g: 17.0, carbsPer100g: 42.0, fatPer100g: 31.0, fiberPer100g: 34.4, calciumMg: 631, ironMg: 7.7, potassiumMg: 407, vitaminCMg: 1.6,  magnesiumMg: 335, servingG: 25,  servingLabel: '2 cucharadas' },
-    { name: 'Semillas de linaza',          category: 'FAT', kcalPer100g: 534, proteinPer100g: 18.0, carbsPer100g: 29.0, fatPer100g: 42.0, fiberPer100g: 27.3, calciumMg: 255, ironMg: 5.7, potassiumMg: 813, vitaminCMg: 0.6,  magnesiumMg: 392, servingG: 20,  servingLabel: '2 cucharadas' },
-    { name: 'Mantequilla de maní natural', category: 'FAT', kcalPer100g: 588, proteinPer100g: 25.0, carbsPer100g: 20.0, fatPer100g: 50.0, fiberPer100g: 6.0,  calciumMg: 49,  ironMg: 1.9, potassiumMg: 649, vitaminCMg: 0,    magnesiumMg: 154, servingG: 30,  servingLabel: '2 cucharadas' },
-    { name: 'Aceite de oliva extra virgen',category: 'FAT', kcalPer100g: 884, proteinPer100g: 0.0,  carbsPer100g: 0.0,  fatPer100g: 100.0, fiberPer100g: 0,   calciumMg: 1,   ironMg: 0.6, potassiumMg: 1,   vitaminCMg: 0,    magnesiumMg: 0,   servingG: 15,  servingLabel: '1 cucharada' },
-    { name: 'Aceite de coco',              category: 'FAT', kcalPer100g: 862, proteinPer100g: 0.0,  carbsPer100g: 0.0,  fatPer100g: 100.0, fiberPer100g: 0,   calciumMg: 0,   ironMg: 0.1, potassiumMg: 0,   vitaminCMg: 0,    magnesiumMg: 0,   servingG: 15,  servingLabel: '1 cucharada' },
+  // Asignar a Miguel y Laura
+  await prisma.assignedNutritionPlan.upsert({
+    where: { athleteId: miguelId },
+    update: {},
+    create: { templateId: tmpl.id, athleteId: miguelId, coachId },
+  })
+  await prisma.assignedNutritionPlan.upsert({
+    where: { athleteId: lauraId },
+    update: {},
+    create: { templateId: tmpl.id, athleteId: lauraId, coachId },
+  })
 
-    // ── VEGETALES ──
-    { name: 'Brócoli',                     category: 'VEGETABLE', kcalPer100g: 34,  proteinPer100g: 2.8,  carbsPer100g: 7.0,  fatPer100g: 0.4,  fiberPer100g: 2.6, calciumMg: 47,  ironMg: 0.7, potassiumMg: 316, vitaminCMg: 89.2,  magnesiumMg: 21, servingG: 150, servingLabel: '1 taza en floretes' },
-    { name: 'Espinaca',                    category: 'VEGETABLE', kcalPer100g: 23,  proteinPer100g: 2.9,  carbsPer100g: 3.6,  fatPer100g: 0.4,  fiberPer100g: 2.2, calciumMg: 99,  ironMg: 2.7, potassiumMg: 558, vitaminCMg: 28.1,  magnesiumMg: 79, servingG: 80,  servingLabel: '2 tazas crudas' },
-    { name: 'Kale / col rizada',           category: 'VEGETABLE', kcalPer100g: 49,  proteinPer100g: 4.3,  carbsPer100g: 9.0,  fatPer100g: 0.9,  fiberPer100g: 3.6, calciumMg: 150, ironMg: 1.5, potassiumMg: 491, vitaminCMg: 93.4,  magnesiumMg: 47, servingG: 80,  servingLabel: '2 tazas crudas' },
-    { name: 'Tomate',                      category: 'VEGETABLE', kcalPer100g: 18,  proteinPer100g: 0.9,  carbsPer100g: 3.9,  fatPer100g: 0.2,  fiberPer100g: 1.2, calciumMg: 10,  ironMg: 0.3, potassiumMg: 237, vitaminCMg: 13.7,  magnesiumMg: 11, servingG: 150, servingLabel: '1 tomate mediano' },
-    { name: 'Zanahoria',                   category: 'VEGETABLE', kcalPer100g: 41,  proteinPer100g: 0.9,  carbsPer100g: 10.0, fatPer100g: 0.2,  fiberPer100g: 2.8, calciumMg: 33,  ironMg: 0.3, potassiumMg: 320, vitaminCMg: 5.9,   magnesiumMg: 12, servingG: 100, servingLabel: '1 zanahoria mediana' },
-    { name: 'Pimentón rojo',               category: 'VEGETABLE', kcalPer100g: 31,  proteinPer100g: 1.0,  carbsPer100g: 6.0,  fatPer100g: 0.3,  fiberPer100g: 2.1, calciumMg: 7,   ironMg: 0.4, potassiumMg: 211, vitaminCMg: 127.7, magnesiumMg: 10, servingG: 120, servingLabel: '1 pimentón mediano' },
-    { name: 'Calabacín / zucchini',        category: 'VEGETABLE', kcalPer100g: 17,  proteinPer100g: 1.2,  carbsPer100g: 3.1,  fatPer100g: 0.3,  fiberPer100g: 1.0, calciumMg: 16,  ironMg: 0.4, potassiumMg: 261, vitaminCMg: 17.9,  magnesiumMg: 18, servingG: 150, servingLabel: '1 zucchini mediano' },
-    { name: 'Pepino',                      category: 'VEGETABLE', kcalPer100g: 15,  proteinPer100g: 0.7,  carbsPer100g: 3.6,  fatPer100g: 0.1,  fiberPer100g: 0.5, calciumMg: 16,  ironMg: 0.3, potassiumMg: 147, vitaminCMg: 2.8,   magnesiumMg: 13, servingG: 200, servingLabel: '1 pepino mediano' },
-    { name: 'Champiñones',                 category: 'VEGETABLE', kcalPer100g: 22,  proteinPer100g: 3.1,  carbsPer100g: 3.3,  fatPer100g: 0.3,  fiberPer100g: 1.0, calciumMg: 3,   ironMg: 0.5, potassiumMg: 318, vitaminCMg: 2.1,   magnesiumMg: 9,  servingG: 100, servingLabel: '1 taza' },
-    { name: 'Coliflor',                    category: 'VEGETABLE', kcalPer100g: 25,  proteinPer100g: 1.9,  carbsPer100g: 5.0,  fatPer100g: 0.3,  fiberPer100g: 2.0, calciumMg: 22,  ironMg: 0.4, potassiumMg: 299, vitaminCMg: 48.2,  magnesiumMg: 15, servingG: 150, servingLabel: '1 taza en floretes' },
-    { name: 'Lechuga romana',              category: 'VEGETABLE', kcalPer100g: 17,  proteinPer100g: 1.2,  carbsPer100g: 3.3,  fatPer100g: 0.3,  fiberPer100g: 2.1, calciumMg: 33,  ironMg: 0.9, potassiumMg: 247, vitaminCMg: 24.0,  magnesiumMg: 14, servingG: 100, servingLabel: '2 tazas crudas' },
-    { name: 'Repollo verde',               category: 'VEGETABLE', kcalPer100g: 25,  proteinPer100g: 1.3,  carbsPer100g: 5.8,  fatPer100g: 0.1,  fiberPer100g: 2.5, calciumMg: 40,  ironMg: 0.5, potassiumMg: 170, vitaminCMg: 36.6,  magnesiumMg: 12, servingG: 100, servingLabel: '1 taza rallada' },
-    { name: 'Remolacha cocida',            category: 'VEGETABLE', kcalPer100g: 44,  proteinPer100g: 1.7,  carbsPer100g: 10.0, fatPer100g: 0.2,  fiberPer100g: 2.0, calciumMg: 16,  ironMg: 0.8, potassiumMg: 305, vitaminCMg: 3.6,   magnesiumMg: 23, servingG: 150, servingLabel: '1 remolacha mediana' },
-    { name: 'Cebolla',                     category: 'VEGETABLE', kcalPer100g: 40,  proteinPer100g: 1.1,  carbsPer100g: 9.3,  fatPer100g: 0.1,  fiberPer100g: 1.7, calciumMg: 23,  ironMg: 0.2, potassiumMg: 146, vitaminCMg: 7.4,   magnesiumMg: 10, servingG: 80,  servingLabel: '½ cebolla mediana' },
+  console.log('   📊 Nutrición: template "Plan Rendimiento LatAm" asignado a Miguel + Laura')
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// HELPERS COMPARTIDOS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function seedFoodLogs(userId: string, days: number) {
+  const foods = await prisma.food.findMany({ take: 6, where: { isActive: true }, select: { id: true, kcalPer100g: true, proteinPer100g: true, carbsPer100g: true, fatPer100g: true } })
+  if (foods.length < 3) return
+
+  const meals: MealType[] = [MealType.BREAKFAST, MealType.LUNCH, MealType.DINNER]
+  for (let d = 0; d < days; d++) {
+    const date = dateOnly(daysAgo(d))
+    for (let m = 0; m < meals.length; m++) {
+      const food = foods[(m + d) % foods.length]
+      const grams = 150 + Math.floor(Math.random() * 100)
+      const factor = grams / 100
+      await prisma.foodLog.upsert({
+        where: { userId_foodId_date_mealType: { userId, foodId: food.id, date, mealType: meals[m] } },
+        update: {},
+        create: {
+          userId, foodId: food.id, date, mealType: meals[m], grams,
+          kcalLogged: Math.round(food.kcalPer100g * factor),
+          proteinLogged: Math.round(food.proteinPer100g * factor * 10) / 10,
+          carbsLogged: Math.round(food.carbsPer100g * factor * 10) / 10,
+          fatLogged: Math.round(food.fatPer100g * factor * 10) / 10,
+        },
+      })
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EJERCICIOS GLOBALES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function seedExercises() {
+  const globalExercises = [
+    { id: 'global-exercise-sentadilla-frontal',         name: 'Sentadilla frontal',              bodyPart: 'upper legs', target: 'quads',      equipment: 'barbell',    mechanic: 'compound'  },
+    { id: 'global-exercise-sentadilla-sumo',            name: 'Sentadilla sumo',                 bodyPart: 'upper legs', target: 'quads',      equipment: 'barbell',    mechanic: 'compound'  },
+    { id: 'global-exercise-prensa',                     name: 'Prensa',                          bodyPart: 'upper legs', target: 'quads',      equipment: 'machine',    mechanic: 'compound'  },
+    { id: 'global-exercise-extension-rodillas',         name: 'Extensión de rodillas',           bodyPart: 'upper legs', target: 'quads',      equipment: 'machine',    mechanic: 'isolation' },
+    { id: 'global-exercise-avanzadas',                  name: 'Avanzadas (Lunges)',               bodyPart: 'upper legs', target: 'quads',      equipment: 'barbell',    mechanic: 'compound'  },
+    { id: 'global-exercise-sentadilla-hack',            name: 'Sentadilla hack',                 bodyPart: 'upper legs', target: 'quads',      equipment: 'machine',    mechanic: 'compound'  },
+    { id: 'global-exercise-flexion-rodillas-acostado',  name: 'Flexión de rodillas acostado',    bodyPart: 'upper legs', target: 'hamstrings', equipment: 'machine',    mechanic: 'isolation' },
+    { id: 'global-exercise-flexion-rodillas-sentado',   name: 'Flexión de rodillas sentado',     bodyPart: 'upper legs', target: 'hamstrings', equipment: 'machine',    mechanic: 'isolation' },
+    { id: 'global-exercise-peso-muerto',                name: 'Peso muerto',                     bodyPart: 'upper legs', target: 'hamstrings', equipment: 'barbell',    mechanic: 'compound'  },
+    { id: 'global-exercise-hip-thrust',                 name: 'Hip Thrust',                      bodyPart: 'upper legs', target: 'glutes',     equipment: 'barbell',    mechanic: 'compound'  },
+    { id: 'global-exercise-patada-gluteos-maquina',     name: 'Patada de glúteos en máquina',    bodyPart: 'upper legs', target: 'glutes',     equipment: 'machine',    mechanic: 'isolation' },
+    { id: 'global-exercise-abduccion-maquina',          name: 'Abducción en máquina',            bodyPart: 'upper legs', target: 'glutes',     equipment: 'machine',    mechanic: 'isolation' },
+    { id: 'global-exercise-aduccion-maquina',           name: 'Aducción en máquina',             bodyPart: 'upper legs', target: 'glutes',     equipment: 'machine',    mechanic: 'isolation' },
+    { id: 'global-exercise-press-plano-barra',          name: 'Press plano con barra',           bodyPart: 'chest',      target: 'pectorals',  equipment: 'barbell',    mechanic: 'compound'  },
+    { id: 'global-exercise-press-inclinado-barra',      name: 'Press inclinado con barra',       bodyPart: 'chest',      target: 'pectorals',  equipment: 'barbell',    mechanic: 'compound'  },
+    { id: 'global-exercise-press-declinado-mancuernas', name: 'Press declinado con mancuernas',  bodyPart: 'chest',      target: 'pectorals',  equipment: 'dumbbell',   mechanic: 'compound'  },
+    { id: 'global-exercise-cruces-polea-alta',          name: 'Cruces en polea alta',            bodyPart: 'chest',      target: 'pectorals',  equipment: 'cable',      mechanic: 'isolation' },
+    { id: 'global-exercise-remo-barra',                 name: 'Remo con barra',                  bodyPart: 'back',       target: 'upper back', equipment: 'barbell',    mechanic: 'compound'  },
+    { id: 'global-exercise-remo-mancuernas',            name: 'Remo con mancuernas',             bodyPart: 'back',       target: 'upper back', equipment: 'dumbbell',   mechanic: 'compound'  },
+    { id: 'global-exercise-jalon-polea-alta',           name: 'Jalón polea alta',                bodyPart: 'back',       target: 'lats',       equipment: 'cable',      mechanic: 'compound'  },
+    { id: 'global-exercise-dominadas',                  name: 'Dominadas',                       bodyPart: 'back',       target: 'lats',       equipment: 'body weight', mechanic: 'compound' },
+    { id: 'global-exercise-press-militar-barra',        name: 'Press militar con barra',         bodyPart: 'shoulders',  target: 'delts',      equipment: 'barbell',    mechanic: 'compound'  },
+    { id: 'global-exercise-press-arnold',               name: 'Press Arnold',                    bodyPart: 'shoulders',  target: 'delts',      equipment: 'dumbbell',   mechanic: 'compound'  },
+    { id: 'global-exercise-elevacion-lateral',          name: 'Elevación lateral',               bodyPart: 'shoulders',  target: 'delts',      equipment: 'dumbbell',   mechanic: 'isolation' },
+    { id: 'global-exercise-elevacion-frontal',          name: 'Elevación frontal',               bodyPart: 'shoulders',  target: 'delts',      equipment: 'dumbbell',   mechanic: 'isolation' },
+    { id: 'global-exercise-pajaros',                    name: 'Pájaros (Reverse Fly)',            bodyPart: 'shoulders',  target: 'delts',      equipment: 'dumbbell',   mechanic: 'isolation' },
+    { id: 'global-exercise-flexion-barra-z',            name: 'Flexión de codo con barra Z',     bodyPart: 'upper arms', target: 'biceps',     equipment: 'barbell',    mechanic: 'isolation' },
+    { id: 'global-exercise-martillo-mancuernas',        name: 'Martillo con mancuernas',         bodyPart: 'upper arms', target: 'biceps',     equipment: 'dumbbell',   mechanic: 'isolation' },
+    { id: 'global-exercise-concentrado-mancuernas',     name: 'Concentrado con mancuernas',      bodyPart: 'upper arms', target: 'biceps',     equipment: 'dumbbell',   mechanic: 'isolation' },
+    { id: 'global-exercise-predicador',                 name: 'Predicador',                      bodyPart: 'upper arms', target: 'biceps',     equipment: 'barbell',    mechanic: 'isolation' },
+    { id: 'global-exercise-press-frances',              name: 'Press francés',                   bodyPart: 'upper arms', target: 'triceps',    equipment: 'barbell',    mechanic: 'isolation' },
+    { id: 'global-exercise-push-down',                  name: 'Push down en polea',              bodyPart: 'upper arms', target: 'triceps',    equipment: 'cable',      mechanic: 'isolation' },
+    { id: 'global-exercise-extension-codo',             name: 'Extensión de codo',               bodyPart: 'upper arms', target: 'triceps',    equipment: 'cable',      mechanic: 'isolation' },
+    { id: 'global-exercise-patada-triceps',             name: 'Patada de tríceps',               bodyPart: 'upper arms', target: 'triceps',    equipment: 'dumbbell',   mechanic: 'isolation' },
+    { id: 'global-exercise-extension-triceps-polea',    name: 'Extensión de tríceps en polea',   bodyPart: 'upper arms', target: 'triceps',    equipment: 'cable',      mechanic: 'isolation' },
+    { id: 'global-exercise-elevacion-talones-maquina',  name: 'Elevación de talones en máquina', bodyPart: 'lower legs', target: 'calves',     equipment: 'machine',    mechanic: 'isolation' },
+    { id: 'global-exercise-extension-plantar-prensa',   name: 'Extensión plantar en prensa',     bodyPart: 'lower legs', target: 'calves',     equipment: 'machine',    mechanic: 'isolation' },
+    { id: 'global-exercise-elevacion-talones-sentado',  name: 'Elevación de talones sentado',    bodyPart: 'lower legs', target: 'calves',     equipment: 'machine',    mechanic: 'isolation' },
+    { id: 'global-exercise-elevacion-piernas-colgado',  name: 'Elevación de piernas colgado',    bodyPart: 'waist',      target: 'abs',        equipment: 'body weight', mechanic: 'isolation' },
+    { id: 'global-exercise-abs-roller',                 name: 'Abs roller',                      bodyPart: 'waist',      target: 'abs',        equipment: 'other',      mechanic: 'isolation' },
   ]
 
-  await prisma.food.createMany({ data: foods })
-  console.log(`  ✓ ${foods.length} alimentos sembrados`)
+  for (const ex of globalExercises) {
+    await prisma.exercise.upsert({
+      where: { id: ex.id },
+      update: { name: ex.name, bodyPart: ex.bodyPart, target: ex.target, equipment: ex.equipment, mechanic: ex.mechanic },
+      create: { id: ex.id, coachId: null, name: ex.name, bodyPart: ex.bodyPart, target: ex.target, equipment: ex.equipment, mechanic: ex.mechanic, source: 'manual', secondaryMuscles: [], instructions: [], instructionsEs: [] },
+    })
+  }
+  console.log(`✅ Ejercicios:    ${globalExercises.length} globales`)
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// RUTINAS PUBLICAS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function seedPublicTemplates() {
+  type PT = {
+    id: string; name: string; description: string; goal: string; level: string
+    daysPerWeek: number; category: string
+    days: Array<{ dayOfWeek: number; label: string; muscleGroups: string[]; isRestDay: boolean; exercises?: Array<{ exerciseId: string; order: number; sets: number; repsScheme: string; restSeconds: number }> }>
+  }
+
+  const templates: PT[] = [
+    {
+      id: 'public-template-ppl-3x', name: 'Push Pull Legs — 3 días',
+      description: 'Divide los músculos en empuje, jalón y piernas. Ideal para ganar músculo con 3 días/semana.',
+      goal: 'HYPERTROPHY', level: 'INTERMEDIATE', daysPerWeek: 3, category: 'PPL',
+      days: [
+        { dayOfWeek: 1, label: 'Lunes — Push (Pecho, Hombros, Tríceps)', muscleGroups: ['CHEST', 'SHOULDERS', 'TRICEPS'], isRestDay: false, exercises: [
+          { exerciseId: 'global-exercise-press-plano-barra', order: 1, sets: 4, repsScheme: '8-10', restSeconds: 120 },
+          { exerciseId: 'global-exercise-press-inclinado-barra', order: 2, sets: 3, repsScheme: '10-12', restSeconds: 90 },
+          { exerciseId: 'global-exercise-press-arnold', order: 3, sets: 3, repsScheme: '10-12', restSeconds: 90 },
+          { exerciseId: 'global-exercise-elevacion-lateral', order: 4, sets: 3, repsScheme: '12-15', restSeconds: 60 },
+          { exerciseId: 'global-exercise-extension-triceps-polea', order: 5, sets: 3, repsScheme: '12-15', restSeconds: 60 },
+        ]},
+        { dayOfWeek: 3, label: 'Miércoles — Pull (Espalda, Bíceps)', muscleGroups: ['BACK', 'BICEPS'], isRestDay: false, exercises: [
+          { exerciseId: 'global-exercise-dominadas', order: 1, sets: 4, repsScheme: '6-8', restSeconds: 120 },
+          { exerciseId: 'global-exercise-remo-barra', order: 2, sets: 4, repsScheme: '8-10', restSeconds: 120 },
+          { exerciseId: 'global-exercise-jalon-polea-alta', order: 3, sets: 3, repsScheme: '10-12', restSeconds: 90 },
+          { exerciseId: 'global-exercise-flexion-barra-z', order: 4, sets: 3, repsScheme: '10-12', restSeconds: 60 },
+          { exerciseId: 'global-exercise-remo-mancuernas', order: 5, sets: 3, repsScheme: '12', restSeconds: 60 },
+        ]},
+        { dayOfWeek: 5, label: 'Viernes — Legs (Cuádriceps, Isquios, Glúteos)', muscleGroups: ['QUADRICEPS', 'HAMSTRINGS', 'GLUTES'], isRestDay: false, exercises: [
+          { exerciseId: 'global-exercise-sentadilla-frontal', order: 1, sets: 4, repsScheme: '8-10', restSeconds: 180 },
+          { exerciseId: 'global-exercise-prensa', order: 2, sets: 3, repsScheme: '10-12', restSeconds: 120 },
+          { exerciseId: 'global-exercise-peso-muerto', order: 3, sets: 3, repsScheme: '8-10', restSeconds: 180 },
+          { exerciseId: 'global-exercise-extension-rodillas', order: 4, sets: 3, repsScheme: '12-15', restSeconds: 60 },
+          { exerciseId: 'global-exercise-hip-thrust', order: 5, sets: 3, repsScheme: '12-15', restSeconds: 90 },
+        ]},
+        { dayOfWeek: 2, label: 'Martes — Descanso', muscleGroups: [], isRestDay: true },
+        { dayOfWeek: 4, label: 'Jueves — Descanso', muscleGroups: [], isRestDay: true },
+        { dayOfWeek: 6, label: 'Sábado — Descanso', muscleGroups: [], isRestDay: true },
+        { dayOfWeek: 7, label: 'Domingo — Descanso', muscleGroups: [], isRestDay: true },
+      ],
+    },
+    {
+      id: 'public-template-fullbody-3x', name: 'Full Body — 3 días',
+      description: 'Trabaja todo el cuerpo en cada sesión. Perfecto para principiantes o quienes buscan eficiencia.',
+      goal: 'HYPERTROPHY', level: 'BEGINNER', daysPerWeek: 3, category: 'FULL_BODY',
+      days: [
+        { dayOfWeek: 1, label: 'Lunes — Full Body A', muscleGroups: ['CHEST', 'BACK', 'QUADRICEPS'], isRestDay: false, exercises: [
+          { exerciseId: 'global-exercise-sentadilla-frontal', order: 1, sets: 3, repsScheme: '10-12', restSeconds: 120 },
+          { exerciseId: 'global-exercise-press-plano-barra', order: 2, sets: 3, repsScheme: '10-12', restSeconds: 90 },
+          { exerciseId: 'global-exercise-remo-barra', order: 3, sets: 3, repsScheme: '10-12', restSeconds: 90 },
+          { exerciseId: 'global-exercise-press-arnold', order: 4, sets: 3, repsScheme: '10-12', restSeconds: 60 },
+          { exerciseId: 'global-exercise-hip-thrust', order: 5, sets: 3, repsScheme: '12-15', restSeconds: 60 },
+        ]},
+        { dayOfWeek: 3, label: 'Miércoles — Full Body B', muscleGroups: ['CHEST', 'BACK', 'HAMSTRINGS'], isRestDay: false, exercises: [
+          { exerciseId: 'global-exercise-peso-muerto', order: 1, sets: 3, repsScheme: '8-10', restSeconds: 180 },
+          { exerciseId: 'global-exercise-press-inclinado-barra', order: 2, sets: 3, repsScheme: '10-12', restSeconds: 90 },
+          { exerciseId: 'global-exercise-jalon-polea-alta', order: 3, sets: 3, repsScheme: '10-12', restSeconds: 90 },
+          { exerciseId: 'global-exercise-elevacion-lateral', order: 4, sets: 3, repsScheme: '12-15', restSeconds: 60 },
+          { exerciseId: 'global-exercise-avanzadas', order: 5, sets: 3, repsScheme: '12 c/lado', restSeconds: 60 },
+        ]},
+        { dayOfWeek: 5, label: 'Viernes — Full Body C', muscleGroups: ['QUADRICEPS', 'CHEST', 'BACK'], isRestDay: false, exercises: [
+          { exerciseId: 'global-exercise-prensa', order: 1, sets: 4, repsScheme: '12-15', restSeconds: 120 },
+          { exerciseId: 'global-exercise-press-declinado-mancuernas', order: 2, sets: 3, repsScheme: '10-12', restSeconds: 90 },
+          { exerciseId: 'global-exercise-remo-mancuernas', order: 3, sets: 3, repsScheme: '10-12', restSeconds: 90 },
+          { exerciseId: 'global-exercise-press-militar-barra', order: 4, sets: 3, repsScheme: '10-12', restSeconds: 90 },
+          { exerciseId: 'global-exercise-flexion-rodillas-acostado', order: 5, sets: 3, repsScheme: '12-15', restSeconds: 60 },
+        ]},
+        { dayOfWeek: 2, label: 'Martes — Descanso', muscleGroups: [], isRestDay: true },
+        { dayOfWeek: 4, label: 'Jueves — Descanso', muscleGroups: [], isRestDay: true },
+        { dayOfWeek: 6, label: 'Sábado — Descanso', muscleGroups: [], isRestDay: true },
+        { dayOfWeek: 7, label: 'Domingo — Descanso', muscleGroups: [], isRestDay: true },
+      ],
+    },
+    {
+      id: 'public-template-upper-lower-4x', name: 'Upper / Lower — 4 días',
+      description: 'Alterna tren superior e inferior. Mayor frecuencia por músculo con 4 sesiones semanales.',
+      goal: 'HYPERTROPHY', level: 'INTERMEDIATE', daysPerWeek: 4, category: 'UPPER_LOWER',
+      days: [
+        { dayOfWeek: 1, label: 'Lunes — Upper (fuerza)', muscleGroups: ['CHEST', 'BACK', 'SHOULDERS'], isRestDay: false, exercises: [
+          { exerciseId: 'global-exercise-press-plano-barra', order: 1, sets: 4, repsScheme: '5-6', restSeconds: 180 },
+          { exerciseId: 'global-exercise-remo-barra', order: 2, sets: 4, repsScheme: '5-6', restSeconds: 180 },
+          { exerciseId: 'global-exercise-press-inclinado-barra', order: 3, sets: 3, repsScheme: '8-10', restSeconds: 120 },
+          { exerciseId: 'global-exercise-dominadas', order: 4, sets: 3, repsScheme: '6-8', restSeconds: 120 },
+          { exerciseId: 'global-exercise-press-militar-barra', order: 5, sets: 3, repsScheme: '8-10', restSeconds: 90 },
+        ]},
+        { dayOfWeek: 2, label: 'Martes — Lower (fuerza)', muscleGroups: ['QUADRICEPS', 'HAMSTRINGS', 'GLUTES'], isRestDay: false, exercises: [
+          { exerciseId: 'global-exercise-sentadilla-frontal', order: 1, sets: 4, repsScheme: '5-6', restSeconds: 180 },
+          { exerciseId: 'global-exercise-peso-muerto', order: 2, sets: 4, repsScheme: '5-6', restSeconds: 180 },
+          { exerciseId: 'global-exercise-prensa', order: 3, sets: 3, repsScheme: '10-12', restSeconds: 120 },
+          { exerciseId: 'global-exercise-hip-thrust', order: 4, sets: 3, repsScheme: '10-12', restSeconds: 90 },
+          { exerciseId: 'global-exercise-flexion-rodillas-acostado', order: 5, sets: 3, repsScheme: '12-15', restSeconds: 60 },
+        ]},
+        { dayOfWeek: 4, label: 'Jueves — Upper (volumen)', muscleGroups: ['CHEST', 'BACK', 'BICEPS', 'TRICEPS'], isRestDay: false, exercises: [
+          { exerciseId: 'global-exercise-press-inclinado-barra', order: 1, sets: 4, repsScheme: '10-12', restSeconds: 90 },
+          { exerciseId: 'global-exercise-jalon-polea-alta', order: 2, sets: 4, repsScheme: '10-12', restSeconds: 90 },
+          { exerciseId: 'global-exercise-press-arnold', order: 3, sets: 3, repsScheme: '10-12', restSeconds: 60 },
+          { exerciseId: 'global-exercise-flexion-barra-z', order: 4, sets: 3, repsScheme: '10-12', restSeconds: 60 },
+          { exerciseId: 'global-exercise-extension-triceps-polea', order: 5, sets: 3, repsScheme: '12-15', restSeconds: 60 },
+        ]},
+        { dayOfWeek: 5, label: 'Viernes — Lower (volumen)', muscleGroups: ['QUADRICEPS', 'GLUTES'], isRestDay: false, exercises: [
+          { exerciseId: 'global-exercise-sentadilla-hack', order: 1, sets: 4, repsScheme: '10-12', restSeconds: 120 },
+          { exerciseId: 'global-exercise-avanzadas', order: 2, sets: 3, repsScheme: '12 c/lado', restSeconds: 90 },
+          { exerciseId: 'global-exercise-extension-rodillas', order: 3, sets: 3, repsScheme: '12-15', restSeconds: 60 },
+          { exerciseId: 'global-exercise-hip-thrust', order: 4, sets: 3, repsScheme: '12-15', restSeconds: 90 },
+          { exerciseId: 'global-exercise-abduccion-maquina', order: 5, sets: 3, repsScheme: '15-20', restSeconds: 60 },
+        ]},
+        { dayOfWeek: 3, label: 'Miércoles — Descanso', muscleGroups: [], isRestDay: true },
+        { dayOfWeek: 6, label: 'Sábado — Descanso', muscleGroups: [], isRestDay: true },
+        { dayOfWeek: 7, label: 'Domingo — Descanso', muscleGroups: [], isRestDay: true },
+      ],
+    },
+    {
+      id: 'public-template-fuerza-5x5', name: 'Fuerza 5×5',
+      description: 'Protocolo clásico para ganar fuerza máxima. 3 días, 5 series de 5 repeticiones en los grandes movimientos.',
+      goal: 'STRENGTH', level: 'INTERMEDIATE', daysPerWeek: 3, category: 'STRENGTH',
+      days: [
+        { dayOfWeek: 1, label: 'Lunes — Día A', muscleGroups: ['CHEST', 'BACK', 'QUADRICEPS'], isRestDay: false, exercises: [
+          { exerciseId: 'global-exercise-sentadilla-frontal', order: 1, sets: 5, repsScheme: '5', restSeconds: 180 },
+          { exerciseId: 'global-exercise-press-plano-barra', order: 2, sets: 5, repsScheme: '5', restSeconds: 180 },
+          { exerciseId: 'global-exercise-remo-barra', order: 3, sets: 5, repsScheme: '5', restSeconds: 180 },
+        ]},
+        { dayOfWeek: 3, label: 'Miércoles — Día B', muscleGroups: ['BACK', 'SHOULDERS', 'HAMSTRINGS'], isRestDay: false, exercises: [
+          { exerciseId: 'global-exercise-sentadilla-frontal', order: 1, sets: 5, repsScheme: '5', restSeconds: 180 },
+          { exerciseId: 'global-exercise-press-militar-barra', order: 2, sets: 5, repsScheme: '5', restSeconds: 180 },
+          { exerciseId: 'global-exercise-peso-muerto', order: 3, sets: 1, repsScheme: '5', restSeconds: 300 },
+        ]},
+        { dayOfWeek: 5, label: 'Viernes — Día A (repetir)', muscleGroups: ['CHEST', 'BACK', 'QUADRICEPS'], isRestDay: false, exercises: [
+          { exerciseId: 'global-exercise-sentadilla-frontal', order: 1, sets: 5, repsScheme: '5', restSeconds: 180 },
+          { exerciseId: 'global-exercise-press-plano-barra', order: 2, sets: 5, repsScheme: '5', restSeconds: 180 },
+          { exerciseId: 'global-exercise-remo-barra', order: 3, sets: 5, repsScheme: '5', restSeconds: 180 },
+        ]},
+        { dayOfWeek: 2, label: 'Martes — Descanso', muscleGroups: [], isRestDay: true },
+        { dayOfWeek: 4, label: 'Jueves — Descanso', muscleGroups: [], isRestDay: true },
+        { dayOfWeek: 6, label: 'Sábado — Descanso', muscleGroups: [], isRestDay: true },
+        { dayOfWeek: 7, label: 'Domingo — Descanso', muscleGroups: [], isRestDay: true },
+      ],
+    },
+  ]
+
+  for (const tmpl of templates) {
+    await prisma.workoutTemplate.upsert({
+      where: { id: tmpl.id },
+      update: {},
+      create: { id: tmpl.id, name: tmpl.name, description: tmpl.description, goal: tmpl.goal, level: tmpl.level, daysPerWeek: tmpl.daysPerWeek, isPublic: true, category: tmpl.category },
+    })
+    for (const day of tmpl.days) {
+      const dayId = `${tmpl.id}-day-${day.dayOfWeek}`
+      await prisma.workoutDay.upsert({
+        where: { id: dayId },
+        update: {},
+        create: { id: dayId, templateId: tmpl.id, dayOfWeek: day.dayOfWeek, label: day.label, muscleGroups: day.muscleGroups, isRestDay: day.isRestDay, order: day.dayOfWeek },
+      })
+      if (!day.isRestDay && day.exercises) {
+        for (const ex of day.exercises) {
+          const exId = `${dayId}-ex-${ex.exerciseId}`
+          await prisma.workoutExercise.upsert({
+            where: { id: exId },
+            update: {},
+            create: { id: exId, dayId, exerciseId: ex.exerciseId, order: ex.order, sets: ex.sets, repsScheme: ex.repsScheme, restSeconds: ex.restSeconds },
+          })
+        }
+      }
+    }
+  }
+  console.log(`✅ Rutinas:       ${templates.length} públicas del sistema`)
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ALIMENTOS LATAM
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function seedLatamFoods() {
+  const foods = [
+    { name: 'Milanesa de res (rebozada)', category: 'PROTEIN', kcalPer100g: 250, proteinPer100g: 18.0, carbsPer100g: 18.0, fatPer100g: 10.0, fiberPer100g: 0.8, calciumMg: 40, ironMg: 2.4, potassiumMg: 290, vitaminCMg: 0, magnesiumMg: 20, servingG: 200, servingLabel: '1 milanesa grande', country: 'AR' },
+    { name: 'Milanesa de pollo (rebozada)', category: 'PROTEIN', kcalPer100g: 220, proteinPer100g: 20.0, carbsPer100g: 15.0, fatPer100g: 8.0, fiberPer100g: 0.7, calciumMg: 30, ironMg: 1.0, potassiumMg: 260, vitaminCMg: 0, magnesiumMg: 22, servingG: 180, servingLabel: '1 milanesa mediana', country: 'AR' },
+    { name: 'Empanada criolla (carne)', category: 'CARB', kcalPer100g: 268, proteinPer100g: 9.0, carbsPer100g: 27.0, fatPer100g: 14.0, fiberPer100g: 1.2, calciumMg: 22, ironMg: 1.8, potassiumMg: 180, vitaminCMg: 0, magnesiumMg: 15, servingG: 90, servingLabel: '1 empanada', country: 'AR' },
+    { name: 'Empanada de queso', category: 'CARB', kcalPer100g: 290, proteinPer100g: 10.0, carbsPer100g: 28.0, fatPer100g: 16.0, fiberPer100g: 1.0, calciumMg: 120, ironMg: 1.0, potassiumMg: 120, vitaminCMg: 0, magnesiumMg: 12, servingG: 90, servingLabel: '1 empanada', country: 'AR' },
+    { name: 'Choripán (chorizo + pan)', category: 'CARB', kcalPer100g: 285, proteinPer100g: 11.0, carbsPer100g: 22.0, fatPer100g: 17.0, fiberPer100g: 1.0, calciumMg: 40, ironMg: 2.0, potassiumMg: 250, vitaminCMg: 1, magnesiumMg: 18, servingG: 200, servingLabel: '1 choripán completo', country: 'AR' },
+    { name: 'Dulce de leche', category: 'FAT', kcalPer100g: 321, proteinPer100g: 6.6, carbsPer100g: 54.0, fatPer100g: 8.7, fiberPer100g: 0, calciumMg: 200, ironMg: 0.2, potassiumMg: 290, vitaminCMg: 1, magnesiumMg: 18, servingG: 30, servingLabel: '2 cucharadas', country: 'AR' },
+    { name: 'Asado (costillas res)', category: 'PROTEIN', kcalPer100g: 291, proteinPer100g: 19.0, carbsPer100g: 0.0, fatPer100g: 23.0, fiberPer100g: 0, calciumMg: 15, ironMg: 2.0, potassiumMg: 290, vitaminCMg: 0, magnesiumMg: 20, servingG: 250, servingLabel: '1 porción asado', country: 'AR' },
+    { name: 'Facturas / medialunas', category: 'CARB', kcalPer100g: 380, proteinPer100g: 7.0, carbsPer100g: 48.0, fatPer100g: 17.0, fiberPer100g: 1.0, calciumMg: 30, ironMg: 1.5, potassiumMg: 90, vitaminCMg: 0, magnesiumMg: 10, servingG: 60, servingLabel: '2 medialunas', country: 'AR' },
+    { name: 'Yerba mate (cebada)', category: 'OTHER', kcalPer100g: 3, proteinPer100g: 0.0, carbsPer100g: 0.5, fatPer100g: 0.0, fiberPer100g: 0, calciumMg: 5, ironMg: 0.1, potassiumMg: 30, vitaminCMg: 0, magnesiumMg: 3, servingG: 250, servingLabel: '1 mate (250ml)', country: 'AR' },
+    { name: 'Lomo saltado', category: 'PROTEIN', kcalPer100g: 190, proteinPer100g: 15.0, carbsPer100g: 13.0, fatPer100g: 9.0, fiberPer100g: 1.5, calciumMg: 20, ironMg: 2.5, potassiumMg: 380, vitaminCMg: 12, magnesiumMg: 24, servingG: 300, servingLabel: '1 plato (sin arroz)', country: 'PE' },
+    { name: 'Ceviche de pescado', category: 'PROTEIN', kcalPer100g: 88, proteinPer100g: 14.0, carbsPer100g: 5.0, fatPer100g: 1.5, fiberPer100g: 0.8, calciumMg: 22, ironMg: 0.8, potassiumMg: 310, vitaminCMg: 18, magnesiumMg: 30, servingG: 300, servingLabel: '1 porción mediana', country: 'PE' },
+    { name: 'Bandeja paisa (plato completo)', category: 'PROTEIN', kcalPer100g: 175, proteinPer100g: 13.0, carbsPer100g: 16.0, fatPer100g: 6.5, fiberPer100g: 3.5, calciumMg: 50, ironMg: 3.5, potassiumMg: 450, vitaminCMg: 8, magnesiumMg: 55, servingG: 500, servingLabel: '1 bandeja paisa', country: 'CO' },
+    { name: 'Pandebono', category: 'CARB', kcalPer100g: 290, proteinPer100g: 8.0, carbsPer100g: 38.0, fatPer100g: 11.0, fiberPer100g: 0.5, calciumMg: 120, ironMg: 0.8, potassiumMg: 80, vitaminCMg: 0, magnesiumMg: 8, servingG: 60, servingLabel: '1 pandebono (60g)', country: 'CO' },
+    { name: 'Ajiaco bogotano (por porción)', category: 'PROTEIN', kcalPer100g: 68, proteinPer100g: 6.0, carbsPer100g: 8.0, fatPer100g: 1.5, fiberPer100g: 1.5, calciumMg: 20, ironMg: 0.8, potassiumMg: 290, vitaminCMg: 12, magnesiumMg: 18, servingG: 400, servingLabel: '1 plato mediano', country: 'CO' },
+    { name: 'Tortilla de maíz', category: 'CARB', kcalPer100g: 218, proteinPer100g: 5.7, carbsPer100g: 46.0, fatPer100g: 2.5, fiberPer100g: 4.6, calciumMg: 46, ironMg: 2.4, potassiumMg: 157, vitaminCMg: 0, magnesiumMg: 56, servingG: 60, servingLabel: '2 tortillas medianas', country: 'MX' },
+    { name: 'Guacamole casero', category: 'FAT', kcalPer100g: 150, proteinPer100g: 2.0, carbsPer100g: 8.5, fatPer100g: 13.0, fiberPer100g: 5.0, calciumMg: 12, ironMg: 0.6, potassiumMg: 410, vitaminCMg: 10, magnesiumMg: 25, servingG: 80, servingLabel: '4 cucharadas (80g)', country: 'MX' },
+    { name: 'Frijoles refritos', category: 'LEGUME', kcalPer100g: 120, proteinPer100g: 6.5, carbsPer100g: 16.5, fatPer100g: 2.5, fiberPer100g: 5.5, calciumMg: 38, ironMg: 1.8, potassiumMg: 300, vitaminCMg: 0, magnesiumMg: 38, servingG: 100, servingLabel: '½ taza', country: 'MX' },
+    { name: 'Tacos de bistec (2 tacos)', category: 'PROTEIN', kcalPer100g: 210, proteinPer100g: 14.0, carbsPer100g: 18.0, fatPer100g: 8.0, fiberPer100g: 2.0, calciumMg: 35, ironMg: 2.0, potassiumMg: 270, vitaminCMg: 5, magnesiumMg: 22, servingG: 200, servingLabel: '2 tacos medianos', country: 'MX' },
+  ]
+
+  const names = foods.map(f => f.name)
+  const existing = await prisma.food.findMany({ where: { name: { in: names } }, select: { name: true } })
+  const existingNames = new Set(existing.map(f => f.name))
+
+  const toCreate = foods.filter(f => !existingNames.has(f.name)).map(f => ({
+    ...f, source: 'system' as const, isActive: true, isVerified: true,
+  }))
+
+  if (toCreate.length === 0) {
+    console.log('✅ Alimentos:     todos ya existen')
+    return
+  }
+
+  // @ts-expect-error — category type mismatch between literal and enum
+  await prisma.food.createMany({ data: toCreate })
+  console.log(`✅ Alimentos:     ${toCreate.length} LatAm insertados (${existingNames.size} ya existían)`)
 }
 
 main()
