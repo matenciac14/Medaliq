@@ -3,16 +3,10 @@
 import { cn } from '@/lib/utils'
 import PlanCompletionCard from '../../_components/PlanCompletionCard'
 import PageTopBar from '../../_components/PageTopBar'
+import WeekDayStrip from '../../_components/WeekDayStrip'
+import type { WeekDayCell } from '../../_components/week_day_cells'
 
 const WEEK_DAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
-
-const SESSION_EMOJI: Record<string, string> = {
-  RODAJE_Z2: '🏃', EASY_RUN: '🏃', TEMPO: '🏃', FARTLEK: '🏃',
-  TIRADA_LARGA: '🏃', INTERVALOS: '🏃', SIMULACRO: '🏃',
-  STRENGTH: '💪', GYM: '💪', FUERZA: '💪',
-  DESCANSO: '😴', REST: '😴',
-  TEST: '🎯',
-}
 
 const PHASE_LABELS: Record<string, string> = {
   BASE: 'BASE', DEVELOPMENT: 'DESARRO', BUILD: 'DESARRO',
@@ -68,6 +62,22 @@ export default function PlanCompletedClient({
   const endDow = endDateObj.getDay() === 0 ? 7 : endDateObj.getDay()
   const lastWeekMonday = new Date(endDateObj)
   lastWeekMonday.setDate(endDateObj.getDate() - (endDow - 1))
+
+  // Build WeekDayCell[] for the shared WeekDayStrip component
+  const lastWeekCells: WeekDayCell[] = Array.from({ length: 7 }, (_, i) => {
+    const session = sessionsByDow.get(i + 1)
+    return {
+      idx: i,
+      dateNum: new Date(lastWeekMonday.getTime() + i * 86400000).getDate(),
+      isToday: false,
+      sessionType: session?.type ?? null,
+      done: session?.done ?? false,
+      durationMin: session?.durationMin ?? 0,
+      zoneTarget: session?.zone ?? '',
+      label: session?.label ?? null,
+      hasGym: false,
+    }
+  })
 
   const displayPhases = phases.length > 0
     ? [...new Set(phases.map(p => PHASE_LABELS[p] ?? p))]
@@ -207,75 +217,36 @@ export default function PlanCompletedClient({
     </div>
 
     {/* ══════ DESKTOP (sm+) ══════ */}
-    <div className="hidden sm:block px-4 py-6 md:px-8 max-w-7xl mx-auto">
-      {/* TopBar — unified PageTopBar */}
-      <PageTopBar
-        title="Mi Plan"
-        subtitle={`${planName} · ${totalWeeks} semanas`}
-        right={
-          <span className="inline-flex items-center gap-1.5 bg-green-50 text-green-700 border border-green-200 px-3.5 py-1.5 rounded-[20px] text-[11px] font-semibold whitespace-nowrap">
-            ✓ PLAN COMPLETADO
+    <div className="hidden sm:block px-4 py-6 md:px-8 max-w-7xl mx-auto space-y-5">
+      {/* WeekSection card — matches active plan structure */}
+      <div className="bg-white rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
+        <PageTopBar
+          title="Mi Plan"
+          subtitle={`${planName} · ${totalWeeks} semanas`}
+          right={
+            <span className="inline-flex items-center gap-1.5 bg-green-50 text-green-700 border border-green-200 px-3.5 py-1.5 rounded-[20px] text-[11px] font-semibold whitespace-nowrap">
+              ✓ PLAN COMPLETADO
+            </span>
+          }
+        />
+
+        {/* Progress bar — 100% complete */}
+        <div className="px-5">
+          <div className="h-[3px] bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-full bg-[#22c55e] rounded-full w-full" />
+          </div>
+        </div>
+
+        {/* Calendar Strip — Last week of completed plan (shared GridCell) */}
+        <div className="px-3 pt-3">
+          <WeekDayStrip cells={lastWeekCells} />
+        </div>
+
+        {/* Footer — session count */}
+        <div className="px-5 pb-3 flex justify-end">
+          <span className="text-[12px] text-gray-400 font-medium">
+            {sessionsLogged} / {sessionsTotal} sesiones
           </span>
-        }
-      />
-      <div className="h-6" />
-
-      {/* Calendar Strip — Last week of completed plan */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-5">
-        <div className="grid grid-cols-7 divide-x divide-gray-50">
-          {Array.from({ length: 7 }, (_, i) => {
-            const dow = i + 1
-            const session = sessionsByDow.get(dow)
-            const isDone = session?.done ?? false
-            const isRest = session?.type === 'DESCANSO' || session?.type === 'REST'
-            const emoji = session ? (SESSION_EMOJI[session.type] ?? '🏃') : null
-
-            const barColor = isDone && !isRest ? 'bg-[#22c55e]' : 'bg-gray-200'
-            const cardBg = isDone && !isRest
-              ? 'bg-green-50/60'
-              : 'bg-[#f5f7fa]'
-
-            return (
-              <div
-                key={dow}
-                className={cn('flex flex-col items-center py-3.5 px-1 text-center relative min-h-[150px]', cardBg)}
-              >
-                <div className={cn('absolute top-0 left-0 right-0 h-[3px]', barColor)} />
-
-                <span className="text-[11px] font-semibold mb-1 text-gray-400">
-                  {WEEK_DAYS[i]}
-                </span>
-
-                <div className="flex items-center gap-1 mb-2">
-                  <span className={cn('text-[22px] font-black leading-none',
-                    isDone && !isRest ? 'text-green-600' : 'text-gray-300'
-                  )}>
-                    {new Date(lastWeekMonday.getTime() + i * 86400000).getDate()}
-                  </span>
-                  {isDone && !isRest && (
-                    <span className="text-[10px] font-bold text-green-600">✓</span>
-                  )}
-                </div>
-
-                {emoji && (
-                  <span className="text-lg mb-1">{emoji}</span>
-                )}
-
-                {session && (
-                  <>
-                    <span className="text-[11px] font-semibold leading-tight text-gray-700 mt-auto">
-                      {session.label}
-                    </span>
-                    {!isRest && session.durationMin > 0 && (
-                      <span className="text-[10px] text-gray-400 mt-0.5">
-                        {session.durationMin} min · {session.zone || 'Z2'}
-                      </span>
-                    )}
-                  </>
-                )}
-              </div>
-            )
-          })}
         </div>
       </div>
 

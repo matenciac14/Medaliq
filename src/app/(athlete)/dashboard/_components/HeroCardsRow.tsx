@@ -47,7 +47,7 @@ function ActivityCard({ weekSessionCount, weekSessionTarget, streakDays }: { wee
       <div className="flex h-full">
         <div className="w-1 bg-[#ea580c] shrink-0" />
         <div className="flex-1 px-4 py-3">
-          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1">TU ACTIVIDAD</p>
+          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1">📊 TU ACTIVIDAD</p>
           {weekSessionCount > 0 ? (
             <>
               <div className="flex items-baseline gap-2 mb-0.5">
@@ -83,7 +83,7 @@ function WeightCard({ currentWeight, targetWeight, weeklyWeightChange, weightPro
       <div className="flex h-full">
         <div className="w-1 bg-[#3b6fdd] shrink-0" />
         <div className="flex-1 px-4 py-3">
-          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1">{targetWeight ? 'TU META DE PESO' : 'TU PESO'}</p>
+          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1">{targetWeight ? '⚖️ TU META DE PESO' : '⚖️ TU PESO'}</p>
           {currentWeight && targetWeight ? (
             <>
               <div className="flex items-baseline gap-1.5 mb-0.5">

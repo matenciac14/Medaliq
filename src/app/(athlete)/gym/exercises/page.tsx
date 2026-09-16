@@ -75,7 +75,7 @@ export default async function AthleteExercisesPage({ searchParams }: Props) {
         <div className="flex items-start justify-between gap-4 mb-6">
           <div>
             <Link href="/gym" className="text-xs font-medium text-gray-400 hover:text-gray-600 mb-1 inline-block">
-              ← Gym
+              ← Entreno
             </Link>
             <h1 className="text-2xl font-black" style={{ color: '#1e3a5f' }}>Biblioteca de ejercicios</h1>
             <p className="text-sm text-gray-500 mt-0.5">{total.toLocaleString()} ejercicios con instrucciones y demos</p>

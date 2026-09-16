@@ -129,7 +129,7 @@ function CompactVariant({ data, consumed: consumedData }: { data: NutritionData 
         <div className="flex items-center justify-center gap-5">
           <CalorieRingSvg consumed={consumed} target={data.kcal} />
           <div className="flex-1 min-w-0">
-            <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-widest">Objetivo diario</p>
+            <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-widest">Calorías de hoy</p>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-[28px] font-black text-[#1e3a5f] leading-none tracking-tight">{data.kcal.toLocaleString('es')}</span>
               <span className="text-[11px] text-gray-400">kcal objetivo</span>
@@ -178,7 +178,7 @@ function CardVariant({ data, targetKcalHard, consumed: consumedData }: { data: N
       <div className="flex items-center gap-3 px-5 py-2.5">
         <CalorieRingSvg consumed={consumed} target={targetKcal} size={90} />
         <div className="flex-1 min-w-0 flex flex-col items-center justify-between self-stretch py-0.5">
-          <p className="text-[8px] font-semibold text-gray-400 uppercase tracking-[0.4px]">Objetivo diario</p>
+          <p className="text-[8px] font-semibold text-gray-400 uppercase tracking-[0.4px]">Calorías de hoy</p>
           <div className="flex items-baseline gap-1 justify-center">
             <span className="text-[22px] font-black text-[#1e3a5f] leading-none">{targetKcal.toLocaleString('es')}</span>
             <span className="text-[9px] text-gray-400">kcal objetivo</span>

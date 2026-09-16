@@ -1,9 +1,11 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import type { NutritionPlanData, ActivePlanData } from '../AthleteDetailClient'
 import { FoodLogsSection, type FoodLogEntry } from '../FoodLogsSection'
 import NutritionAdherenceCard, { type DayAdherence } from '../NutritionAdherenceCard'
+import { KCAL_ADJUSTMENT_OPTIONS } from '@/domain/plan/formulas'
 
 type FoodProfileData = {
   availableFoods: string[]
@@ -177,6 +179,9 @@ export default function NutricionTab({
         </div>
       )}
 
+      {/* ── Estrategia calórica ── */}
+      {nutritionPlan && <KcalStrategySelector athleteId={athleteId} currentAdjustment={nutritionPlan.kcalAdjustment} />}
+
       {/* Banner → Plan Builder */}
       <div className="rounded-xl border border-[#1e3a5f]/15 p-4 flex items-center justify-between gap-4" style={{ backgroundColor: '#1e3a5f08' }}>
         <div>
@@ -272,6 +277,73 @@ export default function NutricionTab({
             </div>
           )}
         </>
+      )}
+    </div>
+  )
+}
+
+function KcalStrategySelector({ athleteId, currentAdjustment }: { athleteId: string; currentAdjustment: number }) {
+  const [selected, setSelected] = useState(currentAdjustment)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  const changed = selected !== currentAdjustment
+
+  async function handleSave() {
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/coach/athletes/${athleteId}/nutrition/targets`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kcalAdjustment: selected }),
+      })
+      if (res.ok) {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2500)
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="font-semibold text-gray-900">Estrategia calórica</h2>
+        {saved && <span className="text-xs text-green-600 font-medium">Guardado</span>}
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {KCAL_ADJUSTMENT_OPTIONS.map(opt => {
+          const isActive = selected === opt.value
+          const isDeficit = opt.value < 0
+          const isSurplus = opt.value > 0
+          return (
+            <button
+              key={opt.value}
+              onClick={() => setSelected(opt.value)}
+              className={`rounded-lg border p-3 text-left transition-all ${
+                isActive
+                  ? isDeficit ? 'border-blue-500 bg-blue-50' : isSurplus ? 'border-orange-500 bg-orange-50' : 'border-[#1e3a5f] bg-[#1e3a5f]/5'
+                  : 'border-gray-100 hover:border-gray-200'
+              }`}
+            >
+              <p className={`text-sm font-semibold ${isActive ? (isDeficit ? 'text-blue-700' : isSurplus ? 'text-orange-700' : 'text-[#1e3a5f]') : 'text-gray-700'}`}>
+                {opt.label}
+              </p>
+              <p className="text-xs text-gray-500 mt-0.5">{opt.desc}</p>
+            </button>
+          )
+        })}
+      </div>
+      {changed && (
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="mt-3 w-full py-2 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+          style={{ backgroundColor: '#1e3a5f' }}
+        >
+          {saving ? 'Guardando...' : 'Aplicar estrategia'}
+        </button>
       )}
     </div>
   )

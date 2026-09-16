@@ -125,7 +125,7 @@ export default function ResumenTab({
             ))}
           </div>
           <span className="text-sm font-medium shrink-0 cursor-pointer" style={{ color: '#1e3a5f' }}>
-            Ver detalles →
+            {classifiedAlerts.some(a => a.level === 'critical') ? 'Resolver →' : 'Ver detalles →'}
           </span>
         </div>
       )}
@@ -226,25 +226,31 @@ export default function ResumenTab({
           <div className="space-y-3 flex-1">
             <div>
               <label className="block text-xs text-gray-500 mb-1">Meta pactada</label>
-              <input
-                type="text"
-                value={coachGoal}
-                onChange={(e) => setCoachGoal(e.target.value)}
-                placeholder="ej. Bajar a 85kg en 3 meses"
-                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/20"
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  value={coachGoal}
+                  onChange={(e) => setCoachGoal(e.target.value)}
+                  placeholder="ej. Bajar a 85kg en 3 meses"
+                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/20"
+                />
+                <svg className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M11.5 1.5l3 3M1 15l1-4L12.5 0.5l3 3L5 14z" /><path d="M10 3l3 3" /></svg>
+              </div>
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">
                 🔒 Notas privadas (el atleta no las ve)
               </label>
-              <textarea
-                rows={2}
-                value={privateNotes}
-                onChange={(e) => setPrivateNotes(e.target.value)}
-                placeholder="Tendencia a sobreentrenar — monitorear RPE"
-                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/20"
-              />
+              <div className="relative">
+                <textarea
+                  rows={2}
+                  value={privateNotes}
+                  onChange={(e) => setPrivateNotes(e.target.value)}
+                  placeholder="Tendencia a sobreentrenar — monitorear RPE"
+                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 pr-8 resize-none focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/20"
+                />
+                <svg className="absolute right-2.5 top-3 w-3.5 h-3.5 text-gray-300" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M11.5 1.5l3 3M1 15l1-4L12.5 0.5l3 3L5 14z" /><path d="M10 3l3 3" /></svg>
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-3 mt-3">

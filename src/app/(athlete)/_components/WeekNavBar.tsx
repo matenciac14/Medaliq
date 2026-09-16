@@ -64,7 +64,7 @@ export default function WeekNavBar({
         className={
           isDark
             ? 'inline-flex items-center rounded-xl bg-white/10 w-full h-10'
-            : 'inline-flex items-center rounded-[10px] bg-[#f1f5f9] h-11 min-w-[260px]'
+            : 'inline-flex items-center rounded-[10px] border border-gray-200 bg-white h-11 min-w-[260px]'
         }
       >
         <button
@@ -73,7 +73,7 @@ export default function WeekNavBar({
           className={
             isDark
               ? 'w-9 h-9 flex items-center justify-center rounded-[10px] text-white/70 disabled:opacity-30 transition-colors'
-              : 'w-8 h-8 flex items-center justify-center rounded-lg bg-white shadow-[0_1px_3px_rgba(0,0,0,0.08)] text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors ml-1'
+              : 'w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50 disabled:opacity-30 transition-colors ml-1'
           }
           aria-label="Semana anterior"
         >
@@ -102,7 +102,7 @@ export default function WeekNavBar({
           className={
             isDark
               ? 'w-9 h-9 flex items-center justify-center rounded-[10px] text-white/70 disabled:opacity-30 transition-colors'
-              : 'w-8 h-8 flex items-center justify-center rounded-lg bg-white shadow-[0_1px_3px_rgba(0,0,0,0.08)] text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors mr-1'
+              : 'w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50 disabled:opacity-30 transition-colors mr-1'
           }
           aria-label="Semana siguiente"
         >
