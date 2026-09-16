@@ -35,12 +35,15 @@ export async function PATCH(
     return NextResponse.json({ error: 'Sin campos válidos' }, { status: 400 })
   }
 
-  const updated = await prisma.sessionLog.update({
-    where: { id: logId },
-    data,
-  })
-
-  return NextResponse.json({ ok: true, log: updated })
+  try {
+    const updated = await prisma.sessionLog.update({
+      where: { id: logId, userId },
+      data,
+    })
+    return NextResponse.json({ ok: true, log: updated })
+  } catch {
+    return NextResponse.json({ error: 'Registro no encontrado' }, { status: 404 })
+  }
 }
 
 export async function DELETE(
@@ -62,7 +65,10 @@ export async function DELETE(
   })
   if (!log) return NextResponse.json({ error: 'Registro no encontrado o no se puede eliminar' }, { status: 404 })
 
-  await prisma.sessionLog.delete({ where: { id: logId } })
-
-  return NextResponse.json({ ok: true })
+  try {
+    await prisma.sessionLog.delete({ where: { id: logId, userId } })
+    return NextResponse.json({ ok: true })
+  } catch {
+    return NextResponse.json({ error: 'Registro no encontrado' }, { status: 404 })
+  }
 }

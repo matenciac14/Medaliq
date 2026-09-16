@@ -49,6 +49,7 @@ export type DashboardInput = {
   assignedWorkout?: AssignedWorkoutInput
   gymCompletionDates?: Date[]  // fechas de GymSession completadas — para streak
   recentGymSessions?: GymSessionInput[]  // gym sessions con detalle para recentActivity
+  todayDow?: number  // 1=Mon..7=Sun — timezone-aware, computed by caller
 }
 
 export type WeekSessionSlot = {
@@ -109,7 +110,7 @@ export type DashboardResult = {
 
 export function getDashboardSummary(input: DashboardInput): DashboardResult {
   const { user, activePlanRaw, lastCompletedPlan, checkIns, recentLogs, nutritionPlan, assignedWorkout } = input
-  const todayDow = jsToOurDow(new Date().getDay())
+  const todayDow = input.todayDow ?? jsToOurDow(new Date().getDay())
 
   // ── Plan lifecycle ────────────────────────────────────────────────
   let planIdToComplete: string | null = null
@@ -180,9 +181,11 @@ export function getDashboardSummary(input: DashboardInput): DashboardResult {
         durationMin: 60,
         zoneTarget: '',
         detailText: todayGymDay.label ?? '',
-        completed: (input.gymCompletionDates ?? []).some(
-          d => new Date(d).toDateString() === new Date().toDateString(),
-        ),
+        completed: (input.gymCompletionDates ?? []).some(d => {
+          const dt = new Date(d)
+          const dtDow = dt.getUTCDay() === 0 ? 7 : dt.getUTCDay()
+          return dtDow === todayDow
+        }),
       }
     }
   }
@@ -217,14 +220,23 @@ export function getDashboardSummary(input: DashboardInput): DashboardResult {
 
   // ── GYM: overlay assignedWorkout on empty slots (matches web buildCalendarWeek) ──
   if (assignedWorkout) {
-    const thisWeekMonday = new Date(); thisWeekMonday.setHours(0, 0, 0, 0)
-    const currDow = thisWeekMonday.getDay() === 0 ? 6 : thisWeekMonday.getDay() - 1
-    thisWeekMonday.setDate(thisWeekMonday.getDate() - currDow)
+    // Use todayDow (timezone-aware) to compute this week's Monday
+    const todayIdx = todayDow - 1 // 0=Mon..6=Sun
     const gymDoneThisWeek = new Set<number>()
     for (const d of (input.gymCompletionDates ?? [])) {
-      const dt = new Date(d); dt.setHours(0, 0, 0, 0)
-      const diffDays = Math.round((dt.getTime() - thisWeekMonday.getTime()) / 86_400_000)
-      if (diffDays >= 0 && diffDays <= 6) gymDoneThisWeek.add(diffDays)
+      const dt = new Date(d)
+      const dtDow = dt.getUTCDay() === 0 ? 7 : dt.getUTCDay() // 1=Mon..7=Sun
+      // Check if this date falls within the current week by comparing dow offset from todayDow
+      const daysDiff = dtDow - 1 // 0-based index (Mon=0)
+      // Only include if within 7-day window: dayIdx relative to this week's Monday
+      const distFromMonday = daysDiff
+      if (distFromMonday >= 0 && distFromMonday <= 6) {
+        // Verify it's actually this week: diff from today should be within [-todayIdx, 6-todayIdx]
+        const diffFromToday = daysDiff - todayIdx
+        if (diffFromToday >= -todayIdx && diffFromToday <= 6 - todayIdx) {
+          gymDoneThisWeek.add(daysDiff)
+        }
+      }
     }
 
     for (const day of assignedWorkout.template.days) {
@@ -251,26 +263,30 @@ export function getDashboardSummary(input: DashboardInput): DashboardResult {
   const nutritionTarget = nt ? { kcal: nt.kcal, proteinG: nt.proteinG, carbsG: nt.carbsG, fatG: nt.fatG, label: nt.label } : null
 
   // ── Streak ────────────────────────────────────────────────────────
-  // Incluye tanto SessionLog (running/libre) como GymSession completadas
+  // Uses UTC date strings for comparison — completedAt and gymCompletionDates are UTC.
+  // todayMidnight derived from todayDow to stay timezone-consistent.
+  const toUTCDateStr = (d: Date) => d.toISOString().split('T')[0]
   const logDateSet = new Set([
-    ...recentLogs.map(l => new Date(l.completedAt).toDateString()),
-    ...(input.gymCompletionDates ?? []).map(d => new Date(d).toDateString()),
+    ...recentLogs.map(l => toUTCDateStr(new Date(l.completedAt))),
+    ...(input.gymCompletionDates ?? []).map(d => toUTCDateStr(new Date(d))),
   ])
   let streakDays = 0
-  const todayMidnight = new Date(); todayMidnight.setHours(0, 0, 0, 0)
+  // Compute today as UTC date from the timezone-aware todayDow offset
+  const nowUtc = new Date()
+  const todayMidnight = new Date(Date.UTC(nowUtc.getUTCFullYear(), nowUtc.getUTCMonth(), nowUtc.getUTCDate()))
   for (let i = 0; i <= 59; i++) {
-    const d = new Date(todayMidnight); d.setDate(d.getDate() - i)
-    if (logDateSet.has(d.toDateString())) streakDays++
+    const d = new Date(todayMidnight.getTime() - i * 86_400_000)
+    if (logDateSet.has(toUTCDateStr(d))) streakDays++
     else break
   }
 
   // ── Week streak ──────────────────────────────────────────────────
   // Consecutive weeks (Mon–Sun) with at least 1 session — for milestone celebrations
   function getMondayKey(date: Date): string {
-    const d = new Date(date); d.setHours(0, 0, 0, 0)
-    const dow = d.getDay() === 0 ? 6 : d.getDay() - 1
-    d.setDate(d.getDate() - dow)
-    return d.toDateString()
+    const d = new Date(date)
+    const dow = d.getUTCDay() === 0 ? 6 : d.getUTCDay() - 1
+    d.setUTCDate(d.getUTCDate() - dow)
+    return toUTCDateStr(d)
   }
   const weekSet = new Set([
     ...recentLogs.map(l => getMondayKey(new Date(l.completedAt))),
@@ -278,11 +294,11 @@ export function getDashboardSummary(input: DashboardInput): DashboardResult {
   ])
   let weekStreak = 0
   const thisMonday = new Date(todayMidnight)
-  const thisDow = thisMonday.getDay() === 0 ? 6 : thisMonday.getDay() - 1
-  thisMonday.setDate(thisMonday.getDate() - thisDow)
+  const thisDowIdx = todayDow - 1 // 0=Mon..6=Sun
+  thisMonday.setUTCDate(thisMonday.getUTCDate() - thisDowIdx)
   for (let i = 0; i <= 51; i++) {
-    const weekStart = new Date(thisMonday); weekStart.setDate(thisMonday.getDate() - i * 7)
-    if (weekSet.has(weekStart.toDateString())) weekStreak++
+    const weekStart = new Date(thisMonday.getTime() - i * 7 * 86_400_000)
+    if (weekSet.has(toUTCDateStr(weekStart))) weekStreak++
     else break
   }
 

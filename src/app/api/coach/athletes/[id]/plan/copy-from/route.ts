@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
+import { forceMonday } from '@/lib/core/date_utils'
 
 const Schema = z.object({
   sourcePlanId: z.string().min(1),
@@ -67,7 +68,7 @@ export async function POST(
     return NextResponse.json({ error: 'No tienes acceso al plan de origen.' }, { status: 403 })
   }
 
-  const newStartDate = new Date(startDate)
+  const newStartDate = forceMonday(new Date(startDate))
 
   try {
     const newPlan = await prisma.$transaction(async (tx) => {

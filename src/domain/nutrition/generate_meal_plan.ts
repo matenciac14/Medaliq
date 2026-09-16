@@ -7,6 +7,7 @@
  */
 
 import { calculateTDEE, calculateMacros } from '@/domain/plan/formulas'
+import { REST_CARBS_MULTIPLIER } from '@/domain/nutrition/nutrition_constants'
 
 export type GenerateMealsInput = {
   availableFoods: string[]
@@ -118,7 +119,8 @@ export function computeNutritionTargets(profile: ProfileInput) {
     (profile.gender ?? 'male') as 'male' | 'female',
     5
   )
-  const macros = calculateMacros(tdee, profile.weightKg ?? 70, !!profile.weightGoalKg)
+  const kcalAdjustment = profile.weightGoalKg ? -500 : 0
+  const macros = calculateMacros(tdee, profile.weightKg ?? 70, kcalAdjustment)
   return { tdee, macros }
 }
 
@@ -187,7 +189,7 @@ export function buildStaticMealPlan(macros: MacroTargets, input: GenerateMealsIn
   ]
 
   const hydration = { hard: 2.5, easy: 2.0, rest: 1.8 }
-  const restCarbs = Math.round(macros.easy.carbs * 0.7)
+  const restCarbs = Math.round(macros.easy.carbs * REST_CARBS_MULTIPLIER)
 
   return {
     hard: {

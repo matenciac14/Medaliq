@@ -9,54 +9,36 @@ type DayBar = {
 }
 
 export default function WeeklyNutritionBars({ days }: { days: DayBar[] }) {
-  const MAX_BAR_H = 56  // px
-
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
-      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">
-        📊 Adherencia calórica — últimos 7 días
-      </p>
-      <div className="flex items-end justify-between gap-1">
+    <div className="bg-white border border-[#f0f2f5] rounded-[16px] p-4 shadow-sm">
+      <div className="flex items-end justify-between gap-2">
         {days.map((day, i) => {
-          const h = day.pct !== null ? Math.max(4, Math.round((Math.min(day.pct, 100) / 100) * MAX_BAR_H)) : 0
+          const barH = day.pct !== null ? Math.max(4, Math.round((Math.min(day.pct, 100) / 100) * 24)) : 24
           const color = day.pct === null
-            ? '#e5e7eb'
+            ? '#f2f5f7'
             : day.pct >= 90
-              ? '#22c55e'
+              ? '#21c25c'
               : day.pct >= 70
-                ? '#f97316'
-                : '#ef4444'
+                ? '#eb590d'
+                : '#1f3b5e'
           return (
-            <div key={i} className="flex-1 flex flex-col items-center gap-1">
-              {/* pct label — solo si hay datos */}
-              <p className={`text-[9px] font-semibold ${day.pct !== null ? 'text-gray-500' : 'text-transparent'}`}>
-                {day.pct !== null ? `${day.pct}%` : '—'}
-              </p>
+            <div key={i} className="flex flex-col items-center gap-1.5" style={{ width: 38 }}>
               {/* barra */}
               <div
-                className="w-full rounded-t-md transition-all"
-                style={{ height: `${h}px`, backgroundColor: color, minHeight: day.pct !== null ? '4px' : '0' }}
+                className="w-full rounded-[4px] transition-all"
+                style={{
+                  height: barH,
+                  backgroundColor: day.pct === null ? '#f2f5f7' : color,
+                  opacity: day.pct === null ? 0.5 : 1,
+                }}
               />
-              {/* etiqueta día */}
-              <p className={`text-[10px] font-medium ${day.isToday ? 'text-[#ea580c] font-bold' : 'text-gray-400'}`}>
+              {/* etiqueta dia */}
+              <p className={`text-[9px] ${day.isToday ? 'text-[#1f3b5e] font-bold' : 'text-[#8c99a6] font-medium'}`}>
                 {day.label}
               </p>
             </div>
           )
         })}
-      </div>
-      <div className="flex items-center gap-3 mt-3 flex-wrap">
-        {[
-          { color: '#22c55e', label: '≥ 90%' },
-          { color: '#f97316', label: '70–89%' },
-          { color: '#ef4444', label: '< 70%' },
-          { color: '#e5e7eb', label: 'Sin registro' },
-        ].map(l => (
-          <span key={l.label} className="flex items-center gap-1 text-[10px] text-gray-400">
-            <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ backgroundColor: l.color }} />
-            {l.label}
-          </span>
-        ))}
       </div>
     </div>
   )

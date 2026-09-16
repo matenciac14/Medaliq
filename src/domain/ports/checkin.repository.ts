@@ -22,5 +22,5 @@ export interface ICheckInRepository {
   count(userId: string): Promise<number>
 
   /** Objective training data for the current week — aggregates SessionLog + GymSession. */
-  getWeekActivitySummary(userId: string): Promise<WeekActivitySummary>
+  getWeekActivitySummary(userId: string, timezone?: string | null): Promise<WeekActivitySummary>
 }

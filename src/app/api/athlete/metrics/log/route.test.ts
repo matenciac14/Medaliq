@@ -12,6 +12,7 @@ vi.mock('@/lib/db/prisma', () => ({
       findMany: vi.fn().mockResolvedValue([]),
       upsert: vi.fn().mockResolvedValue({ weightKg: 75, energyLevel: null, hrResting: null, sleepHours: null, date: new Date() }),
     },
+    user: { findUnique: vi.fn().mockResolvedValue({ timezone: 'America/Bogota' }) },
   },
 }))
 
@@ -61,14 +62,15 @@ describe('POST /api/athlete/metrics/log', () => {
     expect(res.status).toBe(400)
   })
 
-  it('upsert usa fecha de hoy, no del body', async () => {
+  it('upsert usa fecha de hoy (timezone-aware), no del body', async () => {
     await POST(postReq({ weightKg: 75 }))
 
     const upsertCall = vi.mocked(prisma.dailyLog.upsert).mock.calls[0][0]
     const upsertDate = (upsertCall.where as any).userId_date.date as Date
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    expect(upsertDate.getTime()).toBe(today.getTime())
+    // Verifica que la fecha es medianoche UTC (todayInTz retorna midnight UTC)
+    expect(upsertDate.getUTCHours()).toBe(0)
+    expect(upsertDate.getUTCMinutes()).toBe(0)
+    expect(upsertDate.getUTCSeconds()).toBe(0)
   })
 
   it('el update NO incluye campos no enviados (PERSIST-10)', async () => {

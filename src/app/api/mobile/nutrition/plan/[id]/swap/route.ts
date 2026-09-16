@@ -41,7 +41,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const originalKcal = (plannedMeal.food.kcalPer100g * plannedMeal.grams) / 100
   const newKcal      = (overrideFood.kcalPer100g    * overrideGrams)      / 100
-  const diff         = Math.abs(newKcal - originalKcal) / originalKcal
+  const diff         = originalKcal > 0 ? Math.abs(newKcal - originalKcal) / originalKcal : 0
 
   if (diff > SWAP_TOLERANCE) {
     return NextResponse.json(

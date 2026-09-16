@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getMobileUser } from '@/lib/auth/mobile_auth'
 import { rateLimitAsync } from '@/lib/rate_limit'
 import { prisma } from '@/lib/db/prisma'
@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
   const mobile = await getMobileUser(req)
   if (!mobile) return unauthorized()
   const { allowed } = await rateLimitAsync(`mobile-${mobile.id}:profile-get`, { limit: 300, windowMs: 60_000 })
-  if (!allowed) return ok({ error: 'Demasiadas solicitudes.' })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 
   try {
     const profile = await prisma.healthProfile.findUnique({
@@ -58,7 +58,7 @@ export async function PATCH(req: NextRequest) {
   const mobile = await getMobileUser(req)
   if (!mobile) return unauthorized()
   const { allowed } = await rateLimitAsync(`mobile-${mobile.id}:profile-patch`, { limit: 100, windowMs: 60_000 })
-  if (!allowed) return ok({ error: 'Demasiadas solicitudes.' })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 
   const raw = await req.json()
   const parsed = profilePatchSchema.safeParse(raw)

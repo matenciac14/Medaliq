@@ -1,17 +1,12 @@
 // NUT-WATER-01 (mobile) — WaterLog endpoint
 // GET  → { mlLogged, waterMlTarget }
-// POST → body { delta: number } — upsert mlLogged += delta (min 0)
+// POST → body { delta: number } — atomic upsert mlLogged += delta (min 0)
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { getMobileUser } from '@/lib/auth/mobile_auth'
 import { rateLimitAsync } from '@/lib/rate_limit'
 import { todayInTz } from '@/lib/core/date_utils'
-
-async function getUserTimezone(userId: string): Promise<string | null> {
-  const u = await prisma.user.findUnique({ where: { id: userId }, select: { timezone: true } })
-  return u?.timezone ?? null
-}
 
 export async function GET(req: NextRequest) {
   const mobile = await getMobileUser(req)
@@ -20,7 +15,7 @@ export async function GET(req: NextRequest) {
   if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 
   const userId = mobile.id
-  const tz = await getUserTimezone(userId)
+  const tz = req.nextUrl.searchParams.get('tz') || undefined
   const today = todayInTz(tz)
 
   const [log, plan] = await Promise.all([
@@ -45,16 +40,24 @@ export async function POST(req: NextRequest) {
   const delta = Number(body.delta)
   if (!delta || isNaN(delta)) return NextResponse.json({ error: 'delta requerido' }, { status: 400 })
 
-  const tz = await getUserTimezone(userId)
-  const today = todayInTz(tz)
-  const existing = await prisma.waterLog.findUnique({ where: { userId_date: { userId, date: today } } })
-  const newMl = Math.max(0, (existing?.mlLogged ?? 0) + delta)
+  // POST no recibe tz auto-inyectado (solo GET) → leer de DB como fallback
+  const tz = req.nextUrl.searchParams.get('tz') || undefined
+  let resolvedTz = tz
+  if (!resolvedTz) {
+    const u = await prisma.user.findUnique({ where: { id: userId }, select: { timezone: true } })
+    resolvedTz = u?.timezone ?? undefined
+  }
+  const today = todayInTz(resolvedTz)
+  const dateStr = today.toISOString()
 
-  await prisma.waterLog.upsert({
-    where:  { userId_date: { userId, date: today } },
-    create: { userId, date: today, mlLogged: newMl },
-    update: { mlLogged: newMl },
-  })
+  // Atomic upsert — avoids read-then-write race condition on parallel taps
+  const result = await prisma.$queryRaw<{ ml_logged: number }[]>`
+    INSERT INTO "WaterLog" ("id", "userId", "date", "mlLogged")
+    VALUES (gen_random_uuid(), ${userId}, ${dateStr}::timestamp, GREATEST(0, ${delta}))
+    ON CONFLICT ("userId", "date")
+    DO UPDATE SET "mlLogged" = GREATEST(0, "WaterLog"."mlLogged" + ${delta})
+    RETURNING "mlLogged" AS ml_logged
+  `
 
-  return NextResponse.json({ mlLogged: newMl })
+  return NextResponse.json({ mlLogged: result[0]?.ml_logged ?? 0 })
 }

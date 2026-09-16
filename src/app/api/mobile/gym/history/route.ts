@@ -109,7 +109,7 @@ export async function GET(req: NextRequest) {
   const formattedFree = freeLogs.map(fl => ({
     id: fl.id,
     date: fl.completedAt.toISOString(),
-    dayOfWeek: (fl.completedAt.getDay() + 6) % 7 + 1, // 1=lun…7=dom
+    dayOfWeek: fl.completedAt.getUTCDay() === 0 ? 7 : fl.completedAt.getUTCDay(), // 1=lun…7=dom (UTC — completedAt stored as UTC)
     label: 'Fuerza libre',
     muscleGroups: [] as string[],
     durationMin: fl.durationMin,

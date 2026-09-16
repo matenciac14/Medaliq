@@ -64,7 +64,13 @@ export async function GET(req: NextRequest) {
     const [weekSessions, weekRunningSessions] = await Promise.all([
       prisma.gymSession.findMany({
         where: { athleteId, assignedWorkoutId: assigned.id, date: { gte: monday, lte: sunday } },
-        select: { dayOfWeek: true, completed: true, id: true },
+        select: {
+          dayOfWeek: true, completed: true, id: true, durationMin: true, rpe: true, notes: true,
+          setLogs: {
+            include: { workoutExercise: { include: { exercise: { select: { name: true, bodyPart: true, target: true } } } } },
+            orderBy: [{ workoutExerciseId: 'asc' }, { setNumber: 'asc' }],
+          },
+        },
       }),
       activePlan && weekNumber !== null && weekNumber >= 1
         ? prisma.plannedSession.findMany({
@@ -101,20 +107,8 @@ export async function GET(req: NextRequest) {
       if (workoutDay?.isRestDay ?? !workoutDay) {
         selectedDetail = { type: 'rest' }
       } else {
-        const selDayStart = new Date(monday)
-        selDayStart.setUTCDate(monday.getUTCDate() + (selectedDow - 1))
-        const selDayEnd = new Date(selDayStart)
-        selDayEnd.setUTCDate(selDayStart.getUTCDate() + 1)
-
-        const session = await prisma.gymSession.findFirst({
-          where: { athleteId, assignedWorkoutId: assigned.id, dayOfWeek: selectedDow, date: { gte: selDayStart, lt: selDayEnd } },
-          include: {
-            setLogs: {
-              include: { workoutExercise: { include: { exercise: { select: { name: true, bodyPart: true, target: true } } } } },
-              orderBy: [{ workoutExerciseId: 'asc' }, { setNumber: 'asc' }],
-            },
-          },
-        })
+        // MOB-2: use pre-fetched session data instead of extra query
+        const session = weekSessions.find(s => s.dayOfWeek === selectedDow)
 
         if (session?.completed && session.setLogs.length > 0) {
           const exerciseMap = new Map<string, CompletedExercise>()
@@ -188,7 +182,14 @@ export async function GET(req: NextRequest) {
     }),
     prisma.gymSession.findMany({
       where: { athleteId, date: { gte: monday, lte: sunday }, plannedSessionId: { not: null } },
-      select: { dayOfWeek: true, completed: true, id: true, plannedSessionId: true },
+      select: {
+        dayOfWeek: true, completed: true, id: true, plannedSessionId: true,
+        durationMin: true, rpe: true, notes: true,
+        setLogs: {
+          include: { workoutExercise: { include: { exercise: { select: { name: true, bodyPart: true, target: true } } } } },
+          orderBy: [{ workoutExerciseId: 'asc' }, { setNumber: 'asc' }],
+        },
+      },
     }),
   ])
 
@@ -248,21 +249,13 @@ export async function GET(req: NextRequest) {
     if (!fuerzaForDay) {
       selectedDetail = { type: 'rest' }
     } else {
+      // MOB-2: use pre-fetched session data instead of extra query
       const session = gymSessions.find(s => s.plannedSessionId === fuerzaForDay.id && s.completed)
 
-      if (session) {
-        const fullSession = await prisma.gymSession.findUnique({
-          where: { id: session.id },
-          include: {
-            setLogs: {
-              include: { workoutExercise: { include: { exercise: { select: { name: true, bodyPart: true, target: true } } } } },
-              orderBy: [{ workoutExerciseId: 'asc' }, { setNumber: 'asc' }],
-            },
-          },
-        })
-        if (fullSession?.setLogs.length) {
+      if (session && session.setLogs.length > 0) {
+        {
           const exerciseMap = new Map<string, CompletedExercise2>()
-          for (const sl of fullSession.setLogs) {
+          for (const sl of session.setLogs) {
             const key = sl.workoutExercise?.id ?? sl.exerciseName ?? 'unknown'
             if (!exerciseMap.has(key)) exerciseMap.set(key, {
               name: sl.workoutExercise?.exercise.name ?? sl.exerciseName ?? 'Ejercicio',
@@ -272,7 +265,7 @@ export async function GET(req: NextRequest) {
             })
             exerciseMap.get(key)!.sets.push({ setNumber: sl.setNumber, weightKg: sl.weightKg, repsCompleted: sl.repsCompleted, completed: sl.completed })
           }
-          selectedDetail = { type: 'completed', session: { durationMin: fullSession.durationMin, rpe: fullSession.rpe, notes: fullSession.notes, exercises: [...exerciseMap.values()] } }
+          selectedDetail = { type: 'completed', session: { durationMin: session.durationMin, rpe: session.rpe, notes: session.notes, exercises: [...exerciseMap.values()] } }
         }
       }
 

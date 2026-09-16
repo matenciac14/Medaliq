@@ -8,6 +8,7 @@ vi.mock('@/lib/db/prisma', () => ({
   prisma: {
     food: { findMany: vi.fn() },
     foodProfile: { findUnique: vi.fn().mockResolvedValue(null) },
+    user: { findUnique: vi.fn().mockResolvedValue({ timezone: 'America/Bogota' }) },
   },
 }))
 
@@ -31,12 +32,12 @@ describe('GET /api/mobile/nutrition/foods', () => {
     expect(res.status).toBe(401)
   })
 
-  it('llama findMany con take: 50 sin filtro cuando no hay ?q=', async () => {
+  it('llama findMany con take: 80 sin filtro cuando no hay ?q=', async () => {
     vi.mocked(getMobileUser).mockResolvedValue(MOBILE_USER as any)
     vi.mocked(prisma.food.findMany).mockResolvedValue([])
     await GET(getReq())
     expect(prisma.food.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ take: 50, where: { isActive: true } })
+      expect.objectContaining({ take: 80, where: { isActive: true } })
     )
   })
 
@@ -46,7 +47,7 @@ describe('GET /api/mobile/nutrition/foods', () => {
     await GET(getReq('?q=arroz'))
     expect(prisma.food.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        take: 50,
+        take: 80,
         where: {
           isActive: true,
           name: { contains: 'arroz', mode: 'insensitive' },

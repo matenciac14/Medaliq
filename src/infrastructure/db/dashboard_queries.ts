@@ -118,11 +118,13 @@ export function buildDashboardSummaryInput(
   core: CoreDashboardData,
   activePlan: ActivePlanForSummary,
   lastCompletedPlan: LastCompletedPlan,
+  todayDow?: number,
 ): DashboardInput {
   const { dbUser, recentLogs, nutritionPlan, assignedWorkout, recentGymSessions } = core
   const profile = dbUser.profile
 
   return {
+    todayDow,
     user: {
       name: dbUser.name,
       profile: profile ? {

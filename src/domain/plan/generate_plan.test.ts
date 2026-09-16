@@ -154,13 +154,13 @@ describe('generatePlan — TDEE consistency', () => {
     expect(tdee).toBeGreaterThan(2000)
   })
 
-  it('atleta con goal de peso (weightGoalKg) → macros con déficit de 500 kcal', () => {
+  it('atleta con goal de peso (weightGoalKg) → macros con déficit (kcal menores)', () => {
     const tdee = calculateTDEE(RUNNER_MALE.weightKg, RUNNER_MALE.heightCm, RUNNER_MALE.age, RUNNER_MALE.gender, RUNNER_MALE.daysPerWeek)
     const sinGoal = calculateMacros(tdee, RUNNER_MALE.weightKg, false)
     const conGoal = calculateMacros(tdee, RUNNER_MALE.weightKg, true)
-    expect(conGoal.hard.kcal).toBe(sinGoal.hard.kcal - 500)
-    expect(conGoal.easy.kcal).toBe(sinGoal.easy.kcal - 500)
-    expect(conGoal.rest.kcal).toBe(sinGoal.rest.kcal - 500)
+    expect(conGoal.hard.kcal).toBeLessThan(sinGoal.hard.kcal)
+    expect(conGoal.easy.kcal).toBeLessThan(sinGoal.easy.kcal)
+    expect(conGoal.rest.kcal).toBeLessThan(sinGoal.rest.kcal)
   })
 
   it('macros: proteína siempre 2g/kg → mismo para hard/easy/rest', () => {

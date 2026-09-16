@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db/prisma'
 import { getMobileUser } from '@/lib/auth/mobile_auth'
 import { rateLimitAsync } from '@/lib/rate_limit'
 import { requireFeature } from '@/lib/guards/feature_gate'
+import { todayInTz } from '@/lib/core/date_utils'
 
 // GET /api/mobile/nutrition/plan?date=YYYY-MM-DD
 // Retorna las comidas planificadas del atleta para la fecha indicada (hoy si no se pasa).
@@ -22,7 +23,8 @@ export async function GET(req: NextRequest) {
   if (featureGuard) return featureGuard
 
   const userId = mobile.id
-  const dateParam = req.nextUrl.searchParams.get('date') ?? new Date().toISOString().split('T')[0]
+  const tz = req.nextUrl.searchParams.get('tz') || undefined
+  const dateParam = req.nextUrl.searchParams.get('date') ?? todayInTz(tz).toISOString().split('T')[0]
   const dayStart = new Date(`${dateParam}T00:00:00.000Z`)
   const dayEnd   = new Date(`${dateParam}T23:59:59.999Z`)
 

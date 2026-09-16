@@ -17,9 +17,10 @@ export type NutritionPlanData = {
   carbsHardG: number
   carbsEasyG: number
   fatG: number
+  kcalAdjustment: number
 }
 
-export function computeNutritionPlanData(profile: HealthProfileInput): NutritionPlanData {
+export function computeNutritionPlanData(profile: HealthProfileInput, kcalAdjustment = 0): NutritionPlanData {
   const tdee = calculateTDEE(
     profile.weightKg,
     profile.heightCm,
@@ -27,7 +28,7 @@ export function computeNutritionPlanData(profile: HealthProfileInput): Nutrition
     (profile.gender ?? 'male') as 'male' | 'female',
     5,
   )
-  const macros = calculateMacros(tdee, profile.weightKg, !!profile.weightGoalKg)
+  const macros = calculateMacros(tdee, profile.weightKg, kcalAdjustment)
   return {
     tdee,
     targetKcalHard: macros.hard.kcal,
@@ -37,5 +38,6 @@ export function computeNutritionPlanData(profile: HealthProfileInput): Nutrition
     carbsHardG: macros.hard.carbs,
     carbsEasyG: macros.easy.carbs,
     fatG: macros.hard.fat,
+    kcalAdjustment,
   }
 }

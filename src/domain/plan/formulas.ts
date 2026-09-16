@@ -91,32 +91,52 @@ export function calculateTDEE(
 export type MacroDay = { kcal: number; protein: number; carbs: number; fat: number }
 export type Macros = { hard: MacroDay; easy: MacroDay; rest: MacroDay }
 
+/** Rango seguro para kcalAdjustment: -750 (déficit agresivo) a +500 (bulk) */
+export const KCAL_ADJUSTMENT_MIN = -750
+export const KCAL_ADJUSTMENT_MAX = 500
+
+/** Opciones predefinidas para UI (coach + atleta Pro) */
+export const KCAL_ADJUSTMENT_OPTIONS = [
+  { value: -750, label: 'Déficit agresivo', desc: '-750 kcal (~0.7 kg/sem)' },
+  { value: -500, label: 'Déficit estándar', desc: '-500 kcal (~0.5 kg/sem)' },
+  { value: -250, label: 'Déficit moderado', desc: '-250 kcal (~0.25 kg/sem)' },
+  { value: 0,    label: 'Mantenimiento',    desc: 'Sin cambio calórico' },
+  { value: 250,  label: 'Superávit moderado', desc: '+250 kcal (lean bulk)' },
+  { value: 500,  label: 'Superávit',        desc: '+500 kcal (bulk)' },
+] as const
+
 /**
  * Calcula macros periodizados por tipo de día.
  * - Proteína: 2g/kg siempre
- * - Déficit si hasWeightGoal: 500 kcal
+ * - kcalAdjustment: negativo = déficit, positivo = superávit
  * - Carbos periodizados: día duro 50%, fácil 35%, descanso 25% de kcal
  * - Grasa: resto de kcal (mínimo 0.5g/kg)
+ *
+ * Backward-compatible: `hasWeightGoal` (boolean) se convierte a -500 internamente.
  */
-export function calculateMacros(tdee: number, weightKg: number, hasWeightGoal: boolean): Macros {
+export function calculateMacros(tdee: number, weightKg: number, kcalAdjustmentOrLegacy: number | boolean): Macros {
+  const adjustment = typeof kcalAdjustmentOrLegacy === 'boolean'
+    ? (kcalAdjustmentOrLegacy ? -500 : 0)
+    : Math.max(KCAL_ADJUSTMENT_MIN, Math.min(KCAL_ADJUSTMENT_MAX, kcalAdjustmentOrLegacy))
+
   const proteinG = Math.round(weightKg * 2)
   const proteinKcal = proteinG * 4
 
   function buildDay(kcalTarget: number, carbPct: number): MacroDay {
-    const kcal = Math.max(kcalTarget, 1200) // mínimo seguro
-    const carbKcal = kcal * carbPct
+    const baseKcal = Math.max(kcalTarget, 1200)
+    const carbKcal = baseKcal * carbPct
     const carbsG = Math.round(carbKcal / 4)
-    const fatKcal = kcal - proteinKcal - carbKcal
-    const fatG = Math.max(Math.round(fatKcal / 9), Math.round(weightKg * 0.5))
+    const minFatG = Math.round(weightKg * 0.5)
+    const derivedFatG = Math.round((baseKcal - proteinKcal - carbKcal) / 9)
+    const fatG = Math.max(derivedFatG, minFatG)
+    const kcal = proteinKcal + carbsG * 4 + fatG * 9
     return { kcal, protein: proteinG, carbs: carbsG, fat: fatG }
   }
 
-  const deficit = hasWeightGoal ? 500 : 0
-
   return {
-    hard: buildDay(tdee - deficit, 0.50),
-    easy: buildDay(tdee - deficit - 200, 0.35),
-    rest: buildDay(tdee - deficit - 400, 0.25),
+    hard: buildDay(tdee + adjustment, 0.50),
+    easy: buildDay(tdee + adjustment - 200, 0.35),
+    rest: buildDay(tdee + adjustment - 400, 0.25),
   }
 }
 

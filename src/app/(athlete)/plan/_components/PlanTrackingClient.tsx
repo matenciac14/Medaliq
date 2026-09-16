@@ -182,26 +182,27 @@ export default function PlanTrackingClient({
     </div>
 
     {/* ══════ DESKTOP (sm+) ══════ */}
-    <div className="hidden sm:block px-4 py-6 md:px-8 max-w-7xl mx-auto">
-      <PageTopBar
-        title="Mi Plan"
-        subtitle="Modo tracking"
-        right={
-          <WeekNavBar
-            weekLabel={weekLabel}
-            canGoPrev={true}
-            canGoNext={true}
-            onPrev={() => { setWeekOffset(w => w - 1); setSelectedDow(1) }}
-            onNext={() => { setWeekOffset(w => w + 1); setSelectedDow(1) }}
-            onToday={() => { setWeekOffset(0); setSelectedDow(todayDow) }}
-            showToday={!isCurrentWeek}
-          />
-        }
-      />
-      <div className="h-6" />
+    <div className="hidden sm:block px-4 py-6 md:px-8 max-w-7xl mx-auto space-y-5">
+      {/* WeekSection card — matches active/completed plan structure */}
+      <div className="bg-white rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
+        <PageTopBar
+          title="Mi Plan"
+          subtitle="Modo tracking"
+          center={
+            <WeekNavBar
+              weekLabel={weekLabel}
+              canGoPrev={true}
+              canGoNext={true}
+              onPrev={() => { setWeekOffset(w => w - 1); setSelectedDow(1) }}
+              onNext={() => { setWeekOffset(w => w + 1); setSelectedDow(1) }}
+              onToday={() => { setWeekOffset(0); setSelectedDow(todayDow) }}
+              showToday={!isCurrentWeek}
+            />
+          }
+        />
 
-      {/* Calendar Strip */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-5">
+        {/* Calendar Strip */}
+        <div className="px-3 pt-3">
         <div className="grid grid-cols-7 divide-x divide-gray-50">
           {calWeek?.days.map((day, i) => {
             const hasActivity = !!(day.sport?.done || day.gym || day.freeRun)
@@ -275,6 +276,14 @@ export default function PlanTrackingClient({
               <span className="text-[22px] font-black leading-none text-gray-300">—</span>
             </div>
           ))}
+        </div>
+        </div>
+
+        {/* Footer — session count */}
+        <div className="px-5 pb-3 flex justify-end">
+          <span className="text-[12px] text-gray-400 font-medium">
+            {weekStats.sessions} sesiones esta semana
+          </span>
         </div>
       </div>
 

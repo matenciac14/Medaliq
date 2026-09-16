@@ -80,7 +80,7 @@ export default async function GymHistoryPage() {
           className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-[#ea580c] transition-colors"
         >
           <ChevronLeft size={16} />
-          Ejercicios
+          Entreno
         </Link>
         <span className="text-gray-300">/</span>
         <h1 className="text-xl font-bold text-[#1e3a5f]">Historial de sesiones</h1>

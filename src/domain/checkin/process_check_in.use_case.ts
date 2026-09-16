@@ -333,6 +333,8 @@ async function syncWeight(
   const hasNutritionPlan = await healthProfileRepo.hasNutritionPlan(userId)
   if (!hasNutritionPlan) return undefined
 
+  const kcalAdjustment = await healthProfileRepo.getNutritionKcalAdjustment(userId)
+
   const tdee = calculateTDEE(
     newWeight,
     profile.heightCm,
@@ -341,7 +343,7 @@ async function syncWeight(
     profile.daysPerWeek ?? 5,
     profile.sessionMinutes,
   )
-  const macros = calculateMacros(tdee, newWeight, !!profile.weightGoalKg)
+  const macros = calculateMacros(tdee, newWeight, kcalAdjustment)
 
   await healthProfileRepo.updateNutritionTargets(userId, {
     tdee,

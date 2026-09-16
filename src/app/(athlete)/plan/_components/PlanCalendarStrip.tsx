@@ -109,10 +109,9 @@ export default function PlanCalendarStrip({ week, calendarDays, weekMonday, sele
         </div>
       </div>
 
-      {/* Desktop: unified WeekDayStrip */}
+      {/* Desktop: unified WeekDayStrip — grid variant matches Figma WeekSection */}
       <div className="hidden sm:block">
         <WeekDayStrip
-          variant="cards"
           cells={cells}
           selectedIdx={selectedIdx}
           onCellClick={(idx) => onSelect(idx + 1)}

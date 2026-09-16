@@ -33,7 +33,7 @@ export async function PATCH(
     return NextResponse.json({ error: `Fase inválida. Válidas: ${[...VALID_PHASES].join(', ')}` }, { status: 400 })
 
   const updated = await prisma.planWeek.update({
-    where: { id: weekId },
+    where: { id: weekId, planId },
     data: {
       ...(phase !== undefined && { phase }),
       ...(focusDescription !== undefined && { focusDescription }),

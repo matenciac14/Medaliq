@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
-import { getMobileUser } from '@/lib/auth/mobile_auth'
 import type { SetType } from '@/generated/prisma/enums'
 
 // ── Shared types ────────────────────────────────────────────────────────────
@@ -37,9 +36,8 @@ interface TemplateBody {
 
 // ── Guards ──────────────────────────────────────────────────────────────────
 
-async function getAthleteId(req: NextRequest): Promise<string | null> {
-  const mobile = await getMobileUser(req)
-  return mobile?.id ?? (await auth())?.user?.id ?? null
+async function getAthleteId(): Promise<string | null> {
+  return (await auth())?.user?.id ?? null
 }
 
 /** Atleta no puede crear rutinas propias si tiene un coach activo */
@@ -54,7 +52,7 @@ async function hasActiveCoach(athleteId: string): Promise<boolean> {
 // ── GET /api/athlete/gym/routines — lista rutinas propias del atleta ─────────
 
 export async function GET(req: NextRequest) {
-  const athleteId = await getAthleteId(req)
+  const athleteId = await getAthleteId()
   if (!athleteId) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
   const templates = await prisma.workoutTemplate.findMany({
@@ -75,7 +73,7 @@ export async function GET(req: NextRequest) {
 // ── POST /api/athlete/gym/routines — crear rutina propia ─────────────────────
 
 export async function POST(req: NextRequest) {
-  const athleteId = await getAthleteId(req)
+  const athleteId = await getAthleteId()
   if (!athleteId) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
   if (await hasActiveCoach(athleteId)) {

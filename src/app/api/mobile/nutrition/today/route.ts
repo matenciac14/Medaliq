@@ -76,6 +76,7 @@ export async function GET(req: NextRequest) {
     prisma.assignedNutritionPlan.findUnique({
       where: { athleteId: userId },
       include: {
+        coach: { select: { name: true } },
         template: {
           select: {
             name: true,
@@ -169,6 +170,13 @@ export async function GET(req: NextRequest) {
   // Compute targets
   const targets = nutritionPlan ? getDailyNutritionTarget(sessionIntensity, nutritionPlan) : null
 
+  // Pre-computed targets per day type (constructor/planner screens need all 3)
+  const dayTargets = nutritionPlan ? {
+    hard: getDailyNutritionTarget('HIGH', nutritionPlan),
+    easy: getDailyNutritionTarget('MODERATE', nutritionPlan),
+    rest: getDailyNutritionTarget('REST', nutritionPlan),
+  } : null
+
   // Resolve template meals for today's dayType
   const dbDayType = sessionIntensity === 'HIGH' ? 'HARD' : sessionIntensity === 'REST' || !sessionIntensity ? 'REST' : 'EASY'
   const templateDay = assignedNutritionPlan?.template.days.find(d => d.dayType === dbDayType) ?? null
@@ -207,7 +215,7 @@ export async function GET(req: NextRequest) {
   const kcalByDay = new Map<string, number>()
   for (const log of weekFoodLogs) {
     const dateKey = log.date.toISOString().split('T')[0]
-    const kcal = Math.round((log.food.kcalPer100g * log.grams) / 100)
+    const kcal = log.kcalLogged != null ? Math.round(log.kcalLogged) : Math.round((log.food.kcalPer100g * log.grams) / 100)
     kcalByDay.set(dateKey, (kcalByDay.get(dateKey) ?? 0) + kcal)
   }
   const daysWithLog = kcalByDay.size
@@ -251,12 +259,88 @@ export async function GET(req: NextRequest) {
     ? { kcal: targets.kcal, proteinG: targets.proteinG, carbsG: targets.carbsG, fatG: targets.fatG, tdee: nutritionPlan!.tdee }
     : null
 
+  // ── B2B detection ──
+  const isB2B = !!assignedNutritionPlan
+  const coachName = assignedNutritionPlan?.coach?.name ?? null
+  const planName = assignedNutritionPlan?.template.name ?? null
+
+  // ── Meal checklist (planned meals + logged status) ──
+  const MEAL_TYPE_LABELS: Record<string, string> = {
+    BREAKFAST: 'Desayuno', LUNCH: 'Almuerzo', DINNER: 'Cena',
+    SNACK: 'Merienda', PRE_WORKOUT: 'Pre-entreno', POST_WORKOUT: 'Post-entreno',
+  }
+  const loggedMealTypes = new Set(foodLogs.map(l => String(l.mealType)).filter(Boolean))
+
+  const mealPlanParsed = parseMealPlanData(mealPlanRow?.data ?? null)
+  const assignedMealPlan = assignedNutritionPlan
+    ? (() => {
+        const templateDayToMeals = (day: any) => {
+          if (!day?.meals) return []
+          return day.meals.map((m: any) => ({
+            label: MEAL_TYPE_LABELS[m.mealType] ?? m.mealType ?? 'Comida',
+            foods: m.items?.map((it: any) => `${it.food?.name ?? 'Alimento'} ${it.grams}g`).join(', ') ?? '',
+            kcal: m.items?.reduce((s: number, it: any) => s + Math.round((it.food?.kcalPer100g ?? 0) * it.grams / 100), 0) ?? 0,
+            protein: m.items?.reduce((s: number, it: any) => s + Math.round((it.food?.proteinPer100g ?? 0) * it.grams / 100), 0) ?? 0,
+          }))
+        }
+        const empty = { meals: [] as any[] }
+        return {
+          hard: { ...empty, meals: templateDayToMeals(assignedNutritionPlan.template.days.find(d => d.dayType === 'HARD')) },
+          easy: { ...empty, meals: templateDayToMeals(assignedNutritionPlan.template.days.find(d => d.dayType === 'EASY')) },
+          rest: { ...empty, meals: templateDayToMeals(assignedNutritionPlan.template.days.find(d => d.dayType === 'REST')) },
+        }
+      })()
+    : null
+
+  const effectiveMealPlan = assignedMealPlan ?? mealPlanParsed
+  const mealChecklist = (() => {
+    if (!effectiveMealPlan) return []
+    const dayKey = intensity as keyof typeof effectiveMealPlan
+    const dayPlan = effectiveMealPlan[dayKey]
+    if (!dayPlan || !('meals' in dayPlan)) return []
+    type MealShape = { label: string; foods: string; kcal: number; protein?: number }
+    return (dayPlan.meals as MealShape[]).map(m => {
+      const mealType = Object.entries(MEAL_TYPE_LABELS).find(([, v]) => v === m.label)?.[0] ?? m.label
+      return {
+        mealType,
+        label: m.label,
+        foods: m.foods,
+        kcal: m.kcal,
+        proteinG: m.protein ?? 0,
+        isLogged: loggedMealTypes.has(mealType),
+      }
+    })
+  })()
+
+  // ── Next meal (first unlogged) ──
+  const MEAL_TIMES: Record<string, string> = {
+    BREAKFAST: '08:00', PRE_WORKOUT: '10:00', LUNCH: '12:30',
+    SNACK: '15:30', POST_WORKOUT: '17:00', DINNER: '19:30',
+  }
+  const nextMealItem = mealChecklist.find(m => !m.isLogged)
+  const nextMeal = nextMealItem ? {
+    label: nextMealItem.label,
+    time: MEAL_TIMES[nextMealItem.mealType] ?? '12:00',
+    foods: nextMealItem.foods,
+    kcal: nextMealItem.kcal,
+    proteinG: nextMealItem.proteinG,
+  } : null
+
+  // ── Tip text (deterministic by dayType) ──
+  const TIPS: Record<string, { title: string; body: string }> = {
+    hard: { title: 'Carbos antes del gym', body: 'Consume avena o arroz 60 min antes del entreno. Maximo rendimiento.' },
+    easy: { title: 'Proteina post-sesion', body: '30 g en los 30 min post-entreno. Facilita la recuperacion muscular.' },
+    rest: { title: 'Hidratacion activa', body: 'Mantente en 2 L aunque no entrenes. Activa la recuperacion.' },
+  }
+  const tip = TIPS[intensity] ?? null
+
   return NextResponse.json({
     // Core nutrition state
     hasNutritionPlan: !!nutritionPlan,
     dayType: intensity,
     macros,
     targets,
+    dayTargets,
     intensity,
 
     // Today's data
@@ -274,12 +358,22 @@ export async function GET(req: NextRequest) {
     waterTarget: nutritionPlan?.waterMlTarget ?? 2000,
 
     // Meal plan (static JSON)
-    mealPlan: parseMealPlanData(mealPlanRow?.data ?? null),
+    mealPlan: mealPlanParsed,
 
     // Context
     gymKcalBurned,
     planPhaseContext,
     pendingAdjustment: null,
+
+    // B2B
+    isB2B,
+    coachName,
+    planName,
+
+    // Meal checklist + next meal + tip
+    mealChecklist,
+    nextMeal,
+    tip,
 
     // Proposals
     proposals: proposals.map(p => ({

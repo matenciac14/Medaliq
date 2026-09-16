@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
-import { getMobileUser } from '@/lib/auth/mobile_auth'
 
 export async function POST(req: NextRequest) {
-  const mobile = await getMobileUser(req)
-  const athleteId = mobile?.id ?? (await auth())?.user?.id
+  const athleteId = (await auth())?.user?.id
   if (!athleteId) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   const { templateId } = await req.json()
 

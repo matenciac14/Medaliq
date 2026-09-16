@@ -81,9 +81,22 @@ export function buildWeekDateNumbers(monday: Date): Record<number, number> {
  *   → todayInTz returns 2026-09-03T05:00:00.000Z (midnight COT = 5am UTC)
  */
 export function todayInTz(timezone: string | null | undefined): Date {
-  const tz = timezone ?? 'America/Bogota'
+  const tz = timezone ?? 'UTC'
   const dateStr = new Date().toLocaleDateString('en-CA', { timeZone: tz })
   return new Date(`${dateStr}T00:00:00.000Z`)
+}
+
+/**
+ * Adjusts a date to the nearest Monday (same or next).
+ * Plans must start on Monday so session dayOfWeek aligns with calendar display.
+ */
+export function forceMonday(date: Date): Date {
+  const d = new Date(date)
+  const dow = d.getUTCDay() // 0=Sun..6=Sat
+  if (dow === 1) return d // already Monday
+  const daysToAdd = dow === 0 ? 1 : 8 - dow // Sun→+1, Tue→+6, Wed→+5...
+  d.setUTCDate(d.getUTCDate() + daysToAdd)
+  return d
 }
 
 /**

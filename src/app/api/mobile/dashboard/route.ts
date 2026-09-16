@@ -6,6 +6,7 @@ import { getDashboardSummary } from '@/domain/dashboard/get_dashboard_summary.us
 import { calculateHRZones } from '@/domain/plan/formulas'
 import { PlanStatus } from '@/generated/prisma/enums'
 import { getPlanWeekNumber } from '@/lib/core/week_number'
+import { todayDowInTz } from '@/lib/core/date_utils'
 import {
   fetchCoreDashboardData,
   buildDashboardSummaryInput,
@@ -21,10 +22,12 @@ export async function GET(req: NextRequest) {
   if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes. Intenta en un minuto.' }, { status: 429 })
 
   const userId = mobile.id
+  const tz = req.nextUrl.searchParams.get('tz') || undefined
 
+  try {
   // ── Shared queries + PERF-01 Phase 1: plan metadata sin sesiones ───────
   const [core, planMeta] = await Promise.all([
-    fetchCoreDashboardData(userId),
+    fetchCoreDashboardData(userId, tz),
     prisma.trainingPlan.findFirst({
       where: { userId, status: PlanStatus.ACTIVE },
       orderBy: { createdAt: 'desc' },
@@ -72,7 +75,8 @@ export async function GET(req: NextRequest) {
       }
     : null
 
-  const summaryInput = buildDashboardSummaryInput(core, activePlan, lastCompletedPlan)
+  const todayDow = todayDowInTz(tz)
+  const summaryInput = buildDashboardSummaryInput(core, activePlan, lastCompletedPlan, todayDow)
   const { summary, planIdToComplete } = getDashboardSummary(summaryInput)
 
   // When a plan just auto-completes, fetch stats to show the season-completed modal
@@ -100,7 +104,10 @@ export async function GET(req: NextRequest) {
 
   if (planIdToComplete && planMeta) {
     justCompletedPlan = await buildJustCompletedPlan(planIdToComplete, planMeta.name, planMeta.totalWeeks, true)
-    prisma.trainingPlan.update({ where: { id: planIdToComplete }, data: { status: PlanStatus.COMPLETED } }).catch((err) => {
+    await prisma.trainingPlan.updateMany({
+      where: { id: planIdToComplete, status: PlanStatus.ACTIVE },
+      data: { status: PlanStatus.COMPLETED },
+    }).catch((err) => {
       console.error('[dashboard] failed to auto-complete plan', planIdToComplete, err)
     })
   }
@@ -163,4 +170,8 @@ export async function GET(req: NextRequest) {
       return calculateHRZones(hrMax, hrResting)
     })(),
   })
+  } catch (err) {
+    console.error('[mobile/dashboard]', err)
+    return NextResponse.json({ error: 'Error interno' }, { status: 500 })
+  }
 }

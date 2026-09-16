@@ -1,5 +1,5 @@
 // NUT-DASH-04 — Cards compactas de comidas planificadas para hoy
-// Muestra las primeras 3 comidas del día (agrupadas por mealType) con alimentos y kcal
+// Muestra las primeras 3 comidas del dia (agrupadas por mealType) con alimentos y kcal
 // Solo visible cuando hay PlannedMeals para hoy
 
 import Link from 'next/link'
@@ -21,6 +21,15 @@ const MEAL_LABELS: Record<string, string> = {
   POST_WORKOUT: 'Post-entreno',
 }
 
+const MEAL_ICONS: Record<string, string> = {
+  BREAKFAST:    '🍳',
+  PRE_WORKOUT:  '⚡',
+  LUNCH:        '🥗',
+  SNACK:        '🍎',
+  DINNER:       '🌙',
+  POST_WORKOUT: '💪',
+}
+
 const MEAL_ORDER = ['BREAKFAST', 'PRE_WORKOUT', 'LUNCH', 'SNACK', 'DINNER', 'POST_WORKOUT']
 
 export default function MealSummaryCards({ meals }: { meals: PlannedMeal[] }) {
@@ -37,40 +46,46 @@ export default function MealSummaryCards({ meals }: { meals: PlannedMeal[] }) {
   const totalComidas  = orderedTypes.length
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+    <div>
       <div className="flex items-center justify-between mb-3">
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Qué comer hoy</p>
+        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Estructura de comidas hoy</p>
         <div className="flex items-center gap-2">
           <LogTodayButton mealCount={meals.length} />
           <Link
             href="/nutrition/planner"
             className="text-xs font-semibold text-[#1e3a5f] hover:underline"
           >
-            Ver plan ({totalComidas}) →
+            Ver plan ({totalComidas}) &rarr;
           </Link>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+      <p className="text-xs text-gray-500 mb-3">
+        Basado en tu plan nutricional -- agrega tus alimentos al registrar
+      </p>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {visibleTypes.map((mealType) => {
           const items    = byType[mealType]!
           const totalKcal = Math.round(
             items.reduce((s, m) => s + (m.food.kcalPer100g * m.grams / 100), 0)
           )
+          const foodsList = items.map(i => `${i.food.name} ${i.grams}g`).join(' - ')
+          const icon = MEAL_ICONS[mealType] ?? '🍽️'
           return (
-            <div key={mealType} className="rounded-xl bg-gray-50 border border-gray-100 px-3 py-2.5">
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">
-                {MEAL_LABELS[mealType] ?? mealType}
-              </p>
-              <div className="space-y-0.5 mb-2">
-                {items.map(item => (
-                  <p key={item.id} className="text-xs text-gray-700 truncate">
-                    {item.food.name}
-                    <span className="text-gray-400 ml-1">{item.grams}g</span>
-                  </p>
-                ))}
+            <div key={mealType} className="rounded-xl bg-white border border-gray-200 shadow-sm overflow-hidden">
+              <div className="px-3.5 py-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">{icon}</span>
+                    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wide">
+                      {MEAL_LABELS[mealType] ?? mealType}
+                    </p>
+                  </div>
+                  <span className="text-sm font-bold text-orange-600">{totalKcal} kcal</span>
+                </div>
+                <p className="text-xs text-gray-600 leading-relaxed">{foodsList}</p>
               </div>
-              <p className="text-xs font-bold text-orange-600">{totalKcal} kcal</p>
             </div>
           )
         })}

@@ -40,11 +40,11 @@ export async function POST(
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Body invalido.' }, { status: 400 })
   }
 
-  const weekStart = new Date(parsed.data.weekStartDate)
-  weekStart.setHours(0, 0, 0, 0)
+  // YYYY-MM-DD → UTC midnight (no usar setHours que depende del TZ del server)
+  const weekStart = new Date(`${parsed.data.weekStartDate}T00:00:00.000Z`)
   const weekEnd = new Date(weekStart)
-  weekEnd.setDate(weekEnd.getDate() + 6)
-  weekEnd.setHours(23, 59, 59, 999)
+  weekEnd.setUTCDate(weekEnd.getUTCDate() + 6)
+  weekEnd.setUTCHours(23, 59, 59, 999)
 
   // Phase 1: reads paralelos
   const [assignedPlan, intensityMap] = await Promise.all([
@@ -82,7 +82,7 @@ export async function POST(
     if (!templateDay) continue
 
     const mealDate = new Date(date)
-    mealDate.setHours(12, 0, 0, 0)
+    mealDate.setUTCHours(12, 0, 0, 0)
 
     for (const meal of templateDay.meals) {
       for (const item of meal.items) {

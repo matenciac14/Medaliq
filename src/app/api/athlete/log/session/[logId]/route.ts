@@ -36,7 +36,7 @@ export async function PATCH(
   }
 
   const updated = await prisma.sessionLog.update({
-    where: { id: logId },
+    where: { id: logId, userId },
     data,
   })
 

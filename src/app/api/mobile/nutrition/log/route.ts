@@ -68,34 +68,40 @@ export async function POST(req: NextRequest) {
 
   const snapshot = calcMacros(gramsNum, food)
 
-  // Si el mismo alimento ya fue registrado en esta comida hoy, sumar los gramos (PERSIST-01)
-  const existing = await prisma.foodLog.findUnique({
-    where: { userId_foodId_date_mealType: { userId, foodId, date: logDate, mealType } },
-    select: { id: true, grams: true },
-  })
+  // Atomic upsert: if same food+date+mealType exists, add grams (PERSIST-01)
+  // Uses serializable transaction to avoid read-then-write race on parallel requests
+  const foodSelect = { name: true, category: true, servingG: true, servingLabel: true, kcalPer100g: true, proteinPer100g: true, carbsPer100g: true, fatPer100g: true } as const
 
-  if (existing) {
-    const totalGrams = existing.grams + gramsNum
-    const totalSnapshot = calcMacros(totalGrams, food)
-    const log = await prisma.foodLog.update({
-      where: { id: existing.id },
-      data: {
-        grams: totalGrams,
-        kcalLogged: totalSnapshot.kcal, proteinLogged: totalSnapshot.proteinG,
-        carbsLogged: totalSnapshot.carbsG, fatLogged: totalSnapshot.fatG,
-      },
-      include: { food: { select: { name: true, category: true, servingG: true, servingLabel: true, kcalPer100g: true, proteinPer100g: true, carbsPer100g: true, fatPer100g: true } } },
+  const result = await prisma.$transaction(async (tx) => {
+    const existing = await tx.foodLog.findUnique({
+      where: { userId_foodId_date_mealType: { userId, foodId, date: logDate, mealType } },
+      select: { id: true, grams: true },
     })
-    return NextResponse.json({ ...log, ...totalSnapshot }, { status: 200 })
-  }
 
-  const log = await prisma.foodLog.create({
-    data: {
-      userId, foodId, grams: gramsNum, mealType, date: logDate,
-      kcalLogged: snapshot.kcal, proteinLogged: snapshot.proteinG, carbsLogged: snapshot.carbsG, fatLogged: snapshot.fatG,
-    },
-    include: { food: { select: { name: true, category: true, servingG: true, servingLabel: true, kcalPer100g: true, proteinPer100g: true, carbsPer100g: true, fatPer100g: true } } },
+    if (existing) {
+      const totalGrams = existing.grams + gramsNum
+      const totalSnapshot = calcMacros(totalGrams, food)
+      const log = await tx.foodLog.update({
+        where: { id: existing.id },
+        data: {
+          grams: totalGrams,
+          kcalLogged: totalSnapshot.kcal, proteinLogged: totalSnapshot.proteinG,
+          carbsLogged: totalSnapshot.carbsG, fatLogged: totalSnapshot.fatG,
+        },
+        include: { food: { select: foodSelect } },
+      })
+      return { log: { ...log, ...totalSnapshot }, status: 200 as const }
+    }
+
+    const log = await tx.foodLog.create({
+      data: {
+        userId, foodId, grams: gramsNum, mealType, date: logDate,
+        kcalLogged: snapshot.kcal, proteinLogged: snapshot.proteinG, carbsLogged: snapshot.carbsG, fatLogged: snapshot.fatG,
+      },
+      include: { food: { select: foodSelect } },
+    })
+    return { log: { ...log, ...snapshot }, status: 201 as const }
   })
 
-  return NextResponse.json({ ...log, ...snapshot }, { status: 201 })
+  return NextResponse.json(result.log, { status: result.status })
 }

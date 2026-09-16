@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { auth } from '@/auth'
-import { todayDowInTz } from '@/lib/core/date_utils'
+import { todayDowInTz, todayInTz, getWeekMonday } from '@/lib/core/date_utils'
 import { prisma } from '@/lib/db/prisma'
 import { getPlanWeekNumber } from '@/lib/core/week_number'
 import { intensityToDayType, type DayType } from '@/lib/nutrition/day_type'
@@ -20,6 +20,7 @@ import HydrationWidget from './_components/HydrationWidget'
 import MealSummaryCards from './_components/MealSummaryCards'
 import TipCard from './_components/TipCard'
 import NutritionPageClient from './_components/NutritionPageClient'
+import AthleteKcalStrategy from './_components/AthleteKcalStrategy'
 import EmptyMealPlanCard from './_components/EmptyMealPlanCard'
 import CoachNutritionBanner from './_components/CoachNutritionBanner'
 import PendingMealsBanner from './_components/PendingMealsBanner'
@@ -40,29 +41,24 @@ export default async function NutritionPage() {
     }),
     prisma.user.findUnique({ where: { id: userId }, select: { timezone: true } }),
   ])
-  const tz = userRecord?.timezone ?? 'America/Bogota'
-  const todayDate = new Date(new Date().toLocaleString('en-US', { timeZone: tz }))
+  const tz = userRecord?.timezone ?? undefined
+  const todayStart = todayInTz(tz)  // UTC midnight of user's "today"
   const todayDow = todayDowInTz(tz)
   const currentWeek = activePlan ? getPlanWeekNumber(activePlan.startDate, activePlan.totalWeeks) : null
 
-  // Ajuste nutricional pendiente para hoy (date es @db.Date — comparar por día completo)
-  const todayStart = new Date(todayDate)
-  todayStart.setHours(0, 0, 0, 0)
-  const tomorrow = new Date(todayDate)
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  tomorrow.setHours(0, 0, 0, 0)
-  const weekStart = new Date(todayDate)
-  weekStart.setDate(weekStart.getDate() - 6) // ultimos 7 dias
-  weekStart.setHours(0, 0, 0, 0)
+  // Tomorrow = today + 1 day (for date range queries)
+  const tomorrow = new Date(todayStart)
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1)
+
+  // Last 7 days
+  const weekStart = new Date(todayStart)
+  weekStart.setUTCDate(weekStart.getUTCDate() - 6)
 
   // Semana actual Lun–Dom para PlannedMeals
-  const mondayThisWeek = new Date(todayDate)
-  const todayDowNum = todayDate.getDay() === 0 ? 7 : todayDate.getDay() // 1=Lun..7=Dom
-  mondayThisWeek.setDate(todayDate.getDate() - (todayDowNum - 1))
-  mondayThisWeek.setHours(0, 0, 0, 0)
+  const mondayThisWeek = getWeekMonday(0, tz)
   const sundayThisWeek = new Date(mondayThisWeek)
-  sundayThisWeek.setDate(mondayThisWeek.getDate() + 6)
-  sundayThisWeek.setHours(23, 59, 59, 999)
+  sundayThisWeek.setUTCDate(mondayThisWeek.getUTCDate() + 6)
+  sundayThisWeek.setUTCHours(23, 59, 59, 999)
 
   const proposalRepo = new CoachNutritionProposalRepository(prisma)
 
@@ -77,6 +73,7 @@ export default async function NutritionPage() {
     weekFoodLogs,
     coachProposals,
     currentPlanWeek,
+    activeCoachRelation,
     assignedNutritionPlan,
     weekSessions,
     athleteTemplate,
@@ -92,7 +89,7 @@ export default async function NutritionPage() {
             week: { planId: activePlan.id, weekNumber: currentWeek },
             dayOfWeek: todayDow,
           },
-          select: { intensity: true, type: true, durationMin: true },
+          select: { intensity: true, type: true, durationMin: true, zoneTarget: true },
         })
       : Promise.resolve(null),
     prisma.assignedWorkout.findFirst({
@@ -135,6 +132,10 @@ export default async function NutritionPage() {
           select: { isRecoveryWeek: true, sessions: { select: { intensity: true } } },
         })
       : Promise.resolve(null),
+    prisma.coachAthlete.findFirst({
+      where: { athleteId: userId, status: 'ACTIVE' },
+      select: { coach: { select: { name: true } } },
+    }),
     prisma.assignedNutritionPlan.findUnique({
       where: { athleteId: userId },
       include: {
@@ -290,7 +291,7 @@ export default async function NutritionPage() {
   const hasPlannedMealsThisWeek = plannedMealsThisWeek.length > 0
 
   // NUT-DASH-04: comidas de HOY (filtramos del array semanal ya cargado)
-  const todayStr = todayDate.toISOString().split('T')[0]
+  const todayStr = todayStart.toISOString().split('T')[0]
   const todayPlannedMeals = plannedMealsThisWeek.filter(m => {
     const d = m.date instanceof Date ? m.date : new Date(m.date)
     return d.toISOString().split('T')[0] === todayStr
@@ -309,15 +310,9 @@ export default async function NutritionPage() {
     // Mapear intensidad por fecha usando las sesiones de la semana
     const intensityByDateKey = new Map<string, string>()
     if (activePlan && currentWeek) {
-      // weekSessions ya tiene dayOfWeek + intensity para la semana actual
-      // Mapear dayOfWeek a fecha real
-      const mondayRef = new Date(todayDate)
-      const todayDowForRef = todayDate.getDay() === 0 ? 7 : todayDate.getDay()
-      mondayRef.setDate(todayDate.getDate() - (todayDowForRef - 1))
-      mondayRef.setHours(0, 0, 0, 0)
       for (const s of weekSessions) {
-        const sessionDate = new Date(mondayRef)
-        sessionDate.setDate(mondayRef.getDate() + s.dayOfWeek)
+        const sessionDate = new Date(mondayThisWeek)
+        sessionDate.setUTCDate(mondayThisWeek.getUTCDate() + s.dayOfWeek - 1)
         const key = sessionDate.toISOString().slice(0, 10)
         intensityByDateKey.set(key, s.intensity ?? 'REST')
       }
@@ -340,21 +335,17 @@ export default async function NutritionPage() {
   // Construir mapa de intensidad por fecha para los últimos 7 días
   const intensityMapForBars = new Map<string, string>()
   if (activePlan && currentWeek) {
-    const mondayRef = new Date(todayDate)
-    const todayDowForBars = todayDate.getDay() === 0 ? 7 : todayDate.getDay()
-    mondayRef.setDate(todayDate.getDate() - (todayDowForBars - 1))
-    mondayRef.setHours(0, 0, 0, 0)
     for (const s of weekSessions) {
-      const sessionDate = new Date(mondayRef)
-      sessionDate.setDate(mondayRef.getDate() + s.dayOfWeek)
+      const sessionDate = new Date(mondayThisWeek)
+      sessionDate.setUTCDate(mondayThisWeek.getUTCDate() + s.dayOfWeek - 1)
       const key = sessionDate.toISOString().slice(0, 10)
       intensityMapForBars.set(key, s.intensity ?? 'REST')
     }
   }
   const DOW_LABELS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
   const weekBars = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(todayDate)
-    d.setDate(d.getDate() - 6 + i)
+    const d = new Date(todayStart)
+    d.setUTCDate(d.getUTCDate() - 6 + i)
     const key = d.toISOString().slice(0, 10)
     const kcal = kcalByDay[key] ?? null
     const intensity = intensityMapForBars.get(key) ?? 'REST'
@@ -366,9 +357,9 @@ export default async function NutritionPage() {
       ? Math.round((kcal / effectiveTargetKcal) * 100)
       : null
     return {
-      label: DOW_LABELS[d.getDay()],
+      label: DOW_LABELS[d.getUTCDay()],
       pct,
-      isToday: key === todayDate.toISOString().slice(0, 10),
+      isToday: key === todayStart.toISOString().slice(0, 10),
     }
   })
 
@@ -379,12 +370,9 @@ export default async function NutritionPage() {
     const dayType = session && session.type !== 'DESCANSO'
       ? intensityToDayType(session.intensity)
       : 'rest'
-    // Fecha real del día
-    const todayMonday = new Date(todayDate)
-    const todayDowNum = todayDate.getDay() === 0 ? 7 : todayDate.getDay()  // 1=Lun
-    todayMonday.setDate(todayDate.getDate() - (todayDowNum - 1))
-    const dayDate = new Date(todayMonday)
-    dayDate.setDate(todayMonday.getDate() + i)
+    // Fecha real del día (usa mondayThisWeek ya calculado con getWeekMonday)
+    const dayDate = new Date(mondayThisWeek)
+    dayDate.setUTCDate(mondayThisWeek.getUTCDate() + i)
     const MONTH_SHORT = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']
     const SESSION_LABELS_MENU: Record<string, string> = {
       EASY_RUN: 'Carrera suave', TEMPO_RUN: 'Tempo', INTERVAL: 'Intervalos',
@@ -397,7 +385,7 @@ export default async function NutritionPage() {
       : null
     return {
       label: ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'][i],
-      date: `${dayDate.getDate()} ${MONTH_SHORT[dayDate.getMonth()]}`,
+      date: `${dayDate.getUTCDate()} ${MONTH_SHORT[dayDate.getUTCMonth()]}`,
       dayType: (weekSessions.length > 0 ? dayType : null) as 'hard' | 'easy' | 'rest' | null,
       sessionLabel: weekSessions.length > 0 ? (sessionLabel ?? 'Descanso') : null,
       isToday: dow === todayDow,
@@ -507,7 +495,21 @@ export default async function NutritionPage() {
   const pageState: 'sin-plan' | 'con-plan' | 'b2b' = isB2B ? 'b2b' : hasMealPlan ? 'con-plan' : 'sin-plan'
 
   return (
-    <div className="px-4 py-6 md:px-8 md:py-8 max-w-7xl mx-auto">
+    <>
+      {/* Mobile header — gradient navy bar (matches dashboard/plan pattern) */}
+      <div className="sm:hidden bg-gradient-to-b from-[#1e3a5f] to-[#2d5a8e] px-5 pt-[max(env(safe-area-inset-top,0px),20px)] pb-[22px]">
+        <h1 className="text-[20px] font-bold text-white leading-tight tracking-[-0.3px]">Nutricion</h1>
+        <div className="flex items-center gap-2 mt-3">
+          <span className="bg-white/15 text-white text-[12px] font-semibold px-3 py-1.5 rounded-[14px]">
+            {todayStart.toLocaleDateString('es', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}
+          </span>
+          <span className="bg-white/15 text-white text-[11px] font-semibold px-3 py-1.5 rounded-[14px]">
+            {pageState === 'b2b' ? 'Coach asigna' : `${badge.emoji} ${badge.label}`}
+          </span>
+        </div>
+      </div>
+
+    <div className="px-4 pt-3 pb-6 sm:py-6 md:px-8 md:py-8 max-w-7xl mx-auto">
       <NutritionPageClient
         state={pageState}
         hasMealPlan={hasMealPlan}
@@ -520,7 +522,8 @@ export default async function NutritionPage() {
         activityLabel={activityLabel}
 
         headerSlot={
-          <div className="flex items-start justify-between flex-wrap gap-2">
+          /* Desktop header only — mobile header is outside this wrapper */
+          <div className="hidden lg:flex items-start justify-between flex-wrap gap-2">
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Nutricion de hoy</h1>
             <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border ${badge.color}`}>
               {badge.emoji} {badge.label}
@@ -552,6 +555,8 @@ export default async function NutritionPage() {
               intensity={todaySession?.intensity ?? null}
               durationMin={todaySession?.durationMin ?? null}
               isGymDay={hasGymSessionToday}
+              zoneTarget={todaySession?.zoneTarget ?? null}
+              weekNumber={currentWeek}
             />
           ) : null
         }
@@ -624,7 +629,7 @@ export default async function NutritionPage() {
         coachBannerSlot={
           assignedNutritionPlan ? (
             <CoachNutritionBanner
-              coachName={null}
+              coachName={activeCoachRelation?.coach?.name ?? null}
               planName={assignedNutritionPlan.template.name}
             />
           ) : null
@@ -707,6 +712,12 @@ export default async function NutritionPage() {
 
         initSlot={needsNutritionInit ? <NutritionInitClient /> : null}
 
+        kcalStrategySlot={
+          !isB2B && nutritionPlan ? (
+            <AthleteKcalStrategy currentAdjustment={nutritionPlan.kcalAdjustment} />
+          ) : null
+        }
+
         foodGuideSlot={
           allFoods.length > 0 && effectiveNutritionPlan ? (
             <div className="pt-2">
@@ -721,5 +732,6 @@ export default async function NutritionPage() {
         }
       />
     </div>
+    </>
   )
 }

@@ -125,6 +125,7 @@ export type NutritionPlanData = {
   carbsHardG: number
   carbsEasyG: number
   fatG: number
+  kcalAdjustment: number
 } | null
 
 export type PaymentData = {
@@ -623,32 +624,27 @@ export default function AthleteDetailClient({
           >
             {initials}
           </div>
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-2xl font-bold" style={{ color: '#1f2d3d' }}>{displayName}</h1>
-              <span
-                className="text-xs font-semibold px-2.5 py-0.5 rounded-full"
-                style={
-                  athleteStatus === 'ACTIVE'
-                    ? { backgroundColor: '#dcfce7', color: '#15803d' }
-                    : { backgroundColor: '#fef3c7', color: '#92400e' }
-                }
-              >
-                {athleteStatus === 'ACTIVE' ? 'Activo' : 'Pausado'}
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-2xl font-bold" style={{ color: '#1f2d3d' }}>{displayName}</h1>
+            <span
+              className="text-xs font-semibold px-2.5 py-0.5 rounded-full"
+              style={
+                athleteStatus === 'ACTIVE'
+                  ? { backgroundColor: '#dcfce7', color: '#15803d' }
+                  : { backgroundColor: '#fef3c7', color: '#92400e' }
+              }
+            >
+              {athleteStatus === 'ACTIVE' ? 'Activo' : 'Pausado'}
+            </span>
+            {healthProfile?.sport && (
+              <span className="text-xs font-medium px-2.5 py-0.5 rounded-full" style={{ backgroundColor: '#f0f1f3', color: '#4a5568' }}>
+                {healthProfile.sport === 'RUNNING' ? 'Running' : healthProfile.sport === 'STRENGTH' ? 'Fuerza' : healthProfile.sport}
+                {healthProfile.experienceLevel && ` · ${healthProfile.experienceLevel === 'BEGINNER' ? 'Principiante' : healthProfile.experienceLevel === 'INTERMEDIATE' ? 'Intermedio' : healthProfile.experienceLevel === 'ADVANCED' ? 'Avanzado' : healthProfile.experienceLevel}`}
               </span>
-              {healthProfile?.sport && (
-                <span className="text-xs font-medium px-2.5 py-0.5 rounded-full" style={{ backgroundColor: '#f0f1f3', color: '#4a5568' }}>
-                  {healthProfile.sport === 'RUNNING' ? '🏃 Running' : healthProfile.sport === 'STRENGTH' ? '🏋️ Gym' : healthProfile.sport}
-                  {healthProfile.experienceLevel && ` · ${healthProfile.experienceLevel === 'BEGINNER' ? 'Principiante' : healthProfile.experienceLevel === 'INTERMEDIATE' ? 'Intermedio' : healthProfile.experienceLevel === 'ADVANCED' ? 'Avanzado' : healthProfile.experienceLevel}`}
-                </span>
-              )}
-            </div>
-            <p className="text-sm mt-0.5" style={{ color: '#8c99a6' }}>
-              {athlete.email} · Cliente desde {new Date(athlete.createdAt).toLocaleDateString('es', { month: 'short', year: 'numeric' })}
-            </p>
+            )}
           </div>
         </div>
-        <div className="flex items-center gap-4 shrink-0">
+        <div className="flex flex-col items-end gap-2 shrink-0">
           <button
             onClick={handleToggleStatus}
             disabled={togglingStatus}
@@ -661,6 +657,9 @@ export default function AthleteDetailClient({
           >
             {togglingStatus ? '...' : athleteStatus === 'ACTIVE' ? 'Pausar' : 'Reactivar'}
           </button>
+          <p className="text-sm" style={{ color: '#8c99a6' }}>
+            {athlete.email} · Cliente desde {new Date(athlete.createdAt).toLocaleDateString('es', { month: 'short', year: 'numeric' })}
+          </p>
         </div>
       </div>
 

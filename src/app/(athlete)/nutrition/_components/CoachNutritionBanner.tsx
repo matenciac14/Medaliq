@@ -7,42 +7,40 @@ type Props = {
 
 export default function CoachNutritionBanner({ coachName, planName }: Props) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-3">
+    <div className="bg-white rounded-[16px] border border-[#f0f2f5] shadow-sm p-4 space-y-3">
       {/* Coach info */}
-      {coachName && (
-        <div className="flex items-center gap-3 mb-1">
-          <div className="w-10 h-10 rounded-full bg-[#1e3a5f] flex items-center justify-center text-white text-sm font-bold">
-            {coachName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
-          </div>
-          <div>
-            <p className="text-sm font-bold text-[#1e3a5f]">{coachName}</p>
-            <p className="text-xs text-gray-400">Gestiona tu plan nutricional</p>
-          </div>
+      <div className="flex items-center gap-3">
+        <div className="w-9 h-9 rounded-[18px] bg-[#1f3b5e] flex items-center justify-center text-white text-[11px] font-bold shrink-0">
+          {coachName
+            ? coachName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+            : '🏋️'}
         </div>
-      )}
-
-      <div className="flex items-start gap-3 bg-gray-50 rounded-xl p-4">
-        <span className="text-2xl">👨‍🍳</span>
-        <div>
-          <p className="text-sm font-bold text-[#1e3a5f]">Tu coach gestiona tu nutricion</p>
-          <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
-            El plan de comidas lo disena y actualiza tu entrenador. Tu registras lo que comes.
+        <div className="flex-1 min-w-0">
+          <p className="text-[13px] font-bold text-[#1f3b5e]">
+            {coachName ?? 'Tu coach'}
           </p>
+          <p className="text-[11px] text-[#8c99a6]">Gestiona tu nutricion</p>
         </div>
       </div>
 
-      <div className="flex gap-3">
+      {planName && (
+        <div className="bg-[#fff7ed] rounded-[10px] px-3 py-2">
+          <p className="text-[11px] font-semibold text-[#735926]">Plan: {planName}</p>
+        </div>
+      )}
+
+      <div className="flex gap-2">
         <Link
           href="/nutrition#tracking"
-          className="flex-1 flex items-center justify-center h-10 rounded-xl bg-[#ea580c] text-sm font-bold text-white hover:opacity-90 transition-opacity"
+          className="flex-1 flex items-center justify-center h-9 rounded-[12px] bg-[#eb590d] text-[12px] font-bold text-white hover:opacity-90 transition-opacity"
         >
-          + Registrar lo que comi
+          + Registrar comida
         </Link>
         <Link
           href="/nutrition/history"
-          className="text-sm font-medium text-gray-500 hover:text-gray-700 self-center whitespace-nowrap"
+          className="flex items-center justify-center h-9 rounded-[12px] border-[1.5px] border-[#1f3b5e] text-[12px] font-semibold text-[#1f3b5e] px-3 hover:bg-gray-50 transition-colors whitespace-nowrap"
         >
-          Ver mi historial de comidas →
+          Mensaje al coach
         </Link>
       </div>
     </div>

@@ -28,7 +28,8 @@ export async function POST(_req: NextRequest) {
     (healthProfile.gender === 'female' ? 'female' : 'male') as 'male' | 'female',
     5,
   )
-  const macros = calculateMacros(tdee, healthProfile.weightKg, !!healthProfile.weightGoalKg)
+  const kcalAdjustment = healthProfile.weightGoalKg ? -500 : 0
+  const macros = calculateMacros(tdee, healthProfile.weightKg, kcalAdjustment)
 
   await prisma.nutritionPlan.upsert({
     where: { userId },
@@ -43,6 +44,7 @@ export async function POST(_req: NextRequest) {
       carbsHardG: macros.hard.carbs,
       carbsEasyG: macros.easy.carbs,
       fatG: macros.hard.fat,
+      kcalAdjustment,
     },
   })
 

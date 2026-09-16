@@ -124,7 +124,8 @@ export async function GET(req: NextRequest) {
       let freeTotal = 0
       for (const log of freeLogs) {
         if (!log.completedAt) continue
-        const idx = jsToOurDow(log.completedAt.getDay()) - 1
+        const jsDay = log.completedAt.getUTCDay()
+        const idx = (jsDay === 0 ? 7 : jsDay) - 1
         if (idx >= 0 && idx < 7) {
           weekSessions[idx].type = log.freeSessionType ?? log.plannedSession?.type ?? 'OTRO'
           weekSessions[idx].done = true
@@ -207,7 +208,8 @@ export async function GET(req: NextRequest) {
 
     for (const log of freeLogs) {
       if (!log.completedAt) continue
-      const idx = jsToOurDow(log.completedAt.getDay()) - 1
+      const jsDay2 = log.completedAt.getUTCDay()
+      const idx = (jsDay2 === 0 ? 7 : jsDay2) - 1
       if (idx >= 0 && idx < 7) {
         weekSessions[idx].type = log.freeSessionType ?? 'OTRO'
         weekSessions[idx].done = true

@@ -55,7 +55,8 @@ export async function completeOnboardingUseCase(
     data.daysPerWeek
   )
   const hasDeficit = !!data.weightGoalKg || data.gymGoal === 'FAT_LOSS' || data.gymGoal === 'RECOMPOSITION'
-  const macros = calculateMacros(tdee, data.weightKg!, hasDeficit)
+  const kcalAdjustment = hasDeficit ? -500 : 0
+  const macros = calculateMacros(tdee, data.weightKg!, kcalAdjustment)
 
   // ── Derive sport fields from activityType ─────────────────────────────────
   const sportType = activityToSport(data.activityType)
@@ -70,6 +71,7 @@ export async function completeOnboardingUseCase(
     carbsHardG: macros.hard.carbs,
     carbsEasyG: macros.easy.carbs,
     fatG: macros.hard.fat,
+    kcalAdjustment,
   }
 
   // ── Profile + nutrition + onboarding completion — all atomic ──────────────

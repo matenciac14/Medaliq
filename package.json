@@ -15,8 +15,7 @@
     "e2e:ui": "playwright test --ui",
     "e2e:debug": "playwright test --debug",
     "e2e:report": "playwright show-report",
-    "e2e:critical": "playwright test --grep @critical",
-    "seed:e2e": "tsx prisma/seed.e2e.ts"
+    "e2e:critical": "playwright test --grep @critical"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",

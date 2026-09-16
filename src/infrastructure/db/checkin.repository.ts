@@ -6,6 +6,7 @@ import type { ICheckInRepository, SaveCheckInPayload } from '@/domain/ports/chec
 import type { PreviousCheckIn, WeekActivitySummary } from '@/domain/checkin/check_in.types'
 import type { PrismaDbClient } from '@/lib/db/prisma_client'
 import { prisma } from '@/lib/db/prisma'
+import { getWeekMonday, todayInTz } from '@/lib/core/date_utils'
 
 export class PrismaCheckInRepository implements ICheckInRepository {
   constructor(private db: PrismaDbClient = prisma) {}
@@ -75,12 +76,8 @@ export class PrismaCheckInRepository implements ICheckInRepository {
     return this.db.weeklyCheckIn.count({ where: { userId } })
   }
 
-  async getWeekActivitySummary(userId: string): Promise<WeekActivitySummary> {
-    const now = new Date()
-    const todayDow = now.getDay() === 0 ? 7 : now.getDay()
-    const monday = new Date(now)
-    monday.setDate(now.getDate() - (todayDow - 1))
-    monday.setHours(0, 0, 0, 0)
+  async getWeekActivitySummary(userId: string, timezone?: string | null): Promise<WeekActivitySummary> {
+    const monday = getWeekMonday(0, timezone)
     const sunday = new Date(monday)
     sunday.setDate(monday.getDate() + 7)
 
@@ -124,29 +121,21 @@ export class PrismaCheckInRepository implements ICheckInRepository {
 
     const totalSessions = thisWeekLogs.length + thisWeekGym.length
 
-    // Consecutive active days — count backwards from today
+    // Consecutive active days — count backwards from today (timezone-aware)
     const activeDates = new Set<string>()
-    for (const l of thisWeekLogs) {
+    for (const l of [...thisWeekLogs, ...prevLogs]) {
       activeDates.add((l.sessionDate ?? l.completedAt).toISOString().slice(0, 10))
     }
-    for (const g of thisWeekGym) {
-      activeDates.add(g.date.toISOString().slice(0, 10))
-    }
-    // Also check previous week logs for streak that started before this week
-    for (const l of prevLogs) {
-      activeDates.add((l.sessionDate ?? l.completedAt).toISOString().slice(0, 10))
-    }
-    for (const g of prevGym) {
+    for (const g of [...thisWeekGym, ...prevGym]) {
       activeDates.add(g.date.toISOString().slice(0, 10))
     }
 
     let consecutiveActiveDays = 0
-    const checkDate = new Date(now)
-    checkDate.setHours(0, 0, 0, 0)
+    const todayStart = todayInTz(timezone)
     for (let i = 0; i < 14; i++) {
+      const checkDate = new Date(todayStart.getTime() - i * 86_400_000)
       if (activeDates.has(checkDate.toISOString().slice(0, 10))) {
         consecutiveActiveDays++
-        checkDate.setDate(checkDate.getDate() - 1)
       } else {
         break
       }

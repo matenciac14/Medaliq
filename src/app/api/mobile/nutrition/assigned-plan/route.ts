@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getMobileUser } from '@/lib/auth/mobile_auth'
+import { rateLimitAsync } from '@/lib/rate_limit'
 import { prisma } from '@/lib/db/prisma'
 import { todayInTz } from '@/lib/core/date_utils'
 import { getDailyNutritionTarget } from '@/lib/nutrition/daily_target'
@@ -14,6 +15,8 @@ export async function GET(req: NextRequest) {
   if (!mobile) {
     return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
   }
+  const { allowed } = await rateLimitAsync(`mobile-${mobile.id}:assigned-plan`, { limit: 300, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 
   const assignment = await prisma.assignedNutritionPlan.findUnique({
     where: { athleteId: mobile.id },

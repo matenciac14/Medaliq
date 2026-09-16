@@ -15,6 +15,12 @@ export async function GET(req: NextRequest) {
   const withId = req.nextUrl.searchParams.get('with')
   if (!withId) return NextResponse.json({ error: 'Falta parámetro with' }, { status: 400 })
 
+  const relationship = await prisma.coachAthlete.findFirst({
+    where: { OR: [{ coachId: mobile.id, athleteId: withId }, { coachId: withId, athleteId: mobile.id }] },
+    select: { id: true },
+  })
+  if (!relationship) return NextResponse.json({ error: 'Sin relación coach-atleta' }, { status: 403 })
+
   const messages = await prisma.message.findMany({
     where: {
       OR: [

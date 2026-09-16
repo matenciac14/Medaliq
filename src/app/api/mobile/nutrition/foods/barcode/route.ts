@@ -62,6 +62,10 @@ export async function POST(req: NextRequest) {
   if (!body.barcode || !body.name) {
     return NextResponse.json({ error: 'Faltan campos requeridos.' }, { status: 400 })
   }
+  const macroFields = [body.kcalPer100g, body.proteinPer100g, body.carbsPer100g, body.fatPer100g]
+  if (macroFields.some(v => typeof v !== 'number' || isNaN(v) || v < 0 || v > 900)) {
+    return NextResponse.json({ error: 'Los valores nutricionales deben ser números entre 0 y 900.' }, { status: 400 })
+  }
 
   // Verificar que no existe ya (race condition)
   const exists = await prisma.food.findUnique({ where: { barcode: body.barcode } })

@@ -1104,8 +1104,14 @@ export default function PlanTab(props: PlanTabProps) {
           <p className="text-xs" style={{ color: '#667080' }}>
             {week.focusDescription ?? `${week.phase} — semana ${week.weekNumber}`}
           </p>
-          {overloadPct != null && overloadPct > 15 && (
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#fee2e2', color: '#dc2626' }}>
+          {overloadPct != null && overloadPct > 10 && (
+            <span
+              className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+              style={isRunning
+                ? { backgroundColor: '#fff5eb', color: '#ea580c' }
+                : { backgroundColor: '#edfaf0', color: '#16a251' }
+              }
+            >
               +{overloadPct}% vs anterior
             </span>
           )}

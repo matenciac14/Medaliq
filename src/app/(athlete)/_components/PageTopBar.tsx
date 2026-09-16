@@ -9,9 +9,9 @@ type PageTopBarProps = {
 
 export default function PageTopBar({ title, subtitle, center, right }: PageTopBarProps) {
   return (
-    <div className="flex items-center justify-between gap-4 px-5 h-[72px]">
+    <div className="flex items-center justify-between gap-4 px-5 min-h-[72px] py-4">
       <div className="min-w-0 shrink-0">
-        <h1 className="text-[20px] font-bold text-gray-900 leading-tight truncate">{title}</h1>
+        <h1 className="text-2xl font-bold text-gray-900 leading-tight truncate">{title}</h1>
         {subtitle && (
           <div className="text-[13px] text-gray-400 mt-0.5">{subtitle}</div>
         )}

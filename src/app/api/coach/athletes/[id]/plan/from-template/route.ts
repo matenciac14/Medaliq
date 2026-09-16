@@ -5,6 +5,7 @@ import { getTemplate } from '@/domain/plan/templates'
 import { getSessionIntensity } from '@/domain/plan/intensity'
 import { calcPlanEndDate } from '@/domain/plan/custom_plan'
 import type { SessionType } from '@/generated/prisma/client'
+import { forceMonday } from '@/lib/core/date_utils'
 
 export async function POST(
   req: NextRequest,
@@ -31,8 +32,9 @@ export async function POST(
   const template = getTemplate(templateId)
   if (!template) return NextResponse.json({ error: 'Template no encontrado.' }, { status: 400 })
 
-  const start = new Date(startDate)
-  if (isNaN(start.getTime())) return NextResponse.json({ error: 'startDate inválido.' }, { status: 400 })
+  const rawStart = new Date(startDate)
+  if (isNaN(rawStart.getTime())) return NextResponse.json({ error: 'startDate inválido.' }, { status: 400 })
+  const start = forceMonday(rawStart)
 
   const end = calcPlanEndDate(start, template.totalWeeks)
 

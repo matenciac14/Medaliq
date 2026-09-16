@@ -31,13 +31,11 @@ export default function TipCard({ dayType }: { dayType: DayType | null }) {
   const tip = TIPS[dayType]
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-3 flex items-start gap-3">
-      <span className="text-2xl leading-none mt-0.5 shrink-0">{tip.icon}</span>
-      <div>
-        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Consejo del día</p>
-        <p className="text-sm font-bold text-gray-900">{tip.title}</p>
-        <p className="text-xs text-gray-500 mt-0.5">{tip.body}</p>
-      </div>
+    <div className="bg-[#fffaf0] rounded-[10px] px-3 py-2 flex items-center gap-1.5">
+      <span className="text-[12px] leading-none shrink-0">💡</span>
+      <p className="text-[11px] font-medium text-[#735926] flex-1 min-w-0">
+        {tip.title} — {tip.body}
+      </p>
     </div>
   )
 }

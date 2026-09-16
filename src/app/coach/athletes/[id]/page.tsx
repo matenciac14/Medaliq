@@ -268,6 +268,7 @@ export default async function AthleteDetailPage({
         carbsHardG: nutritionPlan.carbsHardG,
         carbsEasyG: nutritionPlan.carbsEasyG,
         fatG: nutritionPlan.fatG,
+        kcalAdjustment: nutritionPlan.kcalAdjustment,
       }
     : null
 

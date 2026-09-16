@@ -3,6 +3,7 @@
  */
 
 import { intensityToDayType, type DayType } from '@/domain/nutrition/day_type'
+import { LOW_KCAL_MULTIPLIER, LOW_CARBS_MULTIPLIER, REST_CARBS_MULTIPLIER } from '@/domain/nutrition/nutrition_constants'
 
 export const VALID_MEAL_TYPES = ['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK', 'PRE_WORKOUT', 'POST_WORKOUT'] as const
 export type MealType = typeof VALID_MEAL_TYPES[number]
@@ -43,12 +44,12 @@ export function calcNutritionTarget(
   const kcal =
     dayType === 'hard' ? nutritionPlan.targetKcalHard
     : dayType === 'rest' ? nutritionPlan.targetKcalRest
-    : dayType === 'low'  ? Math.round(nutritionPlan.targetKcalEasy * 0.88)
+    : dayType === 'low'  ? Math.round(nutritionPlan.targetKcalEasy * LOW_KCAL_MULTIPLIER)
     : nutritionPlan.targetKcalEasy
   const carbsG =
     dayType === 'hard' ? nutritionPlan.carbsHardG
-    : dayType === 'rest' ? Math.round(nutritionPlan.carbsEasyG * 0.7)
-    : dayType === 'low'  ? Math.round(nutritionPlan.carbsEasyG * 0.75)
+    : dayType === 'rest' ? Math.round(nutritionPlan.carbsEasyG * REST_CARBS_MULTIPLIER)
+    : dayType === 'low'  ? Math.round(nutritionPlan.carbsEasyG * LOW_CARBS_MULTIPLIER)
     : nutritionPlan.carbsEasyG
   return { kcal, proteinG: nutritionPlan.proteinG, carbsG, fatG: nutritionPlan.fatG }
 }
@@ -121,6 +122,8 @@ export function parseFoodLogPost(body: unknown): { foodId: string; gramsNum: num
   if (isNaN(gramsNum) || gramsNum <= 0) return { error: 'grams debe ser un número positivo' }
   if (gramsNum > 5000) return { error: 'grams no puede superar 5000g por registro' }
   if (date && !DATE_REGEX.test(date)) return { error: 'date debe tener formato YYYY-MM-DD' }
+  // When no date is provided, callers should pass the timezone-aware date.
+  // Fallback uses UTC — callers should always provide `date` from todayInTz(tz).
   const logDate = date
     ? new Date(`${date}T00:00:00.000Z`)
     : new Date(new Date().toISOString().split('T')[0] + 'T00:00:00.000Z')

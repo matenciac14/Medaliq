@@ -804,6 +804,7 @@ model NutritionPlan {
   carbsHardG     Int
   carbsEasyG     Int
   fatG           Int
+  kcalAdjustment Int             @default(0)    // déficit (-) o superávit (+) en kcal. Rango: -750 a +500
   waterMlTarget  Int?            @default(2000) // meta de hidratación diaria (ml) — DB-18
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

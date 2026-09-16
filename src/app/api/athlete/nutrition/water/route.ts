@@ -37,18 +37,20 @@ export async function POST(req: Request) {
 
   const body = await req.json().catch(() => ({}))
   const delta = Number(body.delta)
-  if (!delta || isNaN(delta)) return NextResponse.json({ error: 'delta requerido' }, { status: 400 })
+  if (isNaN(delta) || delta === 0) return NextResponse.json({ error: 'delta requerido' }, { status: 400 })
 
   const tz = await getUserTimezone(userId)
   const today = todayInTz(tz)
-  const existing = await prisma.waterLog.findUnique({ where: { userId_date: { userId, date: today } } })
-  const newMl = Math.max(0, (existing?.mlLogged ?? 0) + delta)
+  const dateStr = today.toISOString()
 
-  await prisma.waterLog.upsert({
-    where:  { userId_date: { userId, date: today } },
-    create: { userId, date: today, mlLogged: newMl },
-    update: { mlLogged: newMl },
-  })
+  // Atomic upsert — avoids read-then-write race condition on parallel taps
+  const result = await prisma.$queryRaw<{ ml_logged: number }[]>`
+    INSERT INTO "WaterLog" ("id", "userId", "date", "mlLogged")
+    VALUES (gen_random_uuid(), ${userId}, ${dateStr}::timestamp, GREATEST(0, ${delta}))
+    ON CONFLICT ("userId", "date")
+    DO UPDATE SET "mlLogged" = GREATEST(0, "WaterLog"."mlLogged" + ${delta})
+    RETURNING "mlLogged" AS ml_logged
+  `
 
-  return NextResponse.json({ mlLogged: newMl })
+  return NextResponse.json({ mlLogged: result[0]?.ml_logged ?? 0 })
 }

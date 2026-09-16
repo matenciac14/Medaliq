@@ -5,6 +5,8 @@
  * No importa Prisma, Next.js ni ningún framework.
  */
 
+import { LOW_KCAL_MULTIPLIER, LOW_CARBS_MULTIPLIER, REST_CARBS_MULTIPLIER } from './nutrition_constants'
+
 export type AdjustmentPlan = {
   targetKcalHard: number
   targetKcalEasy: number
@@ -27,14 +29,14 @@ type Intensity = 'HIGH' | 'MODERATE' | 'LOW' | 'REST'
 function kcalFor(intensity: Intensity, plan: AdjustmentPlan): number {
   if (intensity === 'HIGH') return plan.targetKcalHard
   if (intensity === 'REST') return plan.targetKcalRest
-  if (intensity === 'LOW') return Math.round(plan.targetKcalEasy * 0.88)
+  if (intensity === 'LOW') return Math.round(plan.targetKcalEasy * LOW_KCAL_MULTIPLIER)
   return plan.targetKcalEasy
 }
 
 function carbsFor(intensity: Intensity, plan: AdjustmentPlan): number {
   if (intensity === 'HIGH') return plan.carbsHardG
-  if (intensity === 'REST') return Math.round(plan.carbsEasyG * 0.7)
-  if (intensity === 'LOW') return Math.round(plan.carbsEasyG * 0.75)
+  if (intensity === 'REST') return Math.round(plan.carbsEasyG * REST_CARBS_MULTIPLIER)
+  if (intensity === 'LOW') return Math.round(plan.carbsEasyG * LOW_CARBS_MULTIPLIER)
   return plan.carbsEasyG
 }
 
