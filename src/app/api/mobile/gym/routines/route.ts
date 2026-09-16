@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
+import { getMobileUser } from '@/lib/auth/mobile_auth'
+import { rateLimitAsync } from '@/lib/rate_limit'
 import type { SetType } from '@/generated/prisma/enums'
-
-// ── Shared types ────────────────────────────────────────────────────────────
 
 interface DayExerciseInput {
   exerciseId: string
@@ -34,49 +33,19 @@ interface TemplateBody {
   days: DayInput[]
 }
 
-// ── Guards ──────────────────────────────────────────────────────────────────
+export async function POST(req: NextRequest) {
+  const mobile = await getMobileUser(req)
+  if (!mobile) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  const { allowed } = await rateLimitAsync(`mobile-${mobile.id}:gym-routines`, { limit: 30, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 
-async function getAthleteId(): Promise<string | null> {
-  return (await auth())?.user?.id ?? null
-}
+  const athleteId = mobile.id
 
-/** Atleta no puede crear rutinas propias si tiene un coach activo */
-async function hasActiveCoach(athleteId: string): Promise<boolean> {
-  const relation = await prisma.coachAthlete.findFirst({
+  const activeCoach = await prisma.coachAthlete.findFirst({
     where: { athleteId, status: 'ACTIVE' },
     select: { id: true },
   })
-  return !!relation
-}
-
-// ── GET /api/athlete/gym/routines — lista rutinas propias del atleta ─────────
-
-export async function GET(req: NextRequest) {
-  const athleteId = await getAthleteId()
-  if (!athleteId) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-
-  const templates = await prisma.workoutTemplate.findMany({
-    where: { athleteId },
-    include: {
-      days: {
-        include: { exercises: { include: { exercise: true }, orderBy: { order: 'asc' } } },
-        orderBy: { order: 'asc' },
-      },
-      assignments: { where: { isActive: true }, select: { id: true } },
-    },
-    orderBy: { createdAt: 'desc' },
-  })
-
-  return NextResponse.json(templates)
-}
-
-// ── POST /api/athlete/gym/routines — crear rutina propia ─────────────────────
-
-export async function POST(req: NextRequest) {
-  const athleteId = await getAthleteId()
-  if (!athleteId) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-
-  if (await hasActiveCoach(athleteId)) {
+  if (activeCoach) {
     return NextResponse.json(
       { error: 'Con un coach activo, solo tu coach puede crear rutinas.' },
       { status: 403 }
@@ -87,7 +56,7 @@ export async function POST(req: NextRequest) {
   const { name, description, goal, level, daysPerWeek, days } = body
 
   if (!name?.trim()) return NextResponse.json({ error: 'El nombre es obligatorio' }, { status: 400 })
-  if (!days || days.length === 0) return NextResponse.json({ error: 'Incluye al menos un día' }, { status: 400 })
+  if (!days || days.length === 0) return NextResponse.json({ error: 'Incluye al menos un dia' }, { status: 400 })
 
   const exerciseIds = days.flatMap(d => d.exercises.map(e => e.exerciseId)).filter(Boolean)
   if (exerciseIds.length > 0) {
@@ -119,7 +88,7 @@ export async function POST(req: NextRequest) {
         data: {
           templateId: tmpl.id,
           dayOfWeek: day.dayOfWeek,
-          label: day.label || `Día ${day.dayOfWeek}`,
+          label: day.label || `Dia ${day.dayOfWeek}`,
           muscleGroups: day.muscleGroups ?? [],
           isRestDay: day.isRestDay ?? false,
           warmupNotes: day.warmupNotes?.trim() || null,

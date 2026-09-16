@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
-import { getMobileUser } from '@/lib/auth/mobile_auth'
 import type { SetType } from '@/generated/prisma/enums'
 
-async function getAthleteId(req: NextRequest): Promise<string | null> {
-  const mobile = await getMobileUser(req)
-  return mobile?.id ?? (await auth())?.user?.id ?? null
+async function getAthleteId(): Promise<string | null> {
+  return (await auth())?.user?.id ?? null
 }
 
 // ── GET /api/athlete/gym/routines/[id] ──────────────────────────────────────
@@ -15,7 +13,7 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const athleteId = await getAthleteId(req)
+  const athleteId = await getAthleteId()
   if (!athleteId) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
   const { id } = await params
@@ -42,7 +40,7 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const athleteId = await getAthleteId(req)
+  const athleteId = await getAthleteId()
   if (!athleteId) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
   const { id } = await params
@@ -119,7 +117,7 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const athleteId = await getAthleteId(req)
+  const athleteId = await getAthleteId()
   if (!athleteId) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
   const { id } = await params

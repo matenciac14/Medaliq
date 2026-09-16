@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
 vi.mock('@/auth', () => ({ auth: vi.fn() }))
-vi.mock('@/lib/auth/mobile_auth', () => ({ getMobileUser: vi.fn() }))
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
 vi.mock('@/lib/push/expo_push', () => ({ sendPushNotification: vi.fn().mockResolvedValue(undefined) }))
 vi.mock('@/infrastructure/db/auto_complete_strength', () => ({
@@ -23,7 +22,6 @@ vi.mock('@/lib/db/prisma', () => ({
   },
 }))
 
-import { getMobileUser } from '@/lib/auth/mobile_auth'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import { POST } from './route'
@@ -40,8 +38,7 @@ function postReq(body: object) {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  vi.mocked(getMobileUser).mockResolvedValue(ATHLETE as any)
-  vi.mocked(auth).mockResolvedValue(null as any)
+  vi.mocked(auth).mockResolvedValue({ user: ATHLETE } as any)
   vi.mocked(prisma.user.findUnique).mockResolvedValue({ featureGym: true, name: 'Test' } as any)
   vi.mocked(prisma.workoutExercise.findMany).mockResolvedValue([])
   vi.mocked(prisma.setLog.findMany).mockResolvedValue([])
@@ -51,7 +48,6 @@ beforeEach(() => {
 
 describe('POST /api/athlete/gym/session/complete', () => {
   it('retorna 401 sin usuario autenticado', async () => {
-    vi.mocked(getMobileUser).mockResolvedValue(null)
     vi.mocked(auth).mockResolvedValue(null as any)
     const res = await POST(postReq({ dayOfWeek: 1 }))
     expect(res.status).toBe(401)

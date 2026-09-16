@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
-import { getMobileUser } from '@/lib/auth/mobile_auth'
 import { PrismaExerciseRepository } from '@/infrastructure/db/exercise.repository'
 
 const repo = new PrismaExerciseRepository()
@@ -9,8 +8,7 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const mobile = await getMobileUser(req)
-  const userId = mobile?.id ?? (await auth())?.user?.id
+  const userId = (await auth())?.user?.id
   if (!userId) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
   const { id } = await params

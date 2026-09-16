@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
-import { getMobileUser } from '@/lib/auth/mobile_auth'
 import { prisma } from '@/lib/db/prisma'
 import { translateBodyPart } from '@/lib/gym/labels'
 import { resolveExerciseGifUrl } from '@/lib/gym/gif_url'
 
 export async function GET(req: NextRequest) {
-  const mobile = await getMobileUser(req)
-  const userId = mobile?.id ?? (await auth())?.user?.id
+  const userId = (await auth())?.user?.id
   if (!userId) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
   const q = req.nextUrl.searchParams.get('q')?.trim() ?? ''
