@@ -1018,7 +1018,6 @@ async function seedLatamFoods() {
     return
   }
 
-  // @ts-expect-error — category type mismatch between literal and enum
   await prisma.food.createMany({ data: toCreate })
   console.log(`✅ Alimentos:     ${toCreate.length} LatAm insertados (${existingNames.size} ya existían)`)
 }
