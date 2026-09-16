@@ -47,6 +47,7 @@ export interface IHealthProfileRepository {
   updateHrResting(userId: string, hrResting: number): Promise<void>
   updateNutritionTargets(userId: string, targets: NutritionTargets): Promise<void>
   hasNutritionPlan(userId: string): Promise<boolean>
+  getNutritionKcalAdjustment(userId: string): Promise<number>
   /** Creates or fully replaces an athlete's health profile. */
   upsertProfile(userId: string, data: CreateHealthProfile): Promise<void>
 }

@@ -63,6 +63,14 @@ export class PrismaHealthProfileRepository implements IHealthProfileRepository {
     return !!plan
   }
 
+  async getNutritionKcalAdjustment(userId: string): Promise<number> {
+    const plan = await this.db.nutritionPlan.findUnique({
+      where: { userId },
+      select: { kcalAdjustment: true },
+    })
+    return plan?.kcalAdjustment ?? 0
+  }
+
   async upsertProfile(userId: string, data: CreateHealthProfile): Promise<void> {
     const payload = {
       age: data.age,

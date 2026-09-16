@@ -46,9 +46,9 @@ export default function Home() {
         description: 'Plataforma de tracking y coaching deportivo para entrenadores y atletas en Latinoamerica. Planes periodizados, nutricion personalizada con Mifflin-St Jeor, zonas de frecuencia cardiaca con Karvonen y seguimiento semanal.',
         offers: [
           { '@type': 'Offer', price: '0', priceCurrency: 'USD', name: 'Free', description: 'Dashboard, log de entrenamientos, registro de nutricion y ejercicios — gratis para siempre.' },
-          { '@type': 'Offer', price: '9.99', priceCurrency: 'USD', name: 'Pro', description: 'Plan periodizado, nutricion personalizada diaria, check-in semanal con sugerencias de ajuste, metricas de progreso.' },
+          { '@type': 'Offer', price: '9.99', priceCurrency: 'USD', name: 'Pro', description: 'Check-in semanal con sugerencias de ajuste, nutricion personalizada diaria, metricas de progreso y tracker de ejercicios.' },
         ],
-        aggregateRating: { '@type': 'AggregateRating', ratingValue: '4.8', reviewCount: '50', bestRating: '5' },
+        /* aggregateRating removed — no real user reviews yet. Re-add when we have verified ratings. */
         featureList: 'Planes periodizados, Zonas de FC con Karvonen, TDEE y macros con Mifflin-St Jeor, Nutricion adaptada por sesion, Check-in semanal, Panel multi-atleta para coaches, Gestion de cobros, Codigo de invitacion',
       }} />
       <JsonLd data={{
@@ -58,7 +58,7 @@ export default function Home() {
           { '@type': 'Question', name: 'Mis atletas de verdad lo van a usar?', acceptedAnswer: { '@type': 'Answer', text: 'Si. Entran desde su celular o navegador, como cualquier app — sin instalar nada complicado. Tu los invitas con tu codigo.' } },
           { '@type': 'Question', name: 'Mis atletas tambien pagan?', acceptedAnswer: { '@type': 'Answer', text: 'No. Tu pagas tu plan de coach (o empiezas gratis con hasta 5 asesorados). Ellos usan su app sin costo extra.' } },
           { '@type': 'Question', name: 'Como subo lo que ya tengo?', acceptedAnswer: { '@type': 'Answer', text: 'Invitas a tus atletas con tu codigo unico y suben su perfil en minutos. Te ayudamos a cargar los primeros.' } },
-          { '@type': 'Question', name: 'Y si no me sirve?', acceptedAnswer: { '@type': 'Answer', text: 'Cancela cuando quieras — sin letra chica. Si decides salir, te ayudamos a exportar todo.' } },
+          { '@type': 'Question', name: 'Y si no me sirve?', acceptedAnswer: { '@type': 'Answer', text: 'Cancela cuando quieras — sin letra chica, sin permanencia.' } },
           { '@type': 'Question', name: 'Que es Medaliq?', acceptedAnswer: { '@type': 'Answer', text: 'Medaliq es una plataforma de tracking y coaching deportivo para Latinoamerica. Permite a entrenadores gestionar sus atletas con planes periodizados, nutricion personalizada y seguimiento semanal desde un solo panel. Los atletas registran sesiones, nutricion y ejercicios desde la app.' } },
           { '@type': 'Question', name: 'Cuanto cuesta Medaliq para coaches?', acceptedAnswer: { '@type': 'Answer', text: 'Medaliq tiene 4 planes para coaches: Starter (gratis, hasta 5 atletas), Growth ($39/mes, 6-25 atletas), Pro ($79/mes, 26-75 atletas) y Scale ($129/mes, +75 atletas). 0% de fee sobre pagos de atletas.' } },
         ],
