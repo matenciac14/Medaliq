@@ -161,13 +161,13 @@ export default function TrackingSection({ target, foods, date }: Props) {
 
   return (
     <>
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-gray-200 border-l-[3px] border-l-[#ea580c] shadow-sm overflow-hidden">
 
         {/* Hero — siempre visible: barra kcal prominente */}
         <div className="px-5 pt-5 pb-4">
           <div className="flex items-end justify-between mb-3">
             <div>
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">Lo que comí hoy</span>
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">Lo que comi hoy</span>
               {loading ? (
                 <span className="text-sm text-gray-400">Cargando...</span>
               ) : (

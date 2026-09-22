@@ -10,16 +10,14 @@ export default function CoachNutritionBanner({ coachName, planName }: Props) {
     <div className="bg-white rounded-[16px] border border-[#f0f2f5] shadow-sm p-4 space-y-3">
       {/* Coach info */}
       <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-[18px] bg-[#1f3b5e] flex items-center justify-center text-white text-[11px] font-bold shrink-0">
-          {coachName
-            ? coachName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
-            : '🏋️'}
+        <div className="w-9 h-9 rounded-[18px] bg-[#fff7ed] flex items-center justify-center text-lg shrink-0">
+          👨‍🍳
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-[13px] font-bold text-[#1f3b5e]">
-            {coachName ?? 'Tu coach'}
+            {coachName ? `${coachName} gestiona tu nutricion` : 'Tu coach gestiona tu nutricion'}
           </p>
-          <p className="text-[11px] text-[#8c99a6]">Gestiona tu nutricion</p>
+          <p className="text-[11px] text-[#8c99a6]">Sigue el plan que te asigno y registra lo que comes</p>
         </div>
       </div>
 
@@ -34,13 +32,13 @@ export default function CoachNutritionBanner({ coachName, planName }: Props) {
           href="/nutrition#tracking"
           className="flex-1 flex items-center justify-center h-9 rounded-[12px] bg-[#eb590d] text-[12px] font-bold text-white hover:opacity-90 transition-opacity"
         >
-          + Registrar comida
+          + Registrar lo que comi
         </Link>
         <Link
           href="/nutrition/history"
           className="flex items-center justify-center h-9 rounded-[12px] border-[1.5px] border-[#1f3b5e] text-[12px] font-semibold text-[#1f3b5e] px-3 hover:bg-gray-50 transition-colors whitespace-nowrap"
         >
-          Mensaje al coach
+          Ver mi historial de comidas →
         </Link>
       </div>
     </div>

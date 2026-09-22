@@ -9,9 +9,9 @@ type Props = {
 }
 
 const MACROS = [
-  { key: 'kcal',     label: 'Energía',   unit: 'kcal', color: 'text-[#ea580c]', bg: 'bg-orange-50', border: 'border-orange-100', borderLeft: 'border-l-[#ea580c]' },
-  { key: 'proteinG', label: 'Proteína',  unit: 'g',    color: 'text-blue-600',  bg: 'bg-blue-50',   border: 'border-blue-100',   borderLeft: 'border-l-blue-500'  },
-  { key: 'carbsG',   label: 'Carbos',    unit: 'g',    color: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-100', borderLeft: 'border-l-yellow-500' },
+  { key: 'kcal',     label: 'Calorías',       unit: 'kcal', color: 'text-[#ea580c]', bg: 'bg-orange-50', border: 'border-orange-100', borderLeft: 'border-l-[#ea580c]' },
+  { key: 'proteinG', label: 'Proteína',      unit: 'g',    color: 'text-blue-600',  bg: 'bg-blue-50',   border: 'border-blue-100',   borderLeft: 'border-l-blue-500'  },
+  { key: 'carbsG',   label: 'Carbohidratos', unit: 'g',    color: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-100', borderLeft: 'border-l-yellow-500' },
   { key: 'fatG',     label: 'Grasas',    unit: 'g',    color: 'text-green-600', bg: 'bg-green-50',  border: 'border-green-100',  borderLeft: 'border-l-green-500' },
 ] as const
 

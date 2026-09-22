@@ -11,7 +11,7 @@ export default function EmptyMealPlanCard({ tdee, isB2B }: Props) {
       {/* Illustration */}
       <div className="flex flex-col items-center text-center mb-6">
         <div className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center mb-4">
-          <span className="text-3xl">🥗</span>
+          <span className="text-3xl">🍽️</span>
         </div>
         {/* Mobile: simple message per Figma 4523:550 */}
         <h2 className="text-xl font-bold text-[#1e3a5f] mb-2 md:hidden">Sin plan de comidas</h2>
@@ -19,9 +19,9 @@ export default function EmptyMealPlanCard({ tdee, isB2B }: Props) {
           Disena tu menu para dias duros, faciles y de descanso desde el constructor.
         </p>
         {/* Desktop: detailed message with feature pills */}
-        <h2 className="text-xl font-bold text-[#1e3a5f] mb-2 hidden md:block">Disena tu menu</h2>
+        <h2 className="text-xl font-bold text-[#1e3a5f] mb-2 hidden md:block">Diseña tu menú</h2>
         <p className="text-sm text-gray-500 max-w-md hidden md:block">
-          Tus macros ya estan calculados. Elige como distribuirlos en comidas reales.
+          Tus macros ya están calculados. Elige cómo distribuirlos en comidas reales.
         </p>
       </div>
 

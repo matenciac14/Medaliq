@@ -16,11 +16,11 @@ export default function DeficitHeroCard({ consumed, target, onViewConsumed, onRe
   const pct = target.kcal > 0 ? Math.min(100, Math.round((consumed.kcal / target.kcal) * 100)) : 0
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-4">
+    <div className="bg-white rounded-2xl border border-gray-200 border-l-[4px] border-l-[#ea580c] shadow-sm p-5 space-y-4">
       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Lo que te falta hoy</p>
 
-      {/* Two-column hero */}
-      <div className="grid grid-cols-2 gap-4">
+      {/* Two-column hero with divider */}
+      <div className="grid grid-cols-[1fr_auto_1fr] gap-4 items-center">
         <div>
           <p className="text-xs text-gray-500 mb-1">Consumido</p>
           <p className="text-[32px] font-black leading-none text-[#1e3a5f]">
@@ -28,14 +28,22 @@ export default function DeficitHeroCard({ consumed, target, onViewConsumed, onRe
           </p>
           <p className="text-xs text-gray-400 mt-0.5">kcal</p>
         </div>
+        <div className="w-px h-12 bg-gray-200" />
         <div>
-          <p className="text-xs text-gray-500 mb-1">Te faltan</p>
-          <p className="text-[32px] font-black leading-none text-[#ea580c]">
-            {remaining.toLocaleString('es')}
-          </p>
-          <p className="text-xs text-gray-400 mt-0.5">
-            kcal para completar tu objetivo
-          </p>
+          <div className="flex items-baseline gap-2">
+            <div>
+              <p className="text-xs text-gray-500 mb-1">Te faltan</p>
+              <p className="text-[32px] font-black leading-none text-[#ea580c]">
+                {remaining.toLocaleString('es')}
+              </p>
+              <p className="text-xs text-gray-400 mt-0.5">kcal para completar tu objetivo</p>
+            </div>
+            {activityKcalBonus > 0 && activityLabel && (
+              <p className="text-[10px] text-gray-400 whitespace-nowrap">
+                +{activityKcalBonus} kcal ({activityLabel})
+              </p>
+            )}
+          </div>
         </div>
       </div>
 
@@ -48,11 +56,6 @@ export default function DeficitHeroCard({ consumed, target, onViewConsumed, onRe
           />
         </div>
         <p className="text-xs font-semibold text-[#ea580c] mt-1">{pct}% completado</p>
-        {activityKcalBonus > 0 && activityLabel && (
-          <p className="text-[11px] text-gray-400 mt-1">
-            ← incluye ~{activityKcalBonus} kcal del {activityLabel} de hoy
-          </p>
-        )}
       </div>
 
       {/* Macro pills */}
@@ -76,7 +79,7 @@ export default function DeficitHeroCard({ consumed, target, onViewConsumed, onRe
           onClick={onViewConsumed}
           className="flex-1 flex items-center justify-center gap-2 h-10 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
         >
-          Ver lo que consumi
+          📋 Ver lo que consumi
         </button>
         <button
           onClick={onRegister}

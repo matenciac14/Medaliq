@@ -563,8 +563,8 @@ export default async function NutritionPage() {
 
         phaseBannerSlot={
           planPhaseText ? (
-            <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-800 font-medium">
-              {planPhaseText}
+            <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-800 font-medium flex items-center gap-2">
+              <span>📅</span>{planPhaseText}
             </div>
           ) : null
         }
@@ -661,11 +661,11 @@ export default async function NutritionPage() {
         menuLinksSlot={
           hasMealPlan ? (
             <div className="flex gap-4 text-sm">
-              <Link href="/nutrition/builder" className="text-[#1e3a5f] font-semibold hover:underline">
-                Editar mi menu &rarr;
+              <Link href="/nutrition/builder" className="text-[#1e3a5f] font-semibold hover:underline flex items-center gap-1">
+                ✏️ Editar mi menu &rarr;
               </Link>
-              <Link href="/nutrition/planner" className="text-[#1e3a5f] font-semibold hover:underline">
-                Aplicar menu a esta semana &rarr;
+              <Link href="/nutrition/planner" className="text-[#1e3a5f] font-semibold hover:underline flex items-center gap-1">
+                📅 Aplicar menu a esta semana &rarr;
               </Link>
             </div>
           ) : null
