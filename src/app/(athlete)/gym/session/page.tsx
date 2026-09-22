@@ -645,62 +645,56 @@ export default function GymSessionPage() {
   }
 
   return (
-    <div className="px-4 py-6 md:px-8 max-w-3xl mx-auto pb-40 md:pb-8 space-y-5">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-3">
-        <div>
+    <div className="px-4 py-6 md:px-8 max-w-7xl mx-auto pb-40 md:pb-8">
+      {/* Header — full width */}
+      <div className="flex items-start justify-between gap-3 mb-5">
+        <div className="flex items-center gap-3">
           <button
             onClick={() => router.push('/gym')}
-            className="text-sm text-gray-500 hover:text-[#ea580c] transition-colors mb-2 block"
+            className="text-gray-400 hover:text-[#ea580c] transition-colors"
           >
-            ← Volver
+            ←
           </button>
-          <h1 className="text-xl font-bold text-[#1e3a5f] leading-tight">
-            {workoutDay?.label ?? sessionData.templateName}
-          </h1>
-          {workoutDay?.muscleGroups && workoutDay.muscleGroups.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mt-2">
-              {workoutDay.muscleGroups.map((mg) => (
-                <span key={mg} className="text-xs font-medium bg-[#1e3a5f]/10 text-[#1e3a5f] px-2 py-0.5 rounded-full">
-                  {translateMuscleGroup(mg)}
-                </span>
-              ))}
-            </div>
-          )}
+          <div>
+            <h1 className="text-xl font-bold text-[#1e3a5f] leading-tight">
+              {sessionData.templateName}
+            </h1>
+            <p className="text-sm text-gray-500 mt-0.5">
+              {workoutDay?.label}
+              {workoutDay?.muscleGroups && workoutDay.muscleGroups.length > 0 && (
+                <>
+                  {' · '}
+                  {workoutDay.muscleGroups.map((mg) => (
+                    <span key={mg} className="inline-flex items-center text-xs font-medium bg-[#1e3a5f]/10 text-[#1e3a5f] px-2 py-0.5 rounded-full mr-1">
+                      {translateMuscleGroup(mg)}
+                    </span>
+                  ))}
+                </>
+              )}
+            </p>
+          </div>
         </div>
-        <div className="text-right shrink-0">
-          <p className="text-2xl font-bold text-[#ea580c] tabular-nums">{timerDisplay}</p>
-          <p className="text-xs text-gray-500">{completedSets}/{totalSets} series</p>
+        <div className="text-right shrink-0 flex items-center gap-4">
+          <div>
+            <p className="text-3xl font-bold text-[#ea580c] tabular-nums">{timerDisplay}</p>
+          </div>
+          <div className="text-sm text-gray-500">
+            <p className="font-semibold">{completedSets}/{totalSets}</p>
+            <p className="text-xs">series</p>
+          </div>
+          <button
+            onClick={() => router.push('/gym')}
+            className="text-xs text-gray-400 hover:text-red-500 transition-colors"
+          >
+            Cancelar sesión
+          </button>
         </div>
       </div>
 
-      {/* Muscle map — músculos que trabaja esta sesión */}
-      {workoutDay?.muscleGroups && workoutDay.muscleGroups.length > 0 && (
-        <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm flex justify-center">
-          <MuscleMapWeb
-            data={buildSessionMuscleData([
-              ...workoutDay.muscleGroups,
-              ...exercises.flatMap(we => we.exercise.muscleGroups),
-            ])}
-            mode="session"
-            compact={true}
-          />
-        </div>
-      )}
-
-      {/* Progress bar */}
-      <div>
-        <div className="flex items-center justify-between mb-1.5">
-          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Progreso</span>
-          <span className="text-xs text-gray-500">{totalSets > 0 ? Math.round((completedSets / totalSets) * 100) : 0}%</span>
-        </div>
-        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-green-500 rounded-full transition-all duration-300"
-            style={{ width: totalSets > 0 ? `${(completedSets / totalSets) * 100}%` : '0%' }}
-          />
-        </div>
-      </div>
+      {/* ── 2-COL LAYOUT ─────────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
+        {/* ── MAIN: Exercise tracker ─────────────────────────── */}
+        <div className="space-y-5">
 
       {/* Warmup notes */}
       {workoutDay?.warmupNotes && (
@@ -1055,7 +1049,95 @@ export default function GymSessionPage() {
         </div>
       )}
 
-      {/* Finish button — mobile: fixed above bottom nav; desktop: inline */}
+      {/* Finish button — desktop inline */}
+      <div className="hidden md:block pt-2">
+        <button
+          onClick={() => setShowModal(true)}
+          disabled={!canFinish}
+          className={`w-full py-4 rounded-xl font-bold text-sm transition-all ${
+            canFinish
+              ? 'bg-[#ea580c] hover:bg-orange-600 text-white shadow-md hover:shadow-lg'
+              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+          }`}
+        >
+          {canFinish ? 'Finalizar sesión' : sessionData.freeSession ? 'Agrega al menos 1 ejercicio y 1 serie' : `Completa al menos 1 serie por ejercicio (${completedSets}/${totalSets})`}
+        </button>
+      </div>
+        </div>{/* end main col */}
+
+        {/* ── SIDEBAR ─────────────────────────────────────────── */}
+        <aside className="hidden lg:block space-y-6">
+          {/* Mapa muscular */}
+          {workoutDay?.muscleGroups && workoutDay.muscleGroups.length > 0 && (
+            <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm sticky top-6">
+              <h3 className="text-sm font-semibold text-[#1e3a5f] mb-3">Músculos de esta sesión</h3>
+              <div className="flex justify-center mb-3">
+                <MuscleMapWeb
+                  data={buildSessionMuscleData([
+                    ...workoutDay.muscleGroups,
+                    ...exercises.flatMap(we => we.exercise.muscleGroups),
+                  ])}
+                  mode="session"
+                  compact={true}
+                />
+              </div>
+              {workoutDay.muscleGroups.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 justify-center">
+                  {workoutDay.muscleGroups.map(mg => (
+                    <span key={mg} className="text-xs font-medium bg-[#1e3a5f]/10 text-[#1e3a5f] px-2 py-0.5 rounded-full">
+                      {translateMuscleGroup(mg)}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Exercise progress list */}
+              <div className="mt-5 border-t border-gray-100 pt-4">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Ejercicios</p>
+                <div className="space-y-2">
+                  {exercises.map((we) => {
+                    const sets = setsMap[we.id] ?? []
+                    const doneCount = sets.filter(s => s.completed).length
+                    const allDone = doneCount === sets.length && sets.length > 0
+                    const isCurrent = expanded.has(we.id)
+                    return (
+                      <button
+                        key={we.id}
+                        onClick={() => toggleExpanded(we.id)}
+                        className={`w-full flex items-center gap-2 text-left px-2 py-1.5 rounded-lg transition-colors ${isCurrent ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
+                      >
+                        <div className={`w-3 h-3 rounded-full shrink-0 ${allDone ? 'bg-green-500' : isCurrent ? 'bg-[#1e3a5f]' : 'bg-gray-200'}`} />
+                        <span className={`text-sm truncate ${allDone ? 'text-green-700' : isCurrent ? 'font-semibold text-[#1e3a5f]' : 'text-gray-600'}`}>
+                          {we.exercise.name}
+                        </span>
+                        {allDone && <CheckCircle2 size={14} className="text-green-500 shrink-0 ml-auto" />}
+                      </button>
+                    )
+                  })}
+                  {freeExercises.map((fe) => {
+                    const sets = setsMap[fe.id] ?? []
+                    const doneCount = sets.filter(s => s.completed).length
+                    const allDone = doneCount === sets.length && sets.length > 0
+                    return (
+                      <button
+                        key={fe.id}
+                        onClick={() => toggleExpanded(fe.id)}
+                        className="w-full flex items-center gap-2 text-left px-2 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <div className={`w-3 h-3 rounded-full shrink-0 ${allDone ? 'bg-green-500' : 'bg-gray-200'}`} />
+                        <span className={`text-sm truncate ${allDone ? 'text-green-700' : 'text-gray-600'}`}>{fe.name}</span>
+                        {allDone && <CheckCircle2 size={14} className="text-green-500 shrink-0 ml-auto" />}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+        </aside>
+      </div>{/* end grid */}
+
+      {/* Finish button — mobile: fixed above bottom nav */}
       <div
         className="fixed left-0 right-0 px-4 pt-3 bg-white border-t border-gray-200 md:hidden"
         style={{ bottom: 0, paddingBottom: 'calc(env(safe-area-inset-bottom) + 3.5rem)' }}
@@ -1069,20 +1151,7 @@ export default function GymSessionPage() {
               : 'bg-gray-100 text-gray-400 cursor-not-allowed'
           }`}
         >
-          {canFinish ? '🏁 Finalizar sesión' : sessionData.freeSession ? 'Agrega al menos 1 ejercicio y 1 serie' : `Completa al menos 1 serie por ejercicio (${completedSets}/${totalSets})`}
-        </button>
-      </div>
-      <div className="hidden md:block pt-2">
-        <button
-          onClick={() => setShowModal(true)}
-          disabled={!canFinish}
-          className={`w-full py-4 rounded-xl font-bold text-sm transition-all ${
-            canFinish
-              ? 'bg-[#ea580c] hover:bg-orange-600 text-white shadow-md hover:shadow-lg'
-              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-          }`}
-        >
-          {canFinish ? '🏁 Finalizar sesión' : sessionData.freeSession ? 'Agrega al menos 1 ejercicio y 1 serie' : `Completa al menos 1 serie por ejercicio (${completedSets}/${totalSets})`}
+          {canFinish ? 'Finalizar sesión' : sessionData.freeSession ? 'Agrega al menos 1 ejercicio y 1 serie' : `Completa al menos 1 serie por ejercicio (${completedSets}/${totalSets})`}
         </button>
       </div>
 

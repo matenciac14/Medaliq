@@ -225,7 +225,7 @@ export default function GymRoutineBuilder({ exercises }: { exercises: Exercise[]
   const sortedActiveDows = Array.from(activeDows).sort()
 
   return (
-    <div className="px-4 py-6 md:px-8 md:py-8 max-w-2xl mx-auto space-y-6">
+    <div className={`px-4 py-6 md:px-8 md:py-8 mx-auto space-y-6 ${step === 3 ? 'max-w-7xl' : 'max-w-2xl'}`}>
 
       {/* Header */}
       <div className="flex items-center gap-3">
@@ -404,169 +404,177 @@ export default function GymRoutineBuilder({ exercises }: { exercises: Exercise[]
             ))}
           </div>
 
-          {selectedDow !== null && days[selectedDow] && (
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-
-              {/* Day label */}
-              <div className="px-5 py-4 border-b border-gray-100">
-                <label className="text-xs font-medium text-gray-500 block mb-1.5">
-                  Nombre del día
-                </label>
-                <input
-                  type="text"
-                  value={days[selectedDow].label}
-                  onChange={e => updateDayLabel(selectedDow, e.target.value)}
-                  placeholder="Ej: Push — Pecho y Hombros"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#1e3a5f]"
-                />
-              </div>
-
-              {/* Added exercises */}
-              {days[selectedDow].exercises.length > 0 && (
-                <div className="divide-y divide-gray-50">
-                  {days[selectedDow].exercises.map(ex => (
-                    <div key={ex.exerciseId} className="px-5 py-3 flex items-center gap-3">
-                      <Dumbbell size={14} className="text-[#ea580c] shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-800 truncate">{ex.name}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <input
-                            type="number"
-                            min={1} max={10}
-                            value={ex.sets}
-                            onChange={e => updateExercise(selectedDow, ex.exerciseId, 'sets', parseInt(e.target.value) || 1)}
-                            className="w-14 border border-gray-200 rounded px-2 py-1 text-xs text-center focus:outline-none focus:border-[#1e3a5f]"
-                          />
-                          <span className="text-xs text-gray-400">series ×</span>
-                          <input
-                            type="text"
-                            value={ex.repsScheme}
-                            onChange={e => updateExercise(selectedDow, ex.exerciseId, 'repsScheme', e.target.value)}
-                            className="w-16 border border-gray-200 rounded px-2 py-1 text-xs text-center focus:outline-none focus:border-[#1e3a5f]"
-                            placeholder="10-12"
-                          />
-                          <span className="text-xs text-gray-400">reps</span>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => removeExercise(selectedDow, ex.exerciseId)}
-                        className="text-gray-300 hover:text-red-400 transition-colors p-1"
-                      >
-                        <X size={14} />
-                      </button>
+          {/* 2-col: editor + agregar ejercicio */}
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
+            {/* ── MAIN: Day editor ──────────────────────────── */}
+            <div className="space-y-4">
+              {selectedDow !== null && days[selectedDow] && (
+                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                  {/* Day label */}
+                  <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-3">
+                    <div className="flex-1">
+                      <input
+                        type="text"
+                        value={days[selectedDow].label}
+                        onChange={e => updateDayLabel(selectedDow, e.target.value)}
+                        placeholder="Ej: Push — Pecho y Hombros"
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-semibold focus:outline-none focus:border-[#1e3a5f]"
+                      />
                     </div>
-                  ))}
+                    {days[selectedDow].exercises.length > 0 && (
+                      <p className="text-xs text-gray-400 shrink-0">{days[selectedDow].exercises.length} ejercicios</p>
+                    )}
+                  </div>
+
+                  {/* Added exercises */}
+                  {days[selectedDow].exercises.length > 0 ? (
+                    <div className="divide-y divide-gray-50">
+                      {days[selectedDow].exercises.map(ex => (
+                        <div key={ex.exerciseId} className="px-5 py-3 flex items-center gap-3">
+                          <Dumbbell size={14} className="text-[#ea580c] shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-800 truncate">{ex.name}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <input
+                                type="number"
+                                min={1} max={10}
+                                value={ex.sets}
+                                onChange={e => updateExercise(selectedDow, ex.exerciseId, 'sets', parseInt(e.target.value) || 1)}
+                                className="w-14 border border-gray-200 rounded px-2 py-1 text-xs text-center focus:outline-none focus:border-[#1e3a5f]"
+                              />
+                              <span className="text-xs text-gray-400">series ×</span>
+                              <input
+                                type="text"
+                                value={ex.repsScheme}
+                                onChange={e => updateExercise(selectedDow, ex.exerciseId, 'repsScheme', e.target.value)}
+                                className="w-16 border border-gray-200 rounded px-2 py-1 text-xs text-center focus:outline-none focus:border-[#1e3a5f]"
+                                placeholder="10-12"
+                              />
+                              <span className="text-xs text-gray-400">reps</span>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => removeExercise(selectedDow, ex.exerciseId)}
+                            className="text-gray-300 hover:text-red-400 transition-colors p-1"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="px-5 py-8 text-center text-gray-400 text-sm">
+                      Agrega ejercicios desde el panel de la derecha
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Search + filter exercises */}
-              <div className="px-5 py-4 border-t border-gray-100">
-
-                {/* Text search */}
-                <div className="relative mb-3">
-                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Buscar ejercicio..."
-                    value={searchQuery}
-                    onChange={e => { setSearchQuery(e.target.value); setBodyPartFilter(null) }}
-                    className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:border-[#1e3a5f]"
-                  />
-                </div>
-
-                {/* Muscle group chips */}
-                {!searchQuery.trim() && (
-                  <div className="flex gap-1.5 overflow-x-auto pb-2 mb-3">
-                    <button
-                      onClick={() => setBodyPartFilter(null)}
-                      className={`shrink-0 px-3 py-1 rounded-full text-[11px] font-semibold border transition-colors ${
-                        bodyPartFilter === null
-                          ? 'bg-[#1e3a5f] text-white border-[#1e3a5f]'
-                          : 'border-gray-200 text-gray-500 hover:border-gray-300'
-                      }`}
-                    >
-                      Todos
-                    </button>
-                    {availableBodyParts.map(bp => (
-                      <button
-                        key={bp}
-                        onClick={() => setBodyPartFilter(f => f === bp ? null : bp)}
-                        className={`shrink-0 px-3 py-1 rounded-full text-[11px] font-semibold border transition-colors ${
-                          bodyPartFilter === bp
-                            ? 'bg-[#ea580c] text-white border-[#ea580c]'
-                            : 'border-gray-200 text-gray-500 hover:border-gray-300'
-                        }`}
-                      >
-                        {BODY_PART_LABELS[bp] ?? bp}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {/* Exercise list */}
-                <div className="space-y-1 max-h-56 overflow-y-auto">
-                  {filteredExercises.map(ex => {
-                    const alreadyAdded = days[selectedDow].exercises.some(e => e.exerciseId === ex.id)
-                    return (
-                      <button
-                        key={ex.id}
-                        onClick={() => addExercise(selectedDow, ex)}
-                        disabled={alreadyAdded}
-                        className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-left transition-colors ${
-                          alreadyAdded
-                            ? 'bg-green-50 text-green-700 cursor-default'
-                            : 'hover:bg-gray-50 text-gray-700'
-                        }`}
-                      >
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{ex.name}</p>
-                          <p className="text-[10px] text-gray-400">
-                            {BODY_PART_LABELS[ex.bodyPart] ?? ex.bodyPart} · {ex.target}
-                          </p>
-                        </div>
-                        {alreadyAdded
-                          ? <Check size={14} className="shrink-0 text-green-500" />
-                          : <Plus size={14} className="shrink-0 text-gray-400" />
-                        }
-                      </button>
-                    )
-                  })}
-                  {filteredExercises.length === 0 && (
-                    <p className="text-xs text-gray-400 text-center py-3">
-                      {searchQuery ? `Sin resultados para "${searchQuery}"` : 'Sin ejercicios en esta categoría'}
-                    </p>
-                  )}
+              {/* Summary + actions */}
+              <div className="bg-gray-50 rounded-xl px-5 py-4 flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-700">{routineName}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {sortedActiveDows.length} días · {Object.values(days).reduce((acc, d) => acc + d.exercises.length, 0)} ejercicios totales
+                  </p>
                 </div>
               </div>
+
+              {error && <p className="text-xs text-red-500 text-center">{error}</p>}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setStep(2)}
+                  className="flex-1 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                >
+                  <ChevronLeft size={16} /> Atrás
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="flex-1 py-3 rounded-xl bg-[#ea580c] text-white font-bold text-sm hover:opacity-90 disabled:opacity-50 transition-opacity flex items-center justify-center gap-2"
+                >
+                  {saving ? 'Guardando...' : 'Activar rutina'}
+                </button>
+              </div>
             </div>
-          )}
 
-          {/* Summary */}
-          <div className="bg-gray-50 rounded-xl px-5 py-4 flex items-center gap-3">
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-700">{routineName}</p>
-              <p className="text-xs text-gray-400 mt-0.5">
-                {sortedActiveDows.length} días · {Object.values(days).reduce((acc, d) => acc + d.exercises.length, 0)} ejercicios totales
-              </p>
-            </div>
-          </div>
+            {/* ── SIDEBAR: Agregar ejercicio ─────────────────── */}
+            {selectedDow !== null && days[selectedDow] && (
+              <aside className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden h-fit sticky top-6">
+                <div className="px-5 py-4 border-b border-gray-100">
+                  <h3 className="text-sm font-bold text-[#1e3a5f]">Agregar ejercicio</h3>
+                </div>
 
-          {error && <p className="text-xs text-red-500 text-center">{error}</p>}
+                <div className="px-5 py-3">
+                  {/* Text search */}
+                  <div className="relative mb-3">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Buscar ejercicio..."
+                      value={searchQuery}
+                      onChange={e => { setSearchQuery(e.target.value); setBodyPartFilter(null) }}
+                      className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:border-[#1e3a5f]"
+                    />
+                  </div>
 
-          <div className="flex gap-3">
-            <button
-              onClick={() => setStep(2)}
-              className="flex-1 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
-            >
-              <ChevronLeft size={16} /> Atrás
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="flex-1 py-3 rounded-xl bg-[#ea580c] text-white font-bold text-sm hover:opacity-90 disabled:opacity-50 transition-opacity flex items-center justify-center gap-2"
-            >
-              {saving ? 'Guardando...' : 'Activar rutina'}
-            </button>
+                  {/* Muscle group chips */}
+                  {!searchQuery.trim() && (
+                    <div className="flex gap-1.5 flex-wrap mb-3">
+                      {availableBodyParts.map(bp => (
+                        <button
+                          key={bp}
+                          onClick={() => setBodyPartFilter(f => f === bp ? null : bp)}
+                          className={`shrink-0 px-3 py-1 rounded-full text-[11px] font-semibold border transition-colors ${
+                            bodyPartFilter === bp
+                              ? 'bg-[#ea580c] text-white border-[#ea580c]'
+                              : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                          }`}
+                        >
+                          {BODY_PART_LABELS[bp] ?? bp}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Exercise list */}
+                  <div className="space-y-1 max-h-[400px] overflow-y-auto">
+                    {filteredExercises.map(ex => {
+                      const alreadyAdded = days[selectedDow].exercises.some(e => e.exerciseId === ex.id)
+                      return (
+                        <button
+                          key={ex.id}
+                          onClick={() => addExercise(selectedDow, ex)}
+                          disabled={alreadyAdded}
+                          className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-left transition-colors ${
+                            alreadyAdded
+                              ? 'bg-green-50 text-green-700 cursor-default'
+                              : 'hover:bg-gray-50 text-gray-700'
+                          }`}
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{ex.name}</p>
+                            <p className="text-[10px] text-gray-400">
+                              {BODY_PART_LABELS[ex.bodyPart] ?? ex.bodyPart} · {ex.target}
+                            </p>
+                          </div>
+                          {alreadyAdded
+                            ? <Check size={14} className="shrink-0 text-green-500" />
+                            : <Plus size={14} className="shrink-0 text-[#ea580c]" />
+                          }
+                        </button>
+                      )
+                    })}
+                    {filteredExercises.length === 0 && (
+                      <p className="text-xs text-gray-400 text-center py-3">
+                        {searchQuery ? `Sin resultados para "${searchQuery}"` : 'Sin ejercicios en esta categoría'}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </aside>
+            )}
           </div>
         </div>
       )}
