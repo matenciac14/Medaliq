@@ -1616,6 +1616,12 @@ export const GROUPS: RoadmapGroup[] = [
             priority: 'P1',
             note: 'DONE (2026-09-15). ~660 líneas duplicadas eliminadas. Creados: domain/gym/get_today_session.use_case.ts (orquestador today), domain/gym/complete_session.orchestrator.ts (orquestador complete), domain/gym/gym_session.schemas.ts (Zod schemas compartidos). 4 rutas refactorizadas a thin wrappers (~20 líneas c/u): web today, mobile today, web complete, mobile complete. Misma respuesta JSON, zero breaking changes.',
           },
+          {
+            title: 'ENTRENO-CODE-02 — Implementación layout 2 columnas Figma en 5 páginas web Entreno',
+            done: true,
+            priority: 'P1',
+            note: 'DONE (2026-09-16). 5 páginas reestructuradas de max-w-3xl single-column a max-w-7xl con grid grid-cols-1 lg:grid-cols-[1fr_380px]. gym/page.tsx: estado vacío (plantillas + sidebar mapa muscular/ejercicios/coach tip) y dashboard (sesión hoy con ejercicios numerados + sidebar adherencia semanal/plan semanal). gym/history/page.tsx: stats full-width top + lista sesiones clickeables + sidebar detalle sesión (searchParams ?s=). gym/session/page.tsx: ejercicios con GIF/inputs + sidebar mapa muscular/progreso ejercicios. gym/builder GymRoutineBuilder.tsx: step 3 usa max-w-7xl con editor días + sidebar agregar ejercicios. gym/exercises/page.tsx ya tenía max-w-7xl. Responsive: sidebar hidden lg:block, mobile 1-col. TypeScript zero errors.',
+          },
         ],
       },
       {
@@ -3409,7 +3415,13 @@ export const GROUPS: RoadmapGroup[] = [
         title: 'NUT-FIGMA-WEB-02 — Auditoría visual y consistencia entre frames Figma nutrición web',
         done: true,
         priority: 'P1',
-        note: 'DONE (2026-09-15). Auditoría completa de 20 frames Figma nutrición web+mobile. SCOPE: 3 desktop principales + 3 mobile principales + 3 modales desktop + 3 modales mobile + 3 constructor desktop + 5 constructor mobile. NAMING: 11 renombramientos en frames principales (separador frame, DayBadge→DayTypeBadge, MacroCard/Calorías→Energía, Sidebar→Nav/Sidebar ×2, HydrationWidget→HydrationCard ×3, EmptyState→EmptyMealPlan, WeeklyNutritionBars→WeeklyNutrition, TipCard→WhyTrackCard). VISUAL: MacroCards ×4 unificados (accent bar + 56px), HydrationCard mobile ×2 (botones 44×28), Header mobile con-plan (148→145px), ActivityCard mobile ×2 (IconBg + KcalPill), TipCard mobile ×2 (padding con-plan). DESKTOP: DayTypeBadge unificado, PlanPhaseBanner 836px, labels corregidos. RENDER ORDER: 2 desktop reordenados, 3 mobile verificados — coinciden con NutritionPageClient.tsx. MODALES: 6 modales verificados — backgrounds decorativos desactualizados (skip, no afecta). CONSTRUCTOR: 3 desktop OK (1 naming menor Bg/RightDivider), 5 mobile OK (frame 4 TabBar/Header estructura diferente — bajo impacto, skip).',
+        note: 'DONE (2026-09-17). Auditoría completa Figma↔código mobile. 43 gaps corregidos en 3 archivos. CONSTRUCTOR: (1) descripción fuera hero, (2) borderRadius:20, (24) emoji 48px, (25) quitar paddingHorizontal, (26-29) header consistencia. WEEK-PLANNER: (3-6) ProgressSeg+círculos+empty state. (16-23) nav arrows+selected orange+chevron+btn+align+modal fixes. DAY-BUILDER: (7-10) iconos+chevron+shortcut+✕. ADD-FOOD-MODAL: (11-15) emoji+handle+category+dividers+combo. DAY-BUILDER-2: (30) subtitle marginTop 2→8, (31) macro columns left-align, (32) progress bar h3→4, (33) MealList unificado en UNA card, (34) dividers food items. ADD-FOOD-MODAL-STEP1: (35) header divider, (36) close btn ✕ texto, (37) addBtn + texto, (38) section+footer dividers. ADD-FOOD-MODAL-STEP2: (39) back btn ← texto, (40) close btn ✕ texto, (41) header divider, (42) kcal row layout baseline, (43) footer divider.',
+      },
+      {
+        title: 'NUT-FIGMA-WEB-03 — Auditoría Figma vs código: 3 frames principales web nutrición (sin-plan, con-plan, b2b)',
+        done: true,
+        priority: 'P1',
+        note: 'DONE (2026-09-20). 33 gaps identificados, todos corregidos. MacroTargetCards: Energía→Calorías, Carbos→Carbohidratos. HydrationWidget: eliminado botón -250ml rojo, vertical layout rediseñado (Agua label, Objetivo subtitle, valor derecha, solo 3 botones add). EmptyMealPlanCard: emoji 🥗→🍽️, título con acentos. PhaseBanner: +📅 emoji. Menu links: +✏️📅 emojis. DeficitHeroCard: +border-left naranja 4px, +divider vertical entre columnas, bonus text junto a "Te faltan", +📋 en botón "Ver lo que consumí". CoachNutritionBanner: avatar→👨‍🍳 emoji, texto descriptivo actualizado, CTA "Registrar lo que comí", link "Ver mi historial de comidas →". WeeklyNutritionBars: +summary "X de 7 días en rango calórico", +empty state "Sin registros esta semana". ActivityCard: +título "Sesión de hoy", +label "DÍA DE ENTRENAMIENTO", icon 48×48, +intensidad en details. TrackingSection: +border-left naranja 3px. NutritionSummaryDonut: centro muestra % meta siempre.',
       },
     ],
   },
