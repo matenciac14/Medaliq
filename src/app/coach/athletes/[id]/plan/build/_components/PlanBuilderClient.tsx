@@ -747,22 +747,22 @@ export default function PlanBuilderClient({ athleteId, athleteName, initialPlan,
           {/* RESUMEN DEL PLAN */}
           {week && (
             <div className="mt-6 pt-4 border-t border-gray-100">
-              <p className="text-[9px] font-semibold uppercase tracking-wider mb-3" style={{ color: '#667382' }}>
+              <p className="text-[10px] font-semibold uppercase tracking-wider mb-3" style={{ color: '#667382' }}>
                 Resumen del plan
               </p>
               <div className="space-y-2.5">
                 <div className="flex justify-between items-baseline">
                   <span className="text-[10px]" style={{ color: '#8c949e' }}>Semana</span>
-                  <span className="text-[11px] font-bold" style={{ color: '#1f2938' }}>{week.weekNumber}/{plan.totalWeeks}</span>
+                  <span className="text-xs font-bold" style={{ color: '#1f2938' }}>{week.weekNumber}/{plan.totalWeeks}</span>
                 </div>
                 <div className="flex justify-between items-baseline">
                   <span className="text-[10px]" style={{ color: '#8c949e' }}>Sesiones totales</span>
-                  <span className="text-[11px] font-bold" style={{ color: '#1f2938' }}>{week.sessions.length}</span>
+                  <span className="text-xs font-bold" style={{ color: '#1f2938' }}>{week.sessions.length}</span>
                 </div>
                 <div className="flex justify-between items-baseline">
                   <span className="text-[10px]" style={{ color: '#8c949e' }}>Fase actual</span>
                   <span
-                    className="text-[11px] font-bold"
+                    className="text-xs font-bold"
                     style={{ color: PHASE_COLORS[week.phase] ?? '#1f2938' }}
                   >
                     {PHASE_LABELS[week.phase] ?? week.phase}
@@ -779,14 +779,14 @@ export default function PlanBuilderClient({ athleteId, athleteName, initialPlan,
                       }}
                     />
                   </div>
-                  <p className="text-[9px] font-medium mt-1" style={{ color: '#8c949e' }}>
+                  <p className="text-[10px] font-medium mt-1" style={{ color: '#8c949e' }}>
                     {Math.round((weekIdx + 1) / plan.totalWeeks * 100)}% completado
                   </p>
                 </div>
               </div>
 
               <button
-                className="w-full mt-4 py-2 rounded-lg text-[12px] font-semibold text-white transition-opacity hover:opacity-90"
+                className="w-full mt-4 py-2 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90"
                 style={{ backgroundColor: '#1e3a5f' }}
               >
                 Publicar semana →
@@ -803,14 +803,14 @@ export default function PlanBuilderClient({ athleteId, athleteName, initialPlan,
           {/* BUILDER-02: Template nutricional vinculado */}
           {coachNutritionTemplates.length > 0 && (
             <div className="mt-4 pt-4 border-t border-gray-100">
-              <p className="text-[9px] font-semibold uppercase tracking-wider mb-2" style={{ color: '#667382' }}>
+              <p className="text-[10px] font-semibold uppercase tracking-wider mb-2" style={{ color: '#667382' }}>
                 Template nutricional
               </p>
               <select
                 value={linkedTemplate ?? ''}
                 onChange={(e) => handleLinkTemplate(e.target.value || null)}
                 disabled={linkingTemplate}
-                className="w-full text-[11px] border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-200 disabled:opacity-50 bg-white"
+                className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-200 disabled:opacity-50 bg-white"
                 style={{ color: linkedTemplate ? '#1f2938' : '#8c949e' }}
               >
                 <option value="">Sin template</option>
@@ -819,7 +819,7 @@ export default function PlanBuilderClient({ athleteId, athleteName, initialPlan,
                 ))}
               </select>
               {linkedTemplate && (
-                <p className="text-[9px] mt-1" style={{ color: '#16a34a' }}>
+                <p className="text-[10px] mt-1" style={{ color: '#16a34a' }}>
                   ✓ Vinculado
                 </p>
               )}
@@ -914,7 +914,7 @@ export default function PlanBuilderClient({ athleteId, athleteName, initialPlan,
             }).length
             return (
               <div className="flex items-center gap-3 mb-3 px-1">
-                <span className="text-[11px] font-medium" style={{ color: '#59616b' }}>
+                <span className="text-xs font-medium" style={{ color: '#59616b' }}>
                   {totalSessions} sesiones · {totalMin} min{totalKm > 0 ? ` · ${totalKm} km` : ''}
                 </span>
                 <div className="flex items-center gap-2">
@@ -959,7 +959,7 @@ export default function PlanBuilderClient({ athleteId, athleteName, initialPlan,
                         const intensity = INTENSITY_MAP[mainType]
                         return intensity ? (
                           <span
-                            className="text-[8px] font-semibold px-1.5 py-0.5 rounded-full"
+                            className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
                             style={{ color: intensity.color, backgroundColor: intensity.bg }}
                           >
                             {intensity.label}
@@ -1070,7 +1070,7 @@ export default function PlanBuilderClient({ athleteId, athleteName, initialPlan,
                                 {gymDay.label}
                               </span>
                             </div>
-                            <p className="text-[9px] mt-0.5" style={{ color: '#8c949e' }}>
+                            <p className="text-[10px] mt-0.5" style={{ color: '#8c949e' }}>
                               {gymDay.exerciseCount} ejercicios · {gymDay.muscleGroups.slice(0, 2).join(', ')}
                             </p>
                           </div>
@@ -1091,9 +1091,9 @@ export default function PlanBuilderClient({ athleteId, athleteName, initialPlan,
                       return (
                         <div className="mt-1 px-2 py-1.5 rounded-md" style={{ backgroundColor: '#f8f9fb' }}>
                           <div className="flex items-center justify-between">
-                            <span className="text-[9px] font-medium" style={{ color: '#667382' }}>🍽️ Nutrición</span>
+                            <span className="text-[10px] font-medium" style={{ color: '#667382' }}>🍽️ Nutrición</span>
                             <span
-                              className="text-[8px] font-semibold px-1 py-0.5 rounded"
+                              className="text-[10px] font-semibold px-1 py-0.5 rounded"
                               style={{ color: nut.color, backgroundColor: nut.color + '15' }}
                             >
                               {nut.label}
@@ -1102,7 +1102,7 @@ export default function PlanBuilderClient({ athleteId, athleteName, initialPlan,
                           <p className="text-[10px] font-semibold mt-0.5" style={{ color: '#1f2938' }}>
                             {nut.kcal} kcal
                           </p>
-                          <p className="text-[9px]" style={{ color: '#8c949e' }}>
+                          <p className="text-[10px]" style={{ color: '#8c949e' }}>
                             P{nutritionPlan.proteinG}g · C{bestIntensity === 'HIGH' ? nutritionPlan.carbsHardG : nutritionPlan.carbsEasyG}g · F{nutritionPlan.fatG}g
                           </p>
                         </div>
@@ -1694,7 +1694,7 @@ function WeekNav({
             className="flex flex-col items-center gap-1 px-1.5 py-1.5 rounded-lg transition-all shrink-0 min-w-[32px]"
             style={isActive ? { backgroundColor: color + '18', outline: `2px solid ${color}` } : { outline: '2px solid transparent' }}
           >
-            <span className="text-[8px] font-bold text-gray-400 leading-none">S{w.weekNumber}</span>
+            <span className="text-[10px] font-bold text-gray-400 leading-none">S{w.weekNumber}</span>
             <span
               className="w-2 h-2 rounded-full transition-transform"
               style={{

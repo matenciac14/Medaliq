@@ -135,7 +135,7 @@ export default function LogModal({ session, onClose, onSuccess }: {
                 <div className="flex gap-1">
                   {[1,2,3,4,5,6,7,8,9,10].map(n => (
                     <button key={n} onClick={() => setRpe(n)}
-                      className={cn('flex-1 h-9 rounded-lg text-[11px] font-bold border transition-colors',
+                      className={cn('flex-1 h-9 rounded-lg text-xs font-bold border transition-colors',
                         rpe === n ? 'bg-[#ea580c] border-[#ea580c] text-white'
                           : n < rpe ? 'bg-orange-50 border-[#ea580c] text-[#ea580c]'
                           : 'border-gray-200 text-gray-400 hover:border-gray-300'

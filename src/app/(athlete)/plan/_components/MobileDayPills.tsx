@@ -81,12 +81,12 @@ export default function MobileDayPills({
           const isSelected = selectedIdx === cell.idx
           return (
             <button key={cell.idx} onClick={() => onSelect(cell.idx + 1)} className="flex flex-col items-center gap-1">
-              <span className={cn('text-[11px] font-semibold',
+              <span className={cn('text-xs font-semibold',
                 cell.isToday ? 'text-[#ea580c]' : isSelected ? 'text-[#1e3a5f]' : 'text-gray-400'
               )}>
                 {WEEK_DAYS_SHORT[cell.idx]}
               </span>
-              <div className={cn('w-10 h-10 rounded-full flex items-center justify-center text-[15px] font-bold transition-colors',
+              <div className={cn('w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-colors',
                 cell.isToday ? 'bg-[#ea580c] text-white' :
                 cell.done && hasSession ? 'bg-[#22c55e] text-white' :
                 isSelected ? 'border-2 border-[#1e3a5f] text-[#1e3a5f] bg-white' :

@@ -302,7 +302,7 @@ function LineChart<T extends { week: number }>({
       <div className="flex justify-between mt-1 px-1">
         {data.map((d, i) => (
           (i === 0 || i === Math.floor((n - 1) / 2) || i === n - 1) && (
-            <span key={d.week} className="text-[9px] text-gray-400">S{d.week}</span>
+            <span key={d.week} className="text-[10px] text-gray-400">S{d.week}</span>
           )
         ))}
       </div>
@@ -352,7 +352,7 @@ function AdherenceVerticalChart({ data }: { data: WeekData[] }) {
               className="flex flex-col items-center flex-1 min-w-[20px] group cursor-default"
               style={{ height: `${CHART_H}px`, justifyContent: 'flex-end' }}
             >
-              <span className="text-[9px] font-semibold text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity mb-0.5">
+              <span className="text-[10px] font-semibold text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity mb-0.5">
                 {pct}%
               </span>
               <div
@@ -367,7 +367,7 @@ function AdherenceVerticalChart({ data }: { data: WeekData[] }) {
       <div className="flex gap-1 mt-1 overflow-x-auto">
         {data.map((w) => (
           <div key={w.weekNumber} className="flex-1 min-w-[20px] text-center">
-            <span className="text-[9px] text-gray-400">S{w.weekNumber}</span>
+            <span className="text-[10px] text-gray-400">S{w.weekNumber}</span>
           </div>
         ))}
       </div>
@@ -431,7 +431,7 @@ function WellbeingChart({ data }: { data: WellbeingPoint[] }) {
                   {p.motivationLevel != null && <div className="w-5 h-1.5 rounded-full mx-auto" style={{ backgroundColor: '#22c55e', opacity: p.motivationLevel / 10 + 0.2 }} />}
                   {p.stressLevel != null && <div className="w-5 h-1.5 rounded-full mx-auto" style={{ backgroundColor: '#8b5cf6', opacity: p.stressLevel / 10 + 0.2 }} />}
                 </div>
-                <span className="text-[9px] text-gray-400">S{p.week}</span>
+                <span className="text-[10px] text-gray-400">S{p.week}</span>
               </div>
             ))}
           </div>
@@ -528,7 +528,7 @@ function MonthlyActivityChart({ data }: { data: MonthlyActivity[] }) {
                   className="h-full flex items-center justify-center transition-all"
                   style={{ width: `${gymPct}%`, minWidth: 20, backgroundColor: '#ea580c' }}
                 >
-                  <span className="text-[9px] font-bold text-white">{gymCount}</span>
+                  <span className="text-[10px] font-bold text-white">{gymCount}</span>
                 </div>
               )}
               {runCount > 0 && (
@@ -536,7 +536,7 @@ function MonthlyActivityChart({ data }: { data: MonthlyActivity[] }) {
                   className="h-full flex items-center justify-center transition-all"
                   style={{ width: `${runPct}%`, minWidth: 20, backgroundColor: '#1e3a5f' }}
                 >
-                  <span className="text-[9px] font-bold text-white">{runCount}</span>
+                  <span className="text-[10px] font-bold text-white">{runCount}</span>
                 </div>
               )}
             </div>
@@ -609,9 +609,9 @@ function DailyWeightChart({ data, goalLine }: { data: DailyWeightPoint[]; goalLi
         )}
       </svg>
       <div className="flex justify-between mt-1 px-1">
-        <span className="text-[9px] text-gray-400">{new Date(data[0].date).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}</span>
-        {n > 2 && <span className="text-[9px] text-gray-400">{new Date(data[Math.floor(n / 2)].date).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}</span>}
-        {n > 1 && <span className="text-[9px] text-gray-400">{new Date(data[n-1].date).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}</span>}
+        <span className="text-[10px] text-gray-400">{new Date(data[0].date).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}</span>
+        {n > 2 && <span className="text-[10px] text-gray-400">{new Date(data[Math.floor(n / 2)].date).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}</span>}
+        {n > 1 && <span className="text-[10px] text-gray-400">{new Date(data[n-1].date).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}</span>}
       </div>
     </div>
   )

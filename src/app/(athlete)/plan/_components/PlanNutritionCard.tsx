@@ -38,15 +38,15 @@ function CalorieRingSvg({ consumed, target }: { consumed: number; target: number
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         {consumed === 0 ? (
           <>
-            <span className="text-[18px] font-black leading-none text-[#b3b3b3]">0</span>
-            <span className="text-[8px] font-medium text-[#8c99a6] text-center leading-tight mt-0.5">kcal</span>
+            <span className="text-lg font-black leading-none text-[#b3b3b3]">0</span>
+            <span className="text-[10px] font-medium text-[#8c99a6] text-center leading-tight mt-0.5">kcal</span>
           </>
         ) : (
           <>
-            <span className={cn('text-[18px] font-black leading-none', over ? 'text-red-500' : 'text-[#1e3a5f]')}>
+            <span className={cn('text-lg font-black leading-none', over ? 'text-red-500' : 'text-[#1e3a5f]')}>
               {(remaining > 0 ? remaining : Math.round(consumed - target)).toLocaleString('es')}
             </span>
-            <span className="text-[8px] font-medium text-gray-400 text-center leading-tight mt-0.5">
+            <span className="text-[10px] font-medium text-gray-400 text-center leading-tight mt-0.5">
               {remaining > 0 ? 'kcal\nrestantes' : 'kcal\nextra'}
             </span>
           </>
@@ -75,8 +75,8 @@ function MiniMacroRingSvg({ value, max, color, label, bgColor = '#f3f4f6' }: { v
           />
         </svg>
       </div>
-      <span className="text-[11px] font-bold text-[#1e3a5f]">{Math.round(value)}g</span>
-      <span className="text-[9px] text-gray-400">{label}</span>
+      <span className="text-xs font-bold text-[#1e3a5f]">{Math.round(value)}g</span>
+      <span className="text-[10px] text-gray-400">{label}</span>
     </div>
   )
 }
@@ -97,22 +97,22 @@ export default function NutritionCard({ nt, consumed }: { nt: { kcal: number; pr
     <a href="/nutrition" className="block bg-white rounded-[20px] border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.06)] p-5 hover:shadow-lg transition-shadow">
       {/* Desktop: barras de color (Figma web) */}
       <div className="hidden sm:block">
-        <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Nutrición hoy</p>
+        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Nutrición hoy</p>
         <div className="flex items-end gap-6">
           <div className="shrink-0">
             <div className="flex items-baseline gap-1.5">
-              <span className="text-[28px] font-black text-[#1e3a5f] leading-none">
+              <span className="text-2xl font-black text-[#1e3a5f] leading-none">
                 {nt.kcal.toLocaleString('es')}
               </span>
-              <span className="text-[12px] text-gray-400">kcal</span>
+              <span className="text-xs text-gray-400">kcal</span>
             </div>
             <p className="text-[10px] text-gray-400 mt-0.5">{nt.label}</p>
           </div>
           <div className="flex flex-1 gap-3">
             {macros.map(m => (
               <div key={m.label} className="flex-1 text-center">
-                <p className="text-[9px] font-semibold mb-1" style={{ color: m.color }}>{m.label}</p>
-                <p className="text-[15px] font-bold text-gray-900">{m.value}</p>
+                <p className="text-[10px] font-semibold mb-1" style={{ color: m.color }}>{m.label}</p>
+                <p className="text-sm font-bold text-gray-900">{m.value}</p>
                 <div className="w-full h-[3px] rounded-full mt-1.5" style={{ backgroundColor: m.color }} />
               </div>
             ))}
@@ -124,12 +124,12 @@ export default function NutritionCard({ nt, consumed }: { nt: { kcal: number; pr
         <div className="flex items-center justify-center gap-5">
           <CalorieRingSvg consumed={c.kcal} target={nt.kcal} />
           <div className="flex-1 min-w-0">
-            <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-widest">Calorías de hoy</p>
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Calorías de hoy</p>
             <div className="flex items-baseline gap-1.5 mt-1">
-              <span className="text-[28px] font-black text-[#1e3a5f] leading-none tracking-tight">
+              <span className="text-2xl font-black text-[#1e3a5f] leading-none tracking-tight">
                 {nt.kcal.toLocaleString('es')}
               </span>
-              <span className="text-[11px] text-gray-400">kcal objetivo</span>
+              <span className="text-xs text-gray-400">kcal objetivo</span>
             </div>
             <p className="text-[10px] text-gray-400 mt-0.5">
               {hasConsumed ? `${c.kcal.toLocaleString('es')} kcal registradas` : 'Sin registros hoy'}

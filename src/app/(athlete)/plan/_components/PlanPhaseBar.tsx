@@ -27,8 +27,8 @@ export default function PhaseBar({ allPhases, currentPhase, currentWeekNum, tota
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-[13px] font-bold text-gray-900">Progreso del plan</span>
-        <span className="text-[11px] text-gray-400">Sem. {currentWeekNum}/{totalWeeks} · {pct}%</span>
+        <span className="text-sm font-bold text-gray-900">Progreso del plan</span>
+        <span className="text-xs text-gray-400">Sem. {currentWeekNum}/{totalWeeks} · {pct}%</span>
       </div>
       {/* Phase pills — Figma style */}
       <div className="flex gap-2">
@@ -48,7 +48,7 @@ export default function PhaseBar({ allPhases, currentPhase, currentWeekNum, tota
               key={phase}
               style={pillStyle}
               className={cn(
-                'py-2 rounded-lg text-center text-[11px] font-semibold transition-colors',
+                'py-2 rounded-lg text-center text-xs font-semibold transition-colors',
                 isActive && 'text-white',
                 isDone && 'text-white opacity-70',
                 !isActive && !isDone && 'border border-gray-200 text-gray-400',

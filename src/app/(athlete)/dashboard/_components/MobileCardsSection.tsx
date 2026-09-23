@@ -170,8 +170,8 @@ function ProMobileCards(props: Props) {
               <span className="text-sm font-bold text-white">{props.coach.initial}</span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-semibold text-[#1e3a5f]">Coach {props.coach.name.split(' ')[0]}</p>
-              <p className="text-[11px] text-gray-500 truncate mt-0.5">{props.coach.headline || 'Entrenador personal'}</p>
+              <p className="text-sm font-semibold text-[#1e3a5f]">Coach {props.coach.name.split(' ')[0]}</p>
+              <p className="text-xs text-gray-500 truncate mt-0.5">{props.coach.headline || 'Entrenador personal'}</p>
             </div>
             <span className="text-sm text-gray-300 shrink-0">›</span>
           </div>
@@ -224,12 +224,12 @@ function ProMetricsCard({ formStatus, formMessage, lastCheckIn, formCheckInDate,
         {/* Row 1: status + chip + ago */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <p className={`text-[15px] font-bold ${statusColor}`}>{formMessage}</p>
-            <span className={`text-[9px] font-semibold px-2 py-0.5 rounded-full ${chipBg}`}>
+            <p className={`text-sm font-bold ${statusColor}`}>{formMessage}</p>
+            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${chipBg}`}>
               {formStatus === 'good' ? 'Buena forma' : formStatus === 'moderate' ? 'Moderado' : 'Descanso'}
             </span>
           </div>
-          {formCheckInDate && <p className="text-[9px] text-gray-400">{formCheckInDate}</p>}
+          {formCheckInDate && <p className="text-[10px] text-gray-400">{formCheckInDate}</p>}
         </div>
 
         {/* Row 2: 4 metrics */}
@@ -244,7 +244,7 @@ function ProMetricsCard({ formStatus, formMessage, lastCheckIn, formCheckInDate,
         {raceDays != null && raceDays > 0 && !isRecomp && (
           <div className="flex items-center gap-1.5 bg-blue-50 rounded-[10px] px-2.5 py-1.5">
             <span className="text-xs">🏁</span>
-            <p className="text-[11px] font-semibold text-[#1e3a5f] flex-1">{raceDays} dias para tu carrera</p>
+            <p className="text-xs font-semibold text-[#1e3a5f] flex-1">{raceDays} dias para tu carrera</p>
             {weightProgressPct != null && (
               <p className="text-[10px] text-gray-400">Peso {weightProgressPct}%</p>
             )}
@@ -254,7 +254,7 @@ function ProMetricsCard({ formStatus, formMessage, lastCheckIn, formCheckInDate,
         {isRecomp && currentWeight && targetWeight && (
           <div className="flex items-center gap-1.5 bg-blue-50 rounded-[10px] px-2.5 py-1.5">
             <span className="text-xs">🎯</span>
-            <p className="text-[11px] font-semibold text-[#1e3a5f] flex-1">
+            <p className="text-xs font-semibold text-[#1e3a5f] flex-1">
               {Math.abs(currentWeight - targetWeight).toFixed(1)} kg restantes
             </p>
             {weeklyWeightChange != null && (
@@ -288,9 +288,9 @@ function FreeMetricsCard({ currentWeight, targetWeight, weeklyWeightChange, weig
       <div className="h-[3px] bg-[#1e3a5f]" />
       <div className="px-4 pt-3 pb-3.5 space-y-2.5">
         <div className="flex items-center justify-between">
-          <p className="text-[13px] font-bold text-[#1e3a5f]">Tu progreso</p>
+          <p className="text-sm font-bold text-[#1e3a5f]">Tu progreso</p>
           {weeklyWeightChange != null && (
-            <span className={`text-[9px] font-semibold px-2 py-0.5 rounded-full ${weeklyWeightChange < 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-500'}`}>
+            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${weeklyWeightChange < 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-500'}`}>
               {weeklyWeightChange > 0 ? '+' : ''}{weeklyWeightChange.toFixed(1)} kg/sem
             </span>
           )}
@@ -312,7 +312,7 @@ function MetricCol({ label, value, unit, color }: { label: string; value: string
     <div>
       <div className="flex items-baseline gap-0.5">
         <span className={`text-lg font-bold ${color}`}>{value}</span>
-        {unit && <span className="text-[11px] text-gray-400">{unit}</span>}
+        {unit && <span className="text-xs text-gray-400">{unit}</span>}
       </div>
       <p className="text-[10px] text-gray-400">{label}</p>
     </div>
@@ -334,24 +334,24 @@ function RecentActivityCard({ recentActivity, hasEverLogged, streakDays }: {
       <div className="px-3.5 pt-3 pb-1 flex justify-between items-center">
         <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Actividad reciente</p>
         {streakDays > 0 && (
-          <span className="text-[11px] font-semibold text-[#ea580c]">🔥 {streakDays} dias de racha</span>
+          <span className="text-xs font-semibold text-[#ea580c]">🔥 {streakDays} dias de racha</span>
         )}
       </div>
       <div className="max-h-[205px] overflow-y-auto">
         {recentActivity.slice(0, 4).map((a, i) => (
           <div key={i} className={`flex items-center gap-3 px-3.5 py-2.5 ${i > 0 ? 'border-t border-gray-100' : ''}`}>
-            <span className="text-[22px]">{SESSION_ICONS[a.type] ?? '🏅'}</span>
+            <span className="text-xl">{SESSION_ICONS[a.type] ?? '🏅'}</span>
             <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-semibold text-gray-900">{SESSION_NAMES[a.type] ?? a.type.replace(/_/g, ' ')}</p>
-              <p className="text-[11px] text-gray-500 mt-0.5">
+              <p className="text-sm font-semibold text-gray-900">{SESSION_NAMES[a.type] ?? a.type.replace(/_/g, ' ')}</p>
+              <p className="text-xs text-gray-500 mt-0.5">
                 {new Date(a.completedAt).toLocaleDateString('es', { weekday: 'short', day: 'numeric', month: 'short' })}
                 {a.durationMin ? ` · ${a.durationMin} min` : ''}
               </p>
             </div>
             {a.rpe != null && (
-              <span className="text-[11px] font-semibold text-[#1e3a5f] bg-gray-100 rounded-lg px-2 py-1">RPE {a.rpe}</span>
+              <span className="text-xs font-semibold text-[#1e3a5f] bg-gray-100 rounded-lg px-2 py-1">RPE {a.rpe}</span>
             )}
-            <Link href="/progress" className="text-[11px] font-semibold text-[#ea580c]">Ver →</Link>
+            <Link href="/progress" className="text-xs font-semibold text-[#ea580c]">Ver →</Link>
           </div>
         ))}
       </div>
@@ -367,9 +367,9 @@ function UpsellBannerPro() {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
           <span className="text-sm">⚡</span>
-          <p className="text-[13px] font-semibold text-[#993300]">Desbloquea Plan Pro</p>
+          <p className="text-sm font-semibold text-[#993300]">Desbloquea Plan Pro</p>
         </div>
-        <p className="text-[11px] text-[#8c4d1a] mt-0.5">Check-in · zonas · progreso</p>
+        <p className="text-xs text-[#8c4d1a] mt-0.5">Check-in · zonas · progreso</p>
       </div>
       <span className="text-xs font-semibold text-white bg-[#ea580c] px-3 py-2 rounded-lg shrink-0">Ver Pro</span>
     </Link>
@@ -381,8 +381,8 @@ function FindCoachBanner() {
     <Link href="/find-coach" className="flex items-center gap-2.5 bg-[#1e3a5f] rounded-lg overflow-hidden pr-3.5">
       <div className="w-1 self-stretch bg-[#ea580c] shrink-0" />
       <div className="flex-1 min-w-0 py-2.5">
-        <p className="text-[13px] font-semibold text-white">🎯  Encuentra tu entrenador</p>
-        <p className="text-[11px] text-[#b2cce5] mt-0.5">Planes personalizados con un experto</p>
+        <p className="text-sm font-semibold text-white">🎯  Encuentra tu entrenador</p>
+        <p className="text-xs text-[#b2cce5] mt-0.5">Planes personalizados con un experto</p>
       </div>
       <span className="text-xs font-semibold text-[#ea580c] shrink-0">Ver coaches →</span>
     </Link>

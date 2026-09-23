@@ -191,7 +191,7 @@ function ProfileCards({ healthProfile }: { healthProfile: HealthProfileData }) {
 
   return (
     <div className="rounded-xl border p-5" style={{ backgroundColor: '#f5f7fa', borderColor: '#edf0f2' }}>
-      <p className="text-[11px] font-semibold uppercase tracking-wider mb-4" style={{ color: '#738090' }}>Perfil del atleta</p>
+      <p className="text-xs font-semibold uppercase tracking-wider mb-4" style={{ color: '#738090' }}>Perfil del atleta</p>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {items.map((item) => (
           <div key={item.label} className="bg-white rounded-lg border px-3 py-3 text-center" style={{ borderColor: '#e8ebed' }}>
@@ -267,7 +267,7 @@ function GymRoutineView({ athleteId, gymRoutine }: { athleteId: string; gymRouti
               <span className="font-medium text-sm" style={{ color: '#1f2d3d' }}>{day.label}</span>
               <div className="flex items-center gap-1 ml-auto">
                 {day.muscleGroups.map(mg => (
-                  <span key={mg} className="text-[9px] font-medium px-1.5 py-0.5 rounded-[3px]" style={{ backgroundColor: '#ebedf0', color: '#667080' }}>
+                  <span key={mg} className="text-[10px] font-medium px-1.5 py-0.5 rounded-[3px]" style={{ backgroundColor: '#ebedf0', color: '#667080' }}>
                     {MUSCLE_ICONS[mg.toLowerCase()] ?? ''} {mg}
                   </span>
                 ))}
@@ -380,7 +380,7 @@ function DisciplineCards({
             style={{ backgroundColor: '#f0f2ff', borderColor: '#1e3a5f' }}
           >
             {sport === 'RUNNING' && (
-              <span className="absolute top-3 right-3 text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
+              <span className="absolute top-3 right-3 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
                 ★ Deporte del atleta
               </span>
             )}
@@ -398,7 +398,7 @@ function DisciplineCards({
             style={{ backgroundColor: '#f5edff', borderColor: '#e8dbfa' }}
           >
             {sport === 'STRENGTH' && (
-              <span className="absolute top-3 right-3 text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
+              <span className="absolute top-3 right-3 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
                 ★ Deporte del atleta
               </span>
             )}
@@ -652,7 +652,7 @@ function RunningSessionRow({ s, date, notes, savedNotes, savingNotes, handleNote
         {!isRest && (
           <div className="space-y-1">
             {status === 'partial' && s.coachNote && (
-              <span className="inline-block text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ backgroundColor: '#fff5eb', color: '#ea580c' }}>AUTO</span>
+              <span className="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ backgroundColor: '#fff5eb', color: '#ea580c' }}>AUTO</span>
             )}
             <div className="flex gap-1 items-start">
               <input
@@ -719,7 +719,7 @@ function GymSessionRow({ s, date, notes, savedNotes, savingNotes, handleNoteChan
             </div>
             <div className="flex gap-1 mt-1 flex-wrap">
               {wd.muscleGroups.map((mg) => (
-                <span key={mg} className="text-[9px] font-medium px-1.5 py-0.5 rounded-[3px] uppercase" style={{ backgroundColor: '#ebedf0', color: '#667080' }}>
+                <span key={mg} className="text-[10px] font-medium px-1.5 py-0.5 rounded-[3px] uppercase" style={{ backgroundColor: '#ebedf0', color: '#667080' }}>
                   {mg}
                 </span>
               ))}
@@ -775,7 +775,7 @@ function GymSessionRow({ s, date, notes, savedNotes, savingNotes, handleNoteChan
         {!isRest && (
           <div className="space-y-1">
             {status === 'partial' && s.coachNote && (
-              <span className="inline-block text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ backgroundColor: '#fff5eb', color: '#ea580c' }}>AUTO</span>
+              <span className="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ backgroundColor: '#fff5eb', color: '#ea580c' }}>AUTO</span>
             )}
             <div className="flex gap-1 items-start">
               <input
@@ -833,8 +833,8 @@ function SessionsCard({
       {/* Header with legend + inline CTAs */}
       <div className="px-5 py-2.5 border-b border-gray-100 flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-3 flex-wrap">
-          <h3 className="font-semibold text-[15px]" style={{ color: '#1f2d3d' }}>Sesiones de la semana</h3>
-          <div className="flex items-center gap-3 text-[11px]" style={{ color: '#8c99a6' }}>
+          <h3 className="font-semibold text-sm" style={{ color: '#1f2d3d' }}>Sesiones de la semana</h3>
+          <div className="flex items-center gap-3 text-xs" style={{ color: '#8c99a6' }}>
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: isRunning ? '#16a251' : '#228b22' }} /> Completada</span>
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: isRunning ? '#3870c7' : '#386bb8' }} /> Pendiente</span>
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#9ea8b8' }} /> Descanso</span>
@@ -863,7 +863,7 @@ function SessionsCard({
       <div className="max-h-[400px] overflow-y-auto overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="sticky top-0 bg-white z-10">
-            <tr className="text-left text-[11px] border-b border-gray-100 uppercase tracking-wide" style={{ color: '#738090' }}>
+            <tr className="text-left text-xs border-b border-gray-100 uppercase tracking-wide" style={{ color: '#738090' }}>
               <th className="w-[3px]" />
               <th className="pl-3 pr-2 pb-2 pt-3 font-medium w-[50px]">Día</th>
               <th className="pb-2 pt-3 font-medium">{isRunning ? 'Sesión' : 'Rutina'}</th>

@@ -183,7 +183,7 @@ export default async function GymHistoryPage({ searchParams }: { searchParams: P
                       </span>
                     )}
                     {prCount > 0 && (
-                      <span className="bg-orange-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md leading-none">
+                      <span className="bg-orange-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md leading-none">
                         {prCount} PR
                       </span>
                     )}
@@ -264,7 +264,7 @@ export default async function GymHistoryPage({ searchParams }: { searchParams: P
                           <p className="text-sm font-semibold text-[#1e3a5f] mb-1.5 flex items-center gap-2">
                             {ex.name}
                             {ex.sets.some(sl => sl.isPR) && (
-                              <span className="bg-orange-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md leading-none">PR</span>
+                              <span className="bg-orange-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md leading-none">PR</span>
                             )}
                           </p>
                           <p className="text-xs text-gray-500">

@@ -513,12 +513,12 @@ export default function PlannedMealPlannerClient({ weekStart, initialMeals, week
                       {new Date(d + 'T12:00:00Z').getUTCDate()}
                     </span>
                     {intConfig && !isSelected && (
-                      <span className={`text-[8px] font-semibold mt-0.5 ${intConfig.color}`}>
+                      <span className={`text-[10px] font-semibold mt-0.5 ${intConfig.color}`}>
                         {intensity === 'HIGH' ? 'Duro' : intensity === 'REST' ? 'Rest' : 'Fácil'}
                       </span>
                     )}
                     {mealCount > 0 && (
-                      <span className={`text-[9px] font-semibold mt-0.5 ${isSelected ? 'text-orange-300' : 'text-[#ea580c]'}`}>
+                      <span className={`text-[10px] font-semibold mt-0.5 ${isSelected ? 'text-orange-300' : 'text-[#ea580c]'}`}>
                         {mealCount} items
                       </span>
                     )}

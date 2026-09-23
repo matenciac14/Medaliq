@@ -365,7 +365,7 @@ export default async function ProgressPage() {
               <div key={item.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
                 <p className="text-2xl mb-2">{item.icon}</p>
                 <p className="text-xs font-semibold text-[#1e3a5f] leading-tight mb-1">{item.label}</p>
-                <p className="text-[11px] text-gray-400 leading-snug">{item.desc}</p>
+                <p className="text-xs text-gray-400 leading-snug">{item.desc}</p>
               </div>
             ))}
           </div>

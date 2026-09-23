@@ -258,7 +258,7 @@ export default function CoachPlannedMealPlanner({ athleteId }: Props) {
                 {day.getDate()}
               </span>
               {mealCount > 0 && (
-                <span className={`text-[9px] mt-0.5 font-semibold ${isSelected ? 'text-blue-200' : 'text-[#ea580c]'}`}>
+                <span className={`text-[10px] mt-0.5 font-semibold ${isSelected ? 'text-blue-200' : 'text-[#ea580c]'}`}>
                   {mealCount} items
                 </span>
               )}
@@ -327,7 +327,7 @@ export default function CoachPlannedMealPlanner({ athleteId }: Props) {
                               <div className="flex items-center gap-1.5">
                                 <p className="text-sm font-medium text-gray-800 truncate">{displayFood.name}</p>
                                 {hasOverride && (
-                                  <span className="shrink-0 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700">
+                                  <span className="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700">
                                     swap
                                   </span>
                                 )}

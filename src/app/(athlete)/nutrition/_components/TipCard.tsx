@@ -32,8 +32,8 @@ export default function TipCard({ dayType }: { dayType: DayType | null }) {
 
   return (
     <div className="bg-[#fffaf0] rounded-[10px] px-3 py-2 flex items-center gap-1.5">
-      <span className="text-[12px] leading-none shrink-0">💡</span>
-      <p className="text-[11px] font-medium text-[#735926] flex-1 min-w-0">
+      <span className="text-xs leading-none shrink-0">💡</span>
+      <p className="text-xs font-medium text-[#735926] flex-1 min-w-0">
         {tip.title} — {tip.body}
       </p>
     </div>

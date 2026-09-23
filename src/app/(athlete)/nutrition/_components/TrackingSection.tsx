@@ -172,7 +172,7 @@ export default function TrackingSection({ target, foods, date }: Props) {
                 <span className="text-sm text-gray-400">Cargando...</span>
               ) : (
                 <div className="flex items-baseline gap-1.5">
-                  <span className="text-3xl font-black text-orange-600 leading-none">{consumed}</span>
+                  <span className="text-2xl font-black text-orange-600 leading-none">{consumed}</span>
                   {target && (
                     <span className="text-sm text-gray-400">/ {targetKcal} kcal</span>
                   )}

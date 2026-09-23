@@ -498,12 +498,12 @@ export default async function NutritionPage() {
     <>
       {/* Mobile header — gradient navy bar (matches dashboard/plan pattern) */}
       <div className="sm:hidden bg-gradient-to-b from-[#1e3a5f] to-[#2d5a8e] px-5 pt-[max(env(safe-area-inset-top,0px),20px)] pb-[22px]">
-        <h1 className="text-[20px] font-bold text-white leading-tight tracking-[-0.3px]">Nutricion</h1>
+        <h1 className="text-xl font-bold text-white leading-tight tracking-[-0.3px]">Nutricion</h1>
         <div className="flex items-center gap-2 mt-3">
-          <span className="bg-white/15 text-white text-[12px] font-semibold px-3 py-1.5 rounded-[14px]">
+          <span className="bg-white/15 text-white text-xs font-semibold px-3 py-1.5 rounded-[14px]">
             {todayStart.toLocaleDateString('es', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}
           </span>
-          <span className="bg-white/15 text-white text-[11px] font-semibold px-3 py-1.5 rounded-[14px]">
+          <span className="bg-white/15 text-white text-xs font-semibold px-3 py-1.5 rounded-[14px]">
             {pageState === 'b2b' ? 'Coach asigna' : `${badge.emoji} ${badge.label}`}
           </span>
         </div>

@@ -17,8 +17,8 @@ export default function AdherenceChart({ weeks, currentWeekNum, selectedWeekNum,
     return (
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
         <div className="flex items-center justify-between mb-2.5">
-          <span className="text-[13px] font-bold text-gray-900">Adherencia semanal</span>
-          <span className="text-[11px] text-gray-400">Sin datos</span>
+          <span className="text-sm font-bold text-gray-900">Adherencia semanal</span>
+          <span className="text-xs text-gray-400">Sin datos</span>
         </div>
         <div className="flex gap-1.5">
           {DAY_LABELS_COMPACT.map(d => (
@@ -61,8 +61,8 @@ export default function AdherenceChart({ weeks, currentWeekNum, selectedWeekNum,
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
       <div className="flex items-center justify-between mb-2.5">
-        <span className="text-[12px] font-bold text-gray-900">Adherencia semanal</span>
-        <span className="text-[11px] text-gray-400">{pct}%</span>
+        <span className="text-xs font-bold text-gray-900">Adherencia semanal</span>
+        <span className="text-xs text-gray-400">{pct}%</span>
       </div>
       <div className="flex gap-1.5">
         {days.map(({ dow, label, status }) => (

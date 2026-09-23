@@ -63,7 +63,7 @@ function RegisterForm() {
         <div className="absolute inset-0 bg-gradient-to-b from-[#162B45]/30 via-[#162B45]/60 to-[#162B45]/80" />
         <div className="relative z-10 flex flex-col items-center justify-center h-full">
           <MedaliqLogo variant="dark" size="lg" />
-          <p className="text-[13px] text-white/70 mt-2">Empieza gratis, sin tarjeta.</p>
+          <p className="text-sm text-white/70 mt-2">Empieza gratis, sin tarjeta.</p>
         </div>
       </div>
 
@@ -103,8 +103,8 @@ function RegisterForm() {
             <MedaliqLogo variant="light" size="md" />
           </div>
 
-          <h1 className="text-[22px] lg:text-2xl font-bold text-[#1e3a5f] mb-1 text-center">Crea tu cuenta</h1>
-          <p className="text-[13px] lg:text-sm text-gray-500 mb-6 lg:mb-8 text-center">
+          <h1 className="text-xl lg:text-2xl font-bold text-[#1e3a5f] mb-1 text-center">Crea tu cuenta</h1>
+          <p className="text-sm lg:text-sm text-gray-500 mb-6 lg:mb-8 text-center">
             <span className="lg:hidden">Solo toma un minuto</span>
             <span className="hidden lg:inline">&nbsp;</span>
           </p>
@@ -124,7 +124,7 @@ function RegisterForm() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Juan Pérez"
-                className="w-full h-12 lg:h-auto rounded-xl lg:rounded-lg border-0 lg:border-[1.5px] lg:border-gray-200 bg-[#f6f7f8] lg:bg-white px-4 py-3 text-[15px] lg:text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f] transition-colors"
+                className="w-full h-12 lg:h-auto rounded-xl lg:rounded-lg border-0 lg:border-[1.5px] lg:border-gray-200 bg-[#f6f7f8] lg:bg-white px-4 py-3 text-sm lg:text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f] transition-colors"
               />
             </div>
 
@@ -136,7 +136,7 @@ function RegisterForm() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="tu@correo.com"
-                className="w-full h-12 lg:h-auto rounded-xl lg:rounded-lg border-0 lg:border-[1.5px] lg:border-gray-200 bg-[#f6f7f8] lg:bg-white px-4 py-3 text-[15px] lg:text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f] transition-colors"
+                className="w-full h-12 lg:h-auto rounded-xl lg:rounded-lg border-0 lg:border-[1.5px] lg:border-gray-200 bg-[#f6f7f8] lg:bg-white px-4 py-3 text-sm lg:text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f] transition-colors"
               />
             </div>
 
@@ -148,7 +148,7 @@ function RegisterForm() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Mínimo 8 caracteres"
-                className="w-full h-12 lg:h-auto rounded-xl lg:rounded-lg border-0 lg:border-[1.5px] lg:border-gray-200 bg-[#f6f7f8] lg:bg-white px-4 py-3 text-[15px] lg:text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f] transition-colors"
+                className="w-full h-12 lg:h-auto rounded-xl lg:rounded-lg border-0 lg:border-[1.5px] lg:border-gray-200 bg-[#f6f7f8] lg:bg-white px-4 py-3 text-sm lg:text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f] transition-colors"
               />
             </div>
 
@@ -195,7 +195,7 @@ function RegisterForm() {
 
           <button
             onClick={handleGoogle}
-            className="w-full h-12 lg:h-auto flex items-center justify-center gap-3 rounded-xl lg:rounded-lg border border-[#e0e5ed] lg:border-gray-200 bg-white py-3 text-[15px] lg:text-sm font-medium text-[#1e3a5f] lg:text-gray-700 hover:bg-gray-50 transition-colors"
+            className="w-full h-12 lg:h-auto flex items-center justify-center gap-3 rounded-xl lg:rounded-lg border border-[#e0e5ed] lg:border-gray-200 bg-white py-3 text-sm lg:text-sm font-medium text-[#1e3a5f] lg:text-gray-700 hover:bg-gray-50 transition-colors"
           >
             <svg className="size-4" viewBox="0 0 24 24">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -206,7 +206,7 @@ function RegisterForm() {
             Continuar con Google
           </button>
 
-          <p className="mt-5 text-center text-[13px] lg:text-sm text-gray-500">
+          <p className="mt-5 text-center text-sm lg:text-sm text-gray-500">
             ¿Ya tienes cuenta?{' '}
             <Link href="/login" className="text-[#1e3a5f] font-semibold hover:underline">
               Inicia sesión

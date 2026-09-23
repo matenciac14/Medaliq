@@ -193,7 +193,7 @@ export default function SesionesTab({
                   const heightPct = maxGymWeight > 0 ? (sessionMax / maxGymWeight) * 100 : 0
                   return (
                     <div key={li} className="flex flex-col items-center gap-0.5 flex-1 min-w-0">
-                      <span className="text-[9px] text-gray-400 font-mono truncate w-full text-center">
+                      <span className="text-[10px] text-gray-400 font-mono truncate w-full text-center">
                         {sessionMax > 0 ? `${sessionMax}` : '—'}
                       </span>
                       <div
@@ -204,7 +204,7 @@ export default function SesionesTab({
                           opacity: 0.5 + (li / ex.logs.length) * 0.5,
                         }}
                       />
-                      <span className="text-[8px] text-gray-300 truncate w-full text-center">
+                      <span className="text-[10px] text-gray-300 truncate w-full text-center">
                         {log.date.slice(5)}
                       </span>
                     </div>
@@ -334,9 +334,9 @@ export default function SesionesTab({
                       })}
                     </div>
                     <div className="flex justify-between mt-1">
-                      <span className="text-[9px] text-gray-300">{ex.points[0].date.slice(5)}</span>
+                      <span className="text-[10px] text-gray-300">{ex.points[0].date.slice(5)}</span>
                       <span className="text-[10px] font-bold text-[#ea580c]">{ex.points[ex.points.length - 1].est1RM} kg</span>
-                      <span className="text-[9px] text-gray-300">{ex.points[ex.points.length - 1].date.slice(5)}</span>
+                      <span className="text-[10px] text-gray-300">{ex.points[ex.points.length - 1].date.slice(5)}</span>
                     </div>
                   </div>
                 )

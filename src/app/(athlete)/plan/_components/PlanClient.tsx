@@ -70,20 +70,20 @@ function SesionLibreCard({ variant = 'desktop' }: { variant?: 'desktop' | 'mobil
       <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#e5eaf0] rounded-sm" />
       <div className={`${pad} space-y-3`}>
         <div className="flex items-center gap-2">
-          <span className="text-[22px]">📝</span>
-          <h3 className="text-[18px] font-bold text-[#1c2b45]">Sesión libre</h3>
+          <span className="text-xl">📝</span>
+          <h3 className="text-lg font-bold text-[#1c2b45]">Sesión libre</h3>
         </div>
         <div className="flex gap-1.5">
-          <span className="bg-[#f0f1f4] text-[#6b7582] text-[11px] font-semibold px-2 py-[5px] rounded-[6px]">— min</span>
-          <span className="bg-[#f0f1f4] text-[#6b7582] text-[11px] font-semibold px-2 py-[5px] rounded-[6px]">Zona 2–3</span>
-          <span className="bg-[#fff1ea] text-[#ea580c] text-[11px] font-bold px-2 py-[5px] rounded-[6px]">Libre</span>
+          <span className="bg-[#f0f1f4] text-[#6b7582] text-xs font-semibold px-2 py-[5px] rounded-[6px]">— min</span>
+          <span className="bg-[#f0f1f4] text-[#6b7582] text-xs font-semibold px-2 py-[5px] rounded-[6px]">Zona 2–3</span>
+          <span className="bg-[#fff1ea] text-[#ea580c] text-xs font-bold px-2 py-[5px] rounded-[6px]">Libre</span>
         </div>
         <p className="text-[10px] font-bold text-[#8c9eb2] uppercase tracking-[0.6px]">
           Registra actividad libre
         </p>
         <a
           href="/log"
-          className="flex items-center justify-center w-full bg-[#ea580c] hover:opacity-90 text-white text-[14px] font-bold h-[42px] rounded-[10px] transition-opacity"
+          className="flex items-center justify-center w-full bg-[#ea580c] hover:opacity-90 text-white text-sm font-bold h-[42px] rounded-[10px] transition-opacity"
         >
           Registrar sesión libre →
         </a>
@@ -105,8 +105,8 @@ function GymDayCard({ gym, isToday }: { gym: NonNullable<CalendarDay['gym']>; is
         <div className={`w-1.5 shrink-0 ${accentColor}`} />
         <div className="flex-1 p-6 space-y-4">
           <div className="flex items-center gap-3">
-            <span className="text-[22px]">🏋️</span>
-            <h3 className="text-[22px] font-black text-gray-900 leading-tight">
+            <span className="text-xl">🏋️</span>
+            <h3 className="text-xl font-black text-gray-900 leading-tight">
               {gym.label}
             </h3>
             {isToday && (
@@ -121,15 +121,15 @@ function GymDayCard({ gym, isToday }: { gym: NonNullable<CalendarDay['gym']>; is
 
           <div className="flex flex-wrap items-center gap-2">
             {gym.durationMin != null && (
-              <span className="text-[12px] font-medium bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full">
+              <span className="text-xs font-medium bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full">
                 {gym.durationMin} min
               </span>
             )}
-            <span className="text-[12px] font-semibold bg-purple-50 text-purple-700 px-3 py-1.5 rounded-full border border-purple-100">
+            <span className="text-xs font-semibold bg-purple-50 text-purple-700 px-3 py-1.5 rounded-full border border-purple-100">
               💪 Fuerza
             </span>
             {gym.templateName && (
-              <span className="text-[12px] font-medium bg-gray-50 text-gray-500 px-3 py-1.5 rounded-full">
+              <span className="text-xs font-medium bg-gray-50 text-gray-500 px-3 py-1.5 rounded-full">
                 {gym.templateName}
               </span>
             )}
@@ -139,19 +139,19 @@ function GymDayCard({ gym, isToday }: { gym: NonNullable<CalendarDay['gym']>; is
             {gym.done ? (
               <div className="flex items-center gap-2 px-4 py-2.5 bg-green-50 border border-green-200 rounded-xl">
                 <CheckGym size={16} className="text-green-500" />
-                <span className="text-[13px] font-semibold text-green-700">Completada</span>
+                <span className="text-sm font-semibold text-green-700">Completada</span>
               </div>
             ) : (
               <a
                 href="/gym/session"
-                className="flex-1 flex items-center justify-center gap-2 bg-[#ea580c] hover:opacity-90 text-white text-[14px] font-bold px-4 py-3 rounded-xl transition-opacity whitespace-nowrap"
+                className="flex-1 flex items-center justify-center gap-2 bg-[#ea580c] hover:opacity-90 text-white text-sm font-bold px-4 py-3 rounded-xl transition-opacity whitespace-nowrap"
               >
                 Iniciar sesión de gym →
               </a>
             )}
             <a
               href="/gym"
-              className="px-4 py-2.5 border border-gray-200 text-gray-600 text-[13px] font-medium rounded-xl hover:bg-gray-50 transition-colors whitespace-nowrap"
+              className="px-4 py-2.5 border border-gray-200 text-gray-600 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors whitespace-nowrap"
             >
               Ver rutina
             </a>
@@ -288,8 +288,8 @@ export default function PlanClient({ plan, weeks, initialCalendarWeek, nutrition
       <div className="bg-gradient-to-b from-[#1e3a5f] to-[#2d5a8e] pb-3 px-5 pt-[max(env(safe-area-inset-top,0px),20px)]">
         <div className="flex items-start justify-between mb-3">
           <div>
-            <h1 className="text-[20px] font-bold text-white leading-tight">Mi Plan</h1>
-            <p className="text-[11px] text-white/60 mt-0.5">
+            <h1 className="text-xl font-bold text-white leading-tight">Mi Plan</h1>
+            <p className="text-xs text-white/60 mt-0.5">
               Plan {formatPlanName(plan.name)} · {plan.totalWeeks} semanas
             </p>
             <div className="flex items-center gap-1.5 mt-1 flex-wrap">
@@ -300,7 +300,7 @@ export default function PlanClient({ plan, weeks, initialCalendarWeek, nutrition
                 </span>
               )}
               {raceDays != null && raceDays > 0 && (
-                <span className="inline-flex items-center gap-1 bg-[#ea580c]/80 text-white px-2 py-0.5 rounded-full text-[9px] font-semibold">
+                <span className="inline-flex items-center gap-1 bg-[#ea580c]/80 text-white px-2 py-0.5 rounded-full text-[10px] font-semibold">
                   🏃 {raceDays}d
                 </span>
               )}
@@ -321,13 +321,13 @@ export default function PlanClient({ plan, weeks, initialCalendarWeek, nutrition
             >
               <ChevronLeft size={16} />
             </button>
-            <span className="flex-1 text-[13px] font-semibold text-white text-center whitespace-nowrap">
+            <span className="flex-1 text-sm font-semibold text-white text-center whitespace-nowrap">
               Semana {selectedWeekNum} · {weekLabel}
             </span>
             {!isCurrentWeek && (
               <button
                 onClick={() => { setSelectedWeekNum(plan.currentWeek); setSelectedDow(todayDow) }}
-                className="text-[12px] font-bold text-white bg-[#ea580c] px-3 py-1 rounded-full transition-colors hover:bg-[#d14d07]"
+                className="text-xs font-bold text-white bg-[#ea580c] px-3 py-1 rounded-full transition-colors hover:bg-[#d14d07]"
               >
                 Hoy
               </button>
@@ -365,9 +365,9 @@ export default function PlanClient({ plan, weeks, initialCalendarWeek, nutrition
         {/* Adjustment banner — mobile */}
         {pendingSuggestionsCount > 0 && (
           <a href="/checkin" className="block bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex items-center gap-2.5">
-            <span className="text-[18px]">🔄</span>
+            <span className="text-lg">🔄</span>
             <div className="flex-1 min-w-0">
-              <p className="text-[12px] font-bold text-blue-800">Ajuste disponible</p>
+              <p className="text-xs font-bold text-blue-800">Ajuste disponible</p>
               <p className="text-[10px] text-blue-600">
                 {pendingSuggestionsCount} {pendingSuggestionsCount === 1 ? 'sugerencia' : 'sugerencias'} de tu check-in
               </p>
@@ -401,10 +401,10 @@ export default function PlanClient({ plan, weeks, initialCalendarWeek, nutrition
             onClick={handleNextDayClick}
             className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 flex items-center gap-2.5 text-left"
           >
-            <span className="text-[14px]">📅</span>
+            <span className="text-sm">📅</span>
             <div className="flex-1 min-w-0">
               <p className="text-[10px] font-semibold text-gray-400">Mañana</p>
-              <p className="text-[12px] font-bold text-gray-800 truncate">
+              <p className="text-xs font-bold text-gray-800 truncate">
                 {nextSession.label || SESSION_NAMES[nextSession.type] || nextSession.type}
                 {' · '}{nextSession.durationMin} min
               </p>
@@ -464,7 +464,7 @@ export default function PlanClient({ plan, weeks, initialCalendarWeek, nutrition
             <span className="flex items-center gap-2 flex-wrap">
               <span>{formatPlanName(plan.name)} · {plan.totalWeeks} semanas</span>
               {isB2B && coachName && (
-                <span className="inline-flex items-center gap-1.5 text-green-600 text-[11px] font-semibold">
+                <span className="inline-flex items-center gap-1.5 text-green-600 text-xs font-semibold">
                   <span className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
                   Diseñado por Coach {coachName}
                 </span>
@@ -485,11 +485,11 @@ export default function PlanClient({ plan, weeks, initialCalendarWeek, nutrition
           right={
             <div className="flex items-center gap-2">
               {raceDays != null && raceDays > 0 && (
-                <span className="inline-flex items-center gap-1 bg-orange-50 text-orange-700 border border-orange-200 px-3 py-1.5 rounded-[20px] text-[11px] font-semibold whitespace-nowrap">
+                <span className="inline-flex items-center gap-1 bg-orange-50 text-orange-700 border border-orange-200 px-3 py-1.5 rounded-[20px] text-xs font-semibold whitespace-nowrap">
                   🏃 {raceDays} días
                 </span>
               )}
-              <span className="inline-flex items-center bg-[#1e3a5f] text-white px-3.5 py-1.5 rounded-[20px] text-[11px] font-semibold whitespace-nowrap">
+              <span className="inline-flex items-center bg-[#1e3a5f] text-white px-3.5 py-1.5 rounded-[20px] text-xs font-semibold whitespace-nowrap">
                 {realCurrentPhase} · {selectedWeekNum} / {plan.totalWeeks}
               </span>
             </div>
@@ -522,7 +522,7 @@ export default function PlanClient({ plan, weeks, initialCalendarWeek, nutrition
 
         {/* Footer — session count */}
         <div className="px-5 pb-3 flex justify-end">
-          <span className="text-[12px] text-gray-400 font-medium">
+          <span className="text-xs text-gray-400 font-medium">
             {completedCount} / {totalTraining} sesiones
           </span>
         </div>
@@ -531,10 +531,10 @@ export default function PlanClient({ plan, weeks, initialCalendarWeek, nutrition
       {/* Adjustment banner */}
       {pendingSuggestionsCount > 0 && (
         <a href="/checkin" className="block bg-blue-50 border border-blue-200 rounded-2xl px-5 py-3.5 flex items-center gap-3 hover:bg-blue-100 transition-colors">
-          <span className="text-[20px]">🔄</span>
+          <span className="text-xl">🔄</span>
           <div className="flex-1">
-            <p className="text-[13px] font-bold text-blue-800">Ajuste de plan disponible</p>
-            <p className="text-[11px] text-blue-600">
+            <p className="text-sm font-bold text-blue-800">Ajuste de plan disponible</p>
+            <p className="text-xs text-blue-600">
               {pendingSuggestionsCount === 1
                 ? 'Tienes 1 sugerencia pendiente de tu último check-in'
                 : `Tienes ${pendingSuggestionsCount} sugerencias pendientes de tu último check-in`}
@@ -574,10 +574,10 @@ export default function PlanClient({ plan, weeks, initialCalendarWeek, nutrition
               onClick={handleNextDayClick}
               className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 flex items-center gap-3 hover:bg-gray-100 transition-colors text-left"
             >
-              <span className="text-[16px]">📅</span>
+              <span className="text-base">📅</span>
               <div className="flex-1 min-w-0">
-                <p className="text-[11px] font-semibold text-gray-500">Mañana</p>
-                <p className="text-[13px] font-bold text-gray-800 truncate">
+                <p className="text-xs font-semibold text-gray-500">Mañana</p>
+                <p className="text-sm font-bold text-gray-800 truncate">
                   {nextSession.label || SESSION_NAMES[nextSession.type] || nextSession.type}
                   {' · '}{nextSession.durationMin} min
                 </p>

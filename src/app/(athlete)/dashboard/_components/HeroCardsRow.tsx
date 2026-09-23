@@ -54,12 +54,12 @@ function ActivityCard({ weekSessionCount, weekSessionTarget, streakDays }: { wee
                 <span className="text-2xl font-black text-[#1e3a5f] leading-none">{weekSessionCount}</span>
                 <span className="text-sm text-gray-400">sesiones</span>
               </div>
-              <p className="text-[11px] text-gray-500 mb-1.5">registradas · ultimo mes</p>
+              <p className="text-xs text-gray-500 mb-1.5">registradas · ultimo mes</p>
             </>
           ) : (
             <>
               <span className="text-2xl font-black text-[#1e3a5f] leading-none block mb-0.5">&mdash;</span>
-              <p className="text-[11px] text-gray-500 mb-1.5">Sin sesiones registradas aun</p>
+              <p className="text-xs text-gray-500 mb-1.5">Sin sesiones registradas aun</p>
             </>
           )}
           <ProgressBar pct={Math.round((weekSessionCount / Math.max(weekSessionTarget, 1)) * 100)} className="mb-1" />
@@ -92,7 +92,7 @@ function WeightCard({ currentWeight, targetWeight, weeklyWeightChange, weightPro
                 <span className="text-sm text-gray-300 mx-1">&rarr;</span>
                 <span className="text-lg font-semibold text-[#3b6fdd]">{targetWeight} kg</span>
               </div>
-              <p className="text-[11px] text-gray-500 mb-1.5">
+              <p className="text-xs text-gray-500 mb-1.5">
                 {dashboardMode === 'FREE'
                   ? 'Meta configurada en tu perfil'
                   : weeklyWeightChange != null
@@ -120,7 +120,7 @@ function WeightCard({ currentWeight, targetWeight, weeklyWeightChange, weightPro
           ) : (
             <>
               <span className="text-2xl font-black text-[#1e3a5f] leading-none block mb-0.5">&mdash;</span>
-              <p className="text-[11px] text-gray-500 mb-1.5">Sin datos de peso registrados</p>
+              <p className="text-xs text-gray-500 mb-1.5">Sin datos de peso registrados</p>
               <ProgressBar pct={0} color="bg-gray-100" className="mb-1" />
               <div className="flex justify-end">
                 <Link href="/progress" className="text-[10px] font-semibold text-[#3b6fdd]">Registrar peso →</Link>

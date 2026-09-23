@@ -69,8 +69,8 @@ export default function SessionDetailCard({ session, isToday, isLogged, onLogged
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 flex items-center gap-4">
         <span className="text-4xl">😴</span>
         <div>
-          <p className="text-[18px] font-bold text-gray-700">Día de descanso</p>
-          <p className="text-[12px] text-gray-400 mt-0.5">Aprovecha para recuperar bien hoy</p>
+          <p className="text-lg font-bold text-gray-700">Día de descanso</p>
+          <p className="text-xs text-gray-400 mt-0.5">Aprovecha para recuperar bien hoy</p>
         </div>
       </div>
     )
@@ -98,8 +98,8 @@ export default function SessionDetailCard({ session, isToday, isLogged, onLogged
 
           {/* Title */}
           <div className="flex items-center gap-3">
-            <span className="text-[22px]">{SESSION_ICONS[session.type] ?? '🏅'}</span>
-            <h3 className="text-[22px] font-black text-gray-900 leading-tight">
+            <span className="text-xl">{SESSION_ICONS[session.type] ?? '🏅'}</span>
+            <h3 className="text-xl font-black text-gray-900 leading-tight">
               {session.label || SESSION_NAMES[session.type] || session.type}
             </h3>
             {isToday && (
@@ -116,15 +116,15 @@ export default function SessionDetailCard({ session, isToday, isLogged, onLogged
 
           {/* Badges */}
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[12px] font-medium bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full">
+            <span className="text-xs font-medium bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full">
               {session.durationMin} min
             </span>
             {showZone && !isGym && (
-              <span className="text-[12px] font-medium bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full border border-blue-100">
+              <span className="text-xs font-medium bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full border border-blue-100">
                 Zona {session.zoneTarget}
               </span>
             )}
-            <span className={cn('text-[12px] font-semibold px-3 py-1.5 rounded-full border', badge.bg)}>
+            <span className={cn('text-xs font-semibold px-3 py-1.5 rounded-full border', badge.bg)}>
               {badge.label}
             </span>
           </div>
@@ -145,16 +145,16 @@ export default function SessionDetailCard({ session, isToday, isLogged, onLogged
                     <div key={idx} className="flex items-start gap-2.5">
                       <div className="flex items-center gap-1 shrink-0 pt-1">
                         <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                        <span className="text-[11px] font-bold w-5 leading-none" style={{ color }}>
+                        <span className="text-xs font-bold w-5 leading-none" style={{ color }}>
                           {zone ?? ''}
                         </span>
                       </div>
                       {durationMin != null && (
-                        <span className="text-[12px] font-bold text-gray-800 shrink-0 w-12 pt-px">
+                        <span className="text-xs font-bold text-gray-800 shrink-0 w-12 pt-px">
                           {durationMin} min
                         </span>
                       )}
-                      <p className="text-[12px] text-gray-600 leading-relaxed flex-1">{text}</p>
+                      <p className="text-xs text-gray-600 leading-relaxed flex-1">{text}</p>
                     </div>
                   )
                 })}
@@ -166,7 +166,7 @@ export default function SessionDetailCard({ session, isToday, isLogged, onLogged
           {session.coachNote && (
             <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
               <p className="text-[10px] font-bold text-blue-500 uppercase tracking-wider mb-1">💬 Nota de tu coach</p>
-              <p className="text-[12px] text-blue-800 leading-relaxed">{session.coachNote}</p>
+              <p className="text-xs text-blue-800 leading-relaxed">{session.coachNote}</p>
             </div>
           )}
 
@@ -176,11 +176,11 @@ export default function SessionDetailCard({ session, isToday, isLogged, onLogged
               <>
                 <div className="flex items-center gap-2 px-4 py-2.5 bg-green-50 border border-green-200 rounded-xl">
                   <CheckCircle2 size={16} className="text-green-500" />
-                  <span className="text-[13px] font-semibold text-green-700">Completada</span>
+                  <span className="text-sm font-semibold text-green-700">Completada</span>
                 </div>
                 <button
                   onClick={() => setShowEdit(true)}
-                  className="px-4 py-2.5 border border-gray-200 text-gray-600 text-[13px] font-medium rounded-xl hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2.5 border border-gray-200 text-gray-600 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors"
                 >
                   Editar sesión ✏️
                 </button>
@@ -189,13 +189,13 @@ export default function SessionDetailCard({ session, isToday, isLogged, onLogged
               <>
                 <button
                   onClick={() => setShowModal(true)}
-                  className="flex-1 flex items-center justify-center gap-2 bg-[#ea580c] hover:opacity-90 text-white text-[14px] font-bold px-4 py-3 rounded-xl transition-opacity whitespace-nowrap"
+                  className="flex-1 flex items-center justify-center gap-2 bg-[#ea580c] hover:opacity-90 text-white text-sm font-bold px-4 py-3 rounded-xl transition-opacity whitespace-nowrap"
                 >
                   Registrar sesión →
                 </button>
                 <button
                   onClick={() => setShowEdit(true)}
-                  className="px-4 py-3 border border-gray-200 text-gray-600 text-[13px] font-medium rounded-xl hover:bg-gray-50 transition-colors whitespace-nowrap"
+                  className="px-4 py-3 border border-gray-200 text-gray-600 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors whitespace-nowrap"
                 >
                   Editar sesión ✏️
                 </button>

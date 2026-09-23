@@ -17,7 +17,7 @@ export function CoachPendingSection({ overduePayments, overdueTotal, pendingOnbo
       {/* Pagos vencidos — siempre visible */}
       <div className="bg-white rounded-lg overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
-          <h2 className="text-[13px] font-semibold" style={{ color: '#1f3b5e' }}>Pagos vencidos</h2>
+          <h2 className="text-sm font-semibold" style={{ color: '#1f3b5e' }}>Pagos vencidos</h2>
           {overduePayments.length > 0 && (
             <span className="w-[18px] h-[18px] rounded-full flex items-center justify-center text-white text-[10px] font-bold" style={{ backgroundColor: '#22c35d' }}>
               {overduePayments.length}
@@ -26,7 +26,7 @@ export function CoachPendingSection({ overduePayments, overdueTotal, pendingOnbo
         </div>
         {overduePayments.length === 0 ? (
           <div className="px-4 py-8 text-center">
-            <p className="text-[11px]" style={{ color: '#808c99' }}>Sin pagos vencidos</p>
+            <p className="text-xs" style={{ color: '#808c99' }}>Sin pagos vencidos</p>
           </div>
         ) : (
           <>
@@ -42,7 +42,7 @@ export function CoachPendingSection({ overduePayments, overdueTotal, pendingOnbo
                       <p className="text-[10px]" style={{ color: '#808c99' }}>${Number(p.amount)} USD · {daysOverdue}d vencido</p>
                     </div>
                     <span
-                      className="text-[9px] font-medium px-2 py-0.5 rounded shrink-0"
+                      className="text-[10px] font-medium px-2 py-0.5 rounded shrink-0"
                       style={isUrgent
                         ? { backgroundColor: '#ea580c1a', color: '#ea580c' }
                         : { backgroundColor: '#f9fafb', color: '#6b7280' }
@@ -74,7 +74,7 @@ export function CoachPendingSection({ overduePayments, overdueTotal, pendingOnbo
       {(pendingOnboarding.length > 0 || athletesWithoutPlan.length > 0) && (
         <div className="bg-white rounded-lg overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-100">
-            <h2 className="text-[13px] font-semibold" style={{ color: '#1f3b5e' }}>Pendientes</h2>
+            <h2 className="text-sm font-semibold" style={{ color: '#1f3b5e' }}>Pendientes</h2>
           </div>
 
           {pendingOnboarding.length > 0 && (
@@ -90,7 +90,7 @@ export function CoachPendingSection({ overduePayments, overdueTotal, pendingOnbo
                         <p className="text-xs font-semibold truncate" style={{ color: '#1f3b5e' }}>{rel.athlete.name ?? rel.athlete.email}</p>
                         <p className="text-[10px]" style={{ color: '#808c99' }}>Invitada hace {daysAgo}d · Sin acceso</p>
                       </div>
-                      {isLate && <span className="text-[9px] font-medium shrink-0" style={{ color: '#ea580c' }}>Más de 48h</span>}
+                      {isLate && <span className="text-[10px] font-medium shrink-0" style={{ color: '#ea580c' }}>Más de 48h</span>}
                       <a
                         href={`/coach/athletes/${rel.athleteId}`}
                         className="text-[10px] font-medium shrink-0"
@@ -111,7 +111,7 @@ export function CoachPendingSection({ overduePayments, overdueTotal, pendingOnbo
               <div className="space-y-2 max-h-[120px] overflow-y-auto">
                 {athletesWithoutPlan.slice(0, 4).map((a) => (
                   <div key={a.id} className="flex items-center gap-3">
-                    <p className="flex-1 text-[11px] truncate" style={{ color: '#4d5966' }}>{a.name}</p>
+                    <p className="flex-1 text-xs truncate" style={{ color: '#4d5966' }}>{a.name}</p>
                     <p className="text-[10px] shrink-0" style={{ color: '#808c99' }}>{a.sport ? SPORT_LABELS[a.sport] ?? a.sport : 'Sin deporte'}</p>
                     <a href={`/coach/athletes/${a.id}`} className="text-[10px] font-medium shrink-0" style={{ color: '#ea580c' }}>
                       Asignar plan →

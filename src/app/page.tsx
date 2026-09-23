@@ -168,10 +168,10 @@ export default function Home() {
                 Sesión de hoy
               </span>
             </div>
-            <p className="text-white text-[13px]  font-bold whitespace-nowrap">
+            <p className="text-white text-sm  font-bold whitespace-nowrap">
               Intervalos 4×8 · Zona 3
             </p>
-            <p className="text-[#bfdbfe] text-[11px] whitespace-nowrap">
+            <p className="text-[#bfdbfe] text-xs whitespace-nowrap">
               Adherencia 92% · FC ↓3bpm
             </p>
           </div>
@@ -192,7 +192,7 @@ export default function Home() {
                   className="flex items-center gap-[5px] bg-white/[0.14] text-white font-medium px-[10px] py-[5px] rounded-full backdrop-blur-sm"
                 >
                   <Icon size={14} strokeWidth={2} className="shrink-0" />
-                  <span className="text-[11px]">{label}</span>
+                  <span className="text-xs">{label}</span>
                 </span>
               ))}
             </div>
@@ -204,7 +204,7 @@ export default function Home() {
               {l.hero.subtitle}
             </p>
             <div className="flex flex-col items-start gap-3 anim-fade-up delay-300">
-              <a href="/login" className="block w-full sm:w-auto anim-pulse-cta bg-[#ea580c] hover:bg-[#ea6c0a] text-white font-semibold text-sm sm:font-bold sm:text-[18px] px-9 py-[12px] sm:py-4 rounded-xl transition-transform hover:scale-105 active:scale-95 text-center">
+              <a href="/login" className="block w-full sm:w-auto anim-pulse-cta bg-[#ea580c] hover:bg-[#ea6c0a] text-white font-semibold text-sm sm:font-bold sm:text-lg px-9 py-[12px] sm:py-4 rounded-xl transition-transform hover:scale-105 active:scale-95 text-center">
                 {l.hero.cta1}
               </a>
               <a
@@ -230,7 +230,7 @@ export default function Home() {
                 <p className="text-white text-xs font-semibold">
                   Pago confirmado
                 </p>
-                <p className="text-blue-200 text-[11px]">
+                <p className="text-blue-200 text-xs">
                   Ana G. · $180.000 COP
                 </p>
               </div>
@@ -242,10 +242,10 @@ export default function Home() {
                   Sesión de hoy
                 </span>
               </div>
-              <p className="text-white text-[13px] font-bold">
+              <p className="text-white text-sm font-bold">
                 Intervalos 4×8 · Zona 3
               </p>
-              <p className="text-[#bfdbfe] text-[11px] whitespace-nowrap">
+              <p className="text-[#bfdbfe] text-xs whitespace-nowrap">
                 Adherencia 92% · FC ↓3bpm
               </p>
             </div>
@@ -340,7 +340,7 @@ export default function Home() {
       <section className="py-12 sm:py-20 px-4 bg-white">
         <div className="max-w-5xl mx-auto text-center">
           <RevealOnScroll>
-            <h2 className="text-[32px] sm:text-4xl font-bold text-[#1e3a5f] mb-4 max-w-2xl mx-auto leading-tight">
+            <h2 className="text-3xl sm:text-4xl font-bold text-[#1e3a5f] mb-4 max-w-2xl mx-auto leading-tight">
               {l.pain.title}
             </h2>
             <p className="text-gray-500 text-base mb-8 sm:mb-12">{l.pain.subtitle}</p>
@@ -612,7 +612,7 @@ export default function Home() {
                       CM
                     </div>
                     <div>
-                      <p className="text-white text-[11px] font-semibold leading-tight">
+                      <p className="text-white text-xs font-semibold leading-tight">
                         Carlos M.
                       </p>
                       <p className="text-blue-300 text-[10px]">
@@ -666,7 +666,7 @@ export default function Home() {
                   </div>
 
                   {/* Table header */}
-                  <div className="grid grid-cols-[1fr_80px_70px_100px_80px] gap-2 px-3 py-1 text-[9px] font-semibold text-gray-400 uppercase tracking-widest">
+                  <div className="grid grid-cols-[1fr_80px_70px_100px_80px] gap-2 px-3 py-1 text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
                     <span>Atleta</span>
                     <span>Deporte</span>
                     <span>Plan</span>
@@ -744,7 +744,7 @@ export default function Home() {
                         >
                           <div className="flex items-center gap-2">
                             <div
-                              className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0"
+                              className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
                               style={{ background: bg, color }}
                             >
                               {initials}

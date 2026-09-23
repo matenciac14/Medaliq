@@ -120,7 +120,7 @@ export default function ResumenTab({
                 >
                   {alert.level === 'critical' ? 'Crítico' : 'Atención'}
                 </span>
-                <span className="text-gray-700 text-[13px]">{alert.text}</span>
+                <span className="text-gray-700 text-sm">{alert.text}</span>
               </Fragment>
             ))}
           </div>
@@ -167,7 +167,7 @@ export default function ResumenTab({
           <div className="flex items-center gap-3 mb-4">
             <h2 className="font-semibold text-gray-900">Perfil del atleta</h2>
             {injuryCount > 0 && (
-              <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-600">
+              <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-600">
                 &#9650; {injuryCount} {injuryCount === 1 ? 'lesión activa' : 'lesiones activas'}
               </span>
             )}
@@ -276,7 +276,7 @@ export default function ResumenTab({
           <>
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-[11px] text-gray-400 border-b border-gray-100 uppercase tracking-wide">
+                <tr className="text-left text-xs text-gray-400 border-b border-gray-100 uppercase tracking-wide">
                   {['Sem', 'Peso', 'FC', 'Sueño', 'Energía', 'Estrés', 'Motiv.', 'RPE', 'Dolor', 'Ajustes'].map(h => (
                     <th key={h} className="pb-2 pr-3 font-medium">{h}</th>
                   ))}
@@ -292,7 +292,7 @@ export default function ResumenTab({
                         <span className="font-medium text-gray-700">S{c.weekNumber}</span>
                         {triggers.length > 0 && (
                           <div className="mt-0.5">
-                            <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-orange-100 text-orange-700">
+                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-orange-100 text-orange-700">
                               {triggers[0]}
                             </span>
                           </div>
@@ -376,7 +376,7 @@ export default function ResumenTab({
             <div>
               <div className="flex items-baseline gap-2 mb-3">
                 <h3 className="text-sm font-semibold text-gray-900">Zonas FC</h3>
-                <span className="text-[11px] text-gray-400">
+                <span className="text-xs text-gray-400">
                   · Objetivo: Z2 · Karvonen (FC rep. {healthProfile?.hrResting ?? '—'})
                 </span>
               </div>
@@ -394,7 +394,7 @@ export default function ResumenTab({
               </div>
               <div className="flex flex-wrap gap-x-4 gap-y-1">
                 {zones.map((z, i) => (
-                  <div key={i} className="flex items-center gap-1.5 text-[11px] text-gray-500">
+                  <div key={i} className="flex items-center gap-1.5 text-xs text-gray-500">
                     <span className="w-2 h-2 rounded-full" style={{ backgroundColor: ZONE_COLORS[i] }} />
                     <span className="font-medium" style={{ color: i === 1 ? '#16a34a' : undefined }}>
                       Z{i + 1} {i === 0 ? `<${z.max}` : i === 4 ? `>${z.min}` : `${z.min}-${z.max}`}
@@ -534,13 +534,13 @@ function KpiCard({ label, value, unit, sub, dotColor }: {
 }) {
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm px-5 py-4">
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-2">{label}</p>
+      <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">{label}</p>
       <div className="flex items-baseline gap-1.5">
         <span className="w-2.5 h-2.5 rounded-full shrink-0 relative top-[-1px]" style={{ backgroundColor: dotColor }} />
         <span className="text-3xl font-bold text-gray-900 leading-none">{value}</span>
         {unit && <span className="text-sm text-gray-500 font-medium">{unit}</span>}
       </div>
-      <p className="text-[11px] text-gray-400 mt-1">{sub}</p>
+      <p className="text-xs text-gray-400 mt-1">{sub}</p>
     </div>
   )
 }
@@ -564,7 +564,7 @@ function TrendItem({ label, value, t, upIsGood }: {
 
   return (
     <div>
-      <p className="text-[11px] text-gray-400 mb-0.5">{label}</p>
+      <p className="text-xs text-gray-400 mb-0.5">{label}</p>
       {value ? (
         <p className="text-sm font-bold" style={{ color }}>
           {value} {arrow}

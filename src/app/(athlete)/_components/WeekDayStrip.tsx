@@ -113,21 +113,21 @@ function DashboardCard({ cell, isSelected = false, onClick }: { cell: WeekDayCel
 
       <div className="p-3 flex flex-col gap-1 flex-1">
         <div className="flex items-start justify-between gap-1">
-          <span className={cn('text-[11px] font-medium leading-none', dayColor)}>
+          <span className={cn('text-xs font-medium leading-none', dayColor)}>
             {WEEK_DAYS_SHORT[cell.idx]}
           </span>
           {done && hasSession && !isSelected && <span className="text-white text-xs leading-none">✓</span>}
           {isToday && (
-            <span className="text-[8px] font-bold bg-[#ea580c] text-white px-1.5 py-0.5 rounded-full leading-none whitespace-nowrap">HOY</span>
+            <span className="text-[10px] font-bold bg-[#ea580c] text-white px-1.5 py-0.5 rounded-full leading-none whitespace-nowrap">HOY</span>
           )}
         </div>
-        <span className={cn('text-[22px] font-black leading-none', numColor)}>{cell.dateNum}</span>
+        <span className={cn('text-xl font-black leading-none', numColor)}>{cell.dateNum}</span>
         {emoji ? (
           <span className="text-xl leading-none mt-1">{emoji}</span>
         ) : !sessionType && (
           <span className={cn('text-xl leading-none mt-1', isToday ? 'text-[#ea580c]' : 'text-gray-400')}>+</span>
         )}
-        <span className={cn('text-[11px] font-semibold leading-tight mt-auto',
+        <span className={cn('text-xs font-semibold leading-tight mt-auto',
           isInverted ? 'text-white'
           : isSelected ? 'text-gray-700'
           : isRest ? 'text-gray-400'
@@ -169,13 +169,13 @@ function DotCell({ cell, todayIdx, isSelected, onClick }: { cell: WeekDayCell; t
 
   return (
     <Wrapper onClick={onClick} className={cn('flex flex-col items-center gap-1.5 py-1', isFuture && hasSession && 'opacity-40')}>
-      <span className={cn('text-[11px] font-semibold',
+      <span className={cn('text-xs font-semibold',
         isToday ? 'text-[#ea580c] font-bold' : isSelected ? 'text-[#1e3a5f] font-bold' : 'text-gray-400'
       )}>
         {DOT_DAY_LETTERS[cell.idx]}
       </span>
       <div className={cn(
-        'w-[38px] h-[38px] rounded-[10px] flex items-center justify-center text-[13px] font-bold',
+        'w-[38px] h-[38px] rounded-[10px] flex items-center justify-center text-sm font-bold',
         dotBg,
         isSelected && !isToday && !isPastUnlogged && 'ring-2 ring-[#1e3a5f]/40',
       )}>
@@ -226,16 +226,16 @@ function GridCell({ cell, isSelected, onClick }: { cell: WeekDayCell; isSelected
       <div className={cn('absolute top-0 left-0 right-0 h-[3px]', barColor)} />
 
       <div className="flex items-start justify-between gap-1 mb-1">
-        <span className={cn('text-[11px] font-medium leading-none', dayColor)}>
+        <span className={cn('text-xs font-medium leading-none', dayColor)}>
           {WEEK_DAYS_SHORT[cell.idx]}
         </span>
         {done && hasSession && !isSelected && <span className="text-white text-xs leading-none">✓</span>}
         {isToday && (
-          <span className="text-[8px] font-bold bg-[#ea580c] text-white px-1.5 py-0.5 rounded-full leading-none">HOY</span>
+          <span className="text-[10px] font-bold bg-[#ea580c] text-white px-1.5 py-0.5 rounded-full leading-none">HOY</span>
         )}
       </div>
 
-      <span className={cn('text-[22px] font-black leading-none', numColor)}>{cell.dateNum}</span>
+      <span className={cn('text-xl font-black leading-none', numColor)}>{cell.dateNum}</span>
 
       {emoji ? (
         <span className="text-xl leading-none mt-1">{emoji}</span>
@@ -243,7 +243,7 @@ function GridCell({ cell, isSelected, onClick }: { cell: WeekDayCell; isSelected
         <span className={cn('text-xl leading-none mt-1', isToday ? 'text-[#ea580c]' : 'text-gray-400')}>+</span>
       )}
 
-      <span className={cn('text-[11px] font-semibold leading-tight mt-auto',
+      <span className={cn('text-xs font-semibold leading-tight mt-auto',
         isInverted ? 'text-white'
         : isSelected ? 'text-gray-700'
         : isRest ? 'text-gray-400'

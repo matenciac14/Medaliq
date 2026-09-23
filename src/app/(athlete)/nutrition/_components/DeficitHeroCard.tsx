@@ -23,7 +23,7 @@ export default function DeficitHeroCard({ consumed, target, onViewConsumed, onRe
       <div className="grid grid-cols-[1fr_auto_1fr] gap-4 items-center">
         <div>
           <p className="text-xs text-gray-500 mb-1">Consumido</p>
-          <p className="text-[32px] font-black leading-none text-[#1e3a5f]">
+          <p className="text-2xl font-black leading-none text-[#1e3a5f]">
             {consumed.kcal.toLocaleString('es')}
           </p>
           <p className="text-xs text-gray-400 mt-0.5">kcal</p>
@@ -33,7 +33,7 @@ export default function DeficitHeroCard({ consumed, target, onViewConsumed, onRe
           <div className="flex items-baseline gap-2">
             <div>
               <p className="text-xs text-gray-500 mb-1">Te faltan</p>
-              <p className="text-[32px] font-black leading-none text-[#ea580c]">
+              <p className="text-2xl font-black leading-none text-[#ea580c]">
                 {remaining.toLocaleString('es')}
               </p>
               <p className="text-xs text-gray-400 mt-0.5">kcal para completar tu objetivo</p>
@@ -67,8 +67,8 @@ export default function DeficitHeroCard({ consumed, target, onViewConsumed, onRe
         ] as const).map((m) => (
           <div key={m.label} className="flex items-center gap-1.5 bg-gray-50 rounded-lg px-2.5 py-1.5">
             <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: m.color }} />
-            <span className="text-[11px] text-gray-600">{m.label}</span>
-            <span className="text-[11px] font-bold text-gray-800">{m.value} / {m.max} {m.unit}</span>
+            <span className="text-xs text-gray-600">{m.label}</span>
+            <span className="text-xs font-bold text-gray-800">{m.value} / {m.max} {m.unit}</span>
           </div>
         ))}
       </div>

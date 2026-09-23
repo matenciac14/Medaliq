@@ -28,7 +28,7 @@ export default function BodyCompositionCard({ weightData, bodyMeasures }: {
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-[13px] font-bold text-gray-900">Composición corporal</span>
+        <span className="text-sm font-bold text-gray-900">Composición corporal</span>
         {changeBadge && (
           <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full', changeBadge.color, changeBadge.bg)}>
             {weeklyChange! < 0 ? '↓' : '↑'} {changeBadge.label}
@@ -37,20 +37,20 @@ export default function BodyCompositionCard({ weightData, bodyMeasures }: {
       </div>
 
       <div className="flex items-baseline gap-2 mb-3">
-        <span className="text-[24px] font-black text-gray-900 tracking-tight">
+        <span className="text-2xl font-black text-gray-900 tracking-tight">
           {currentKg != null ? `${currentKg} kg` : '— kg'}
         </span>
-        {goalKg != null && <span className="text-[12px] text-gray-400">→ meta {goalKg} kg</span>}
-        {!hasData && <span className="text-[11px] text-gray-300">Sin datos registrados</span>}
+        {goalKg != null && <span className="text-xs text-gray-400">→ meta {goalKg} kg</span>}
+        {!hasData && <span className="text-xs text-gray-300">Sin datos registrados</span>}
       </div>
 
       <div className="flex gap-2">
         {measures.map(m => (
           <div key={m.label} className="flex-1 text-center">
-            <span className="text-[15px] font-bold text-gray-900">
+            <span className="text-sm font-bold text-gray-900">
               {m.value != null ? `${m.value} cm` : '— cm'}
             </span>
-            <p className="text-[9px] text-gray-400 mt-0.5">{m.label}</p>
+            <p className="text-[10px] text-gray-400 mt-0.5">{m.label}</p>
           </div>
         ))}
       </div>

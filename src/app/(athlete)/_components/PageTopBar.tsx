@@ -13,7 +13,7 @@ export default function PageTopBar({ title, subtitle, center, right }: PageTopBa
       <div className="min-w-0 shrink-0">
         <h1 className="text-2xl font-bold text-gray-900 leading-tight truncate">{title}</h1>
         {subtitle && (
-          <div className="text-[13px] text-gray-400 mt-0.5">{subtitle}</div>
+          <div className="text-sm text-gray-400 mt-0.5">{subtitle}</div>
         )}
       </div>
       {center && <div className="flex-1 flex justify-center">{center}</div>}

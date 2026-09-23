@@ -24,10 +24,10 @@ export default function MealListInline({ meals, totalLogged, totalPlanned, isB2B
   return (
     <div className="bg-white rounded-[16px] border border-[#f0f2f5] overflow-hidden">
       <div className="flex items-center justify-between px-3.5 pt-2.5 pb-1.5">
-        <p className="text-[9px] font-bold text-[#8c99a6] uppercase" style={{ letterSpacing: '0.72px' }}>
+        <p className="text-[10px] font-bold text-[#8c99a6] uppercase" style={{ letterSpacing: '0.72px' }}>
           {isB2B ? 'Plan de comidas · Coach' : 'Comidas de hoy'}
         </p>
-        <p className="text-[9px] font-semibold text-[#eb590d]">{totalLogged}/{totalPlanned}</p>
+        <p className="text-[10px] font-semibold text-[#eb590d]">{totalLogged}/{totalPlanned}</p>
       </div>
 
       {sorted.map((meal, i) => (
@@ -48,13 +48,13 @@ export default function MealListInline({ meals, totalLogged, totalPlanned, isB2B
 
             {/* Content */}
             <div className="flex-1 min-w-0">
-              <p className="text-[12px] font-medium text-[#26262b]">{meal.label}</p>
-              {meal.foods && <p className="text-[9px] font-normal text-[#8c99a6] truncate">{meal.foods}</p>}
+              <p className="text-xs font-medium text-[#26262b]">{meal.label}</p>
+              {meal.foods && <p className="text-[10px] font-normal text-[#8c99a6] truncate">{meal.foods}</p>}
             </div>
 
             {/* Kcal or register */}
             {meal.isLogged ? (
-              <span className="text-[11px] font-semibold text-[#21c25c] shrink-0">{meal.kcal} kcal</span>
+              <span className="text-xs font-semibold text-[#21c25c] shrink-0">{meal.kcal} kcal</span>
             ) : (
               <button
                 onClick={() => onRegister?.(meal.mealType)}

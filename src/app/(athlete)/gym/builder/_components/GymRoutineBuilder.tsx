@@ -341,7 +341,7 @@ export default function GymRoutineBuilder({ exercises }: { exercises: Exercise[]
                         : 'border-gray-200 text-gray-400 hover:border-gray-300'
                     }`}
                   >
-                    <span className="text-[11px] font-bold">{DOW_LABELS[dow]}</span>
+                    <span className="text-xs font-bold">{DOW_LABELS[dow]}</span>
                     {isActive && <Check size={14} className="mt-1" />}
                   </button>
                 )
@@ -526,7 +526,7 @@ export default function GymRoutineBuilder({ exercises }: { exercises: Exercise[]
                         <button
                           key={bp}
                           onClick={() => setBodyPartFilter(f => f === bp ? null : bp)}
-                          className={`shrink-0 px-3 py-1 rounded-full text-[11px] font-semibold border transition-colors ${
+                          className={`shrink-0 px-3 py-1 rounded-full text-xs font-semibold border transition-colors ${
                             bodyPartFilter === bp
                               ? 'bg-[#ea580c] text-white border-[#ea580c]'
                               : 'border-gray-200 text-gray-500 hover:border-gray-300'

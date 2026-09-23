@@ -18,14 +18,14 @@ export default function PlanHRZones({ hrZones }: { hrZones: HRZoneData | null | 
 
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-      <span className="text-[13px] font-bold text-gray-900 block mb-3">Zonas FC</span>
+      <span className="text-sm font-bold text-gray-900 block mb-3">Zonas FC</span>
       {!hrZones && <p className="text-[10px] text-gray-300 -mt-1 mb-2">Completa tu perfil con FC máx para calcular tus zonas</p>}
       <div className="flex gap-2">
         {zones.map(z => (
           <div key={z.label} className="flex-1 text-center">
             <div className={cn('w-2.5 h-2.5 rounded-full mx-auto mb-1.5', !hrZones && 'opacity-30')} style={{ backgroundColor: z.color }} />
-            <span className="text-[11px] font-bold text-gray-900 block">{z.label}</span>
-            <span className={cn('text-[9px]', hrZones ? 'text-gray-400' : 'text-gray-300')}>{z.range}</span>
+            <span className="text-xs font-bold text-gray-900 block">{z.label}</span>
+            <span className={cn('text-[10px]', hrZones ? 'text-gray-400' : 'text-gray-300')}>{z.range}</span>
           </div>
         ))}
       </div>

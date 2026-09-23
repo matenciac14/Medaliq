@@ -3423,6 +3423,12 @@ export const GROUPS: RoadmapGroup[] = [
         priority: 'P1',
         note: 'DONE (2026-09-20). 33 gaps identificados, todos corregidos. MacroTargetCards: Energía→Calorías, Carbos→Carbohidratos. HydrationWidget: eliminado botón -250ml rojo, vertical layout rediseñado (Agua label, Objetivo subtitle, valor derecha, solo 3 botones add). EmptyMealPlanCard: emoji 🥗→🍽️, título con acentos. PhaseBanner: +📅 emoji. Menu links: +✏️📅 emojis. DeficitHeroCard: +border-left naranja 4px, +divider vertical entre columnas, bonus text junto a "Te faltan", +📋 en botón "Ver lo que consumí". CoachNutritionBanner: avatar→👨‍🍳 emoji, texto descriptivo actualizado, CTA "Registrar lo que comí", link "Ver mi historial de comidas →". WeeklyNutritionBars: +summary "X de 7 días en rango calórico", +empty state "Sin registros esta semana". ActivityCard: +título "Sesión de hoy", +label "DÍA DE ENTRENAMIENTO", icon 48×48, +intensidad en details. TrackingSection: +border-left naranja 3px. NutritionSummaryDonut: centro muestra % meta siempre.',
       },
+      {
+        title: 'UI-TYPO-01 — Estandarización tipográfica: eliminar custom font sizes prohibidos en toda la app',
+        done: true,
+        priority: 'P1',
+        note: 'DONE (2026-09-22). Escala estándar: text-[10px] (único custom permitido), text-xs (12px), text-sm (14px), text-base (16px), text-lg (18px), text-xl (20px), text-2xl (24px), text-3xl (30px), text-4xl (36px). Migrados ~60 archivos en todas las zonas: (athlete), coach, admin, auth (login/register/forgot-password/set-password), landing, components compartidos. Tamaños prohibidos eliminados: 7/8/9/11/12/13/14/15/16/18/20/22/24/28/32px custom → Tailwind estándar. 0 archivos con tamaños prohibidos. Compilación limpia.',
+      },
     ],
   },
 ]

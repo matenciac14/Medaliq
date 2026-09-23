@@ -78,7 +78,7 @@ export default function MealSummaryCards({ meals }: { meals: PlannedMeal[] }) {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-sm">{icon}</span>
-                    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wide">
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wide">
                       {MEAL_LABELS[mealType] ?? mealType}
                     </p>
                   </div>

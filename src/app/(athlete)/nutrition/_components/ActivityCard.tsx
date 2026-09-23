@@ -61,12 +61,12 @@ export default function ActivityCard({ sessionType, intensity, durationMin, isGy
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-[10px] font-bold text-[#ea580c] uppercase tracking-wide">Dia de entrenamiento</p>
-          <p className="text-[13px] font-semibold text-[#1f1f24] truncate">{label}</p>
+          <p className="text-sm font-semibold text-[#1f1f24] truncate">{label}</p>
           <p className="text-[10px] text-[#8c99a6] mt-0.5">{details || 'Dia de entrenamiento'}</p>
         </div>
         {estKcal && (
           <div className="shrink-0 bg-[#fff2e5] rounded-[12px] h-7 px-3 flex items-center justify-center">
-            <span className="text-[11px] font-bold text-[#eb590d]">~{estKcal} kcal</span>
+            <span className="text-xs font-bold text-[#eb590d]">~{estKcal} kcal</span>
           </div>
         )}
       </div>

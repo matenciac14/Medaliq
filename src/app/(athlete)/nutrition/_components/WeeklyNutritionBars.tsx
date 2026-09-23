@@ -36,7 +36,7 @@ export default function WeeklyNutritionBars({ days }: { days: DayBar[] }) {
                 }}
               />
               {/* etiqueta dia */}
-              <p className={`text-[9px] ${day.isToday ? 'text-[#1f3b5e] font-bold' : 'text-[#8c99a6] font-medium'}`}>
+              <p className={`text-[10px] ${day.isToday ? 'text-[#1f3b5e] font-bold' : 'text-[#8c99a6] font-medium'}`}>
                 {day.label}
               </p>
             </div>

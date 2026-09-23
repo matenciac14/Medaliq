@@ -773,7 +773,7 @@ export default async function GymPage({ searchParams }: { searchParams: Promise<
                     <div className={`w-8 h-8 rounded-full flex flex-col items-center justify-center shrink-0 leading-none ${
                       isToday ? 'bg-[#ea580c] text-white' : isCompleted ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-500'
                     }`}>
-                      {isCompleted ? <CheckCircle2 size={14} /> : <span className="text-[9px] font-semibold">{DAY_LABELS[dow]}</span>}
+                      {isCompleted ? <CheckCircle2 size={14} /> : <span className="text-[10px] font-semibold">{DAY_LABELS[dow]}</span>}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className={`text-sm font-medium truncate ${isToday ? 'text-[#1e3a5f] font-semibold' : 'text-gray-800'}`}>

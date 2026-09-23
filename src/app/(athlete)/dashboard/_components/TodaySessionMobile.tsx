@@ -47,7 +47,7 @@ export default function TodaySessionMobile({
 
 function SecondaryLink() {
   return (
-    <Link href="/log/run" className="block text-center text-[12px] font-medium text-gray-500">
+    <Link href="/log/run" className="block text-center text-xs font-medium text-gray-500">
       + Agregar otra actividad
     </Link>
   )
@@ -68,30 +68,30 @@ function PlannedSessionCard({ session }: { session: TodaySessionData }) {
         <div className="flex justify-between items-center">
           <span className="text-[10px] font-semibold text-[#ea580c] tracking-widest uppercase">● HOY</span>
           {session.completed ? (
-            <span className="bg-green-500 text-white text-[11px] font-semibold px-2.5 py-0.5 rounded-lg">Completada</span>
+            <span className="bg-green-500 text-white text-xs font-semibold px-2.5 py-0.5 rounded-lg">Completada</span>
           ) : session.zoneTarget && session.zoneTarget !== 'N/A' ? (
-            <span className="bg-green-100 text-green-700 text-[11px] font-semibold px-2 py-0.5 rounded-lg">
+            <span className="bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded-lg">
               Zona {session.zoneTarget}
             </span>
           ) : null}
         </div>
         <div className="flex items-center gap-2.5">
-          <span className="text-[28px]">{session.completed ? '✓' : SESSION_ICONS[session.type] ?? '🏅'}</span>
-          <span className="text-[28px] font-black text-[#1e3a5f] tracking-tight leading-none">{session.durationMin} min</span>
+          <span className="text-2xl">{session.completed ? '✓' : SESSION_ICONS[session.type] ?? '🏅'}</span>
+          <span className="text-2xl font-black text-[#1e3a5f] tracking-tight leading-none">{session.durationMin} min</span>
         </div>
-        <p className="text-[15px] font-semibold text-gray-900">{sessionName}</p>
+        <p className="text-sm font-semibold text-gray-900">{sessionName}</p>
         {session.detailText && (
-          <p className="text-[12px] text-gray-500">{session.detailText}</p>
+          <p className="text-xs text-gray-500">{session.detailText}</p>
         )}
         <div className="pt-2">
           {session.completed ? (
             <Link href={session.logType === 'gym' ? '/gym/history' : '/progress'}
-              className="block bg-[#1e3a5f] text-white text-[13px] font-semibold text-center py-2.5 rounded-[10px]">
+              className="block bg-[#1e3a5f] text-white text-sm font-semibold text-center py-2.5 rounded-[10px]">
               Ver resumen →
             </Link>
           ) : (
             <Link href={session.id === 'gym-today' ? '/gym/session' : `/log/run?sessionId=${session.id}&type=${session.type}&duration=${session.durationMin}&zone=${session.zoneTarget}`}
-              className="block bg-[#1e3a5f] text-white text-[13px] font-semibold text-center py-2.5 rounded-[10px]">
+              className="block bg-[#1e3a5f] text-white text-sm font-semibold text-center py-2.5 rounded-[10px]">
               {session.id === 'gym-today' ? 'Ir al Gym →' : 'Iniciar →'}
             </Link>
           )}
@@ -117,23 +117,23 @@ function FreeModeTodayCard({ todayRoutineDay }: { todayRoutineDay: RoutineDayCon
               Hoy · Dia de Gym
             </span>
             {todayRoutineDay.split && (
-              <span className="text-[11px] text-gray-400">~45 min</span>
+              <span className="text-xs text-gray-400">~45 min</span>
             )}
           </div>
           <div className="flex items-center gap-2.5">
-            <span className="text-[28px]">💪</span>
-            <span className="text-[28px] font-black text-[#1e3a5f] tracking-tight leading-none">
+            <span className="text-2xl">💪</span>
+            <span className="text-2xl font-black text-[#1e3a5f] tracking-tight leading-none">
               {todayRoutineDay.split ? '~45 min' : 'Entreno hoy'}
             </span>
           </div>
           {todayRoutineDay.split && (
             <>
-              <p className="text-[15px] font-semibold text-gray-900">{todayRoutineDay.split}</p>
-              <p className="text-[12px] text-gray-500">Gym · Rutina asignada</p>
+              <p className="text-sm font-semibold text-gray-900">{todayRoutineDay.split}</p>
+              <p className="text-xs text-gray-500">Gym · Rutina asignada</p>
             </>
           )}
           <div className="pt-2">
-            <Link href="/gym/session" className="block bg-[#22c55e] text-white text-[13px] font-semibold text-center py-2.5 rounded-[10px]">
+            <Link href="/gym/session" className="block bg-[#22c55e] text-white text-sm font-semibold text-center py-2.5 rounded-[10px]">
               Iniciar sesion →
             </Link>
           </div>
@@ -150,11 +150,11 @@ function FreeModeTodayCard({ todayRoutineDay }: { todayRoutineDay: RoutineDayCon
         <div className="px-4 pt-3.5 pb-3.5 space-y-2">
           <span className="text-[10px] font-semibold text-[#ea580c] tracking-widest uppercase">● HOY</span>
           <div className="flex items-center gap-2.5">
-            <span className="text-[28px]">🏃</span>
-            <span className="text-[28px] font-black text-[#1e3a5f] tracking-tight leading-none">Correr hoy</span>
+            <span className="text-2xl">🏃</span>
+            <span className="text-2xl font-black text-[#1e3a5f] tracking-tight leading-none">Correr hoy</span>
           </div>
           <div className="pt-2">
-            <Link href="/log/run" className="block bg-[#ea580c] text-white text-[13px] font-semibold text-center py-2.5 rounded-[10px]">
+            <Link href="/log/run" className="block bg-[#ea580c] text-white text-sm font-semibold text-center py-2.5 rounded-[10px]">
               Registrar →
             </Link>
           </div>
@@ -167,10 +167,10 @@ function FreeModeTodayCard({ todayRoutineDay }: { todayRoutineDay: RoutineDayCon
   if (todayRoutineDay?.activity === 'REST') {
     return (
       <div className="bg-white rounded-[20px] p-[18px] flex items-center gap-3 shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
-        <span className="text-[28px]">😴</span>
+        <span className="text-2xl">😴</span>
         <div>
-          <p className="text-[15px] font-semibold text-gray-900">Descanso hoy segun tu rutina</p>
-          <p className="text-[13px] text-gray-500 mt-0.5">Recupera bien — vuelves manana</p>
+          <p className="text-sm font-semibold text-gray-900">Descanso hoy segun tu rutina</p>
+          <p className="text-sm text-gray-500 mt-0.5">Recupera bien — vuelves manana</p>
         </div>
       </div>
     )
@@ -183,13 +183,13 @@ function FreeModeTodayCard({ todayRoutineDay }: { todayRoutineDay: RoutineDayCon
       <div className="px-4 pt-3.5 pb-3.5 space-y-2">
         <span className="text-[10px] font-semibold text-[#ea580c] tracking-widest uppercase">● HOY</span>
         <div className="flex items-center gap-2.5">
-          <span className="text-[28px]">🎯</span>
-          <span className="text-[28px] font-black text-[#1e3a5f] tracking-tight leading-none">Sin sesion</span>
+          <span className="text-2xl">🎯</span>
+          <span className="text-2xl font-black text-[#1e3a5f] tracking-tight leading-none">Sin sesion</span>
         </div>
-        <p className="text-[15px] font-semibold text-gray-900">Sin sesion planificada</p>
-        <p className="text-[12px] text-gray-500">Registra tu entrenamiento de hoy</p>
+        <p className="text-sm font-semibold text-gray-900">Sin sesion planificada</p>
+        <p className="text-xs text-gray-500">Registra tu entrenamiento de hoy</p>
         <div className="pt-2">
-          <Link href="/log/run" className="block bg-[#ea580c] text-white text-[13px] font-semibold text-center py-2.5 rounded-[10px]">
+          <Link href="/log/run" className="block bg-[#ea580c] text-white text-sm font-semibold text-center py-2.5 rounded-[10px]">
             Registrar actividad →
           </Link>
         </div>
@@ -218,30 +218,30 @@ function RecoveryCard({ planInfo, recoveryDaysSinceEnd }: {
         </div>
 
         <div className="flex items-center gap-2.5">
-          <span className="text-[28px]">🎖️</span>
-          <span className="text-[28px] font-black text-[#1e3a5f] leading-none">¡Completado!</span>
+          <span className="text-2xl">🎖️</span>
+          <span className="text-2xl font-black text-[#1e3a5f] leading-none">¡Completado!</span>
         </div>
 
-        <p className="text-[15px] font-semibold text-gray-900">{planInfo?.name ?? 'Plan terminado'}</p>
+        <p className="text-sm font-semibold text-gray-900">{planInfo?.name ?? 'Plan terminado'}</p>
 
         {planInfo && (
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[11px] font-semibold text-gray-500 bg-gray-100 rounded-full px-2.5 py-0.5">{planInfo.totalWeeks} semanas</span>
-            <span className="text-[11px] font-semibold text-gray-500 bg-gray-100 rounded-full px-2.5 py-0.5">{planInfo.sessionsLogged} sesiones</span>
+            <span className="text-xs font-semibold text-gray-500 bg-gray-100 rounded-full px-2.5 py-0.5">{planInfo.totalWeeks} semanas</span>
+            <span className="text-xs font-semibold text-gray-500 bg-gray-100 rounded-full px-2.5 py-0.5">{planInfo.sessionsLogged} sesiones</span>
           </div>
         )}
 
         {recoveryDaysLeft != null && recoveryDaysLeft > 0 && (
           <div className="flex items-center gap-2 bg-green-50 rounded-[10px] px-3 py-2">
             <span className="text-xs">⏱</span>
-            <p className="text-[11px] font-semibold text-green-700">
+            <p className="text-xs font-semibold text-green-700">
               Semana de recuperacion activa — {recoveryDaysLeft} dias restantes
             </p>
           </div>
         )}
 
         <div className="pt-2">
-          <Link href="/progress" className="block bg-[#22c55e] text-white text-[13px] font-semibold text-center py-2.5 rounded-[10px]">
+          <Link href="/progress" className="block bg-[#22c55e] text-white text-sm font-semibold text-center py-2.5 rounded-[10px]">
             Ver resumen de temporada →
           </Link>
         </div>
@@ -264,18 +264,18 @@ function GymTodayCard({ workoutName, gymDoneToday }: { workoutName: string | nul
           Hoy · Dia de Gym
         </span>
         <div className="flex items-center gap-2.5">
-          <span className="text-[28px]">💪</span>
-          <span className="text-[28px] font-black text-[#1e3a5f] tracking-tight leading-none">
+          <span className="text-2xl">💪</span>
+          <span className="text-2xl font-black text-[#1e3a5f] tracking-tight leading-none">
             {workoutName ?? 'Entreno hoy'}
           </span>
         </div>
         <div className="pt-2">
           {gymDoneToday ? (
-            <Link href="/gym/history" className="block bg-[#1e3a5f] text-white text-[13px] font-semibold text-center py-2.5 rounded-[10px]">
+            <Link href="/gym/history" className="block bg-[#1e3a5f] text-white text-sm font-semibold text-center py-2.5 rounded-[10px]">
               Ver resumen →
             </Link>
           ) : (
-            <Link href="/gym/session" className="block bg-[#22c55e] text-white text-[13px] font-semibold text-center py-2.5 rounded-[10px]">
+            <Link href="/gym/session" className="block bg-[#22c55e] text-white text-sm font-semibold text-center py-2.5 rounded-[10px]">
               Iniciar sesion →
             </Link>
           )}
@@ -291,10 +291,10 @@ function GymTodayCard({ workoutName, gymDoneToday }: { workoutName: string | nul
 function RestDayCard() {
   return (
     <div className="bg-white rounded-[20px] p-[18px] flex items-center gap-3 shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
-      <span className="text-[28px]">😴</span>
+      <span className="text-2xl">😴</span>
       <div>
-        <p className="text-[15px] font-semibold text-gray-900">Dia de descanso</p>
-        <p className="text-[13px] text-gray-500 mt-0.5">Recupera bien hoy</p>
+        <p className="text-sm font-semibold text-gray-900">Dia de descanso</p>
+        <p className="text-sm text-gray-500 mt-0.5">Recupera bien hoy</p>
       </div>
     </div>
   )

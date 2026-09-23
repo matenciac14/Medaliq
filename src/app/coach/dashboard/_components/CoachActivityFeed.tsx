@@ -18,7 +18,7 @@ export function CoachActivityFeed({
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
           {/* Header */}
           <div className="px-4 py-3 flex items-baseline gap-2 border-b border-gray-100">
-            <p className="text-[13px] font-semibold" style={{ color: '#1f3b5e' }}>Semana pasada</p>
+            <p className="text-sm font-semibold" style={{ color: '#1f3b5e' }}>Semana pasada</p>
             <span className="text-[10px]" style={{ color: '#808c99' }}>{lastWeek.weekLabel}</span>
           </div>
 
@@ -65,9 +65,9 @@ export function CoachActivityFeed({
         {/* Card retención */}
         {lastWeek.retentionPct !== null && (
           <div className="bg-white rounded-lg shadow-sm px-4 py-3.5">
-            <p className="text-[11px] font-medium" style={{ color: '#738090' }}>Retención</p>
+            <p className="text-xs font-medium" style={{ color: '#738090' }}>Retención</p>
             <div className="flex items-baseline gap-1.5 mt-1">
-              <span className="text-[28px] font-bold leading-tight" style={{ color: '#22c35d' }}>{lastWeek.retentionPct}%</span>
+              <span className="text-2xl font-bold leading-tight" style={{ color: '#22c35d' }}>{lastWeek.retentionPct}%</span>
               <span className="text-[10px]" style={{ color: '#808c99' }}>{now.toLocaleDateString('es', { month: 'long' })}</span>
             </div>
             <div className="flex items-end gap-1.5 mt-3">
@@ -77,7 +77,7 @@ export function CoachActivityFeed({
                     className="w-5 rounded-sm"
                     style={{ height: h, backgroundColor: '#1e3a5f', opacity: i === RETENTION_BARS.length - 1 ? 1 : 0.3 }}
                   />
-                  <span className="text-[8px]" style={{ color: '#808c99' }}>{RETENTION_MONTHS[i]}</span>
+                  <span className="text-[10px]" style={{ color: '#808c99' }}>{RETENTION_MONTHS[i]}</span>
                 </div>
               ))}
             </div>
@@ -88,14 +88,14 @@ export function CoachActivityFeed({
       {/* Actividad reciente */}
       <div className="bg-white rounded-lg overflow-hidden shadow-sm">
         <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-[13px] font-semibold" style={{ color: '#1f3b5e' }}>Actividad reciente</h2>
-          <Link href="/coach/athletes" className="text-[11px] font-medium" style={{ color: '#ea580c' }}>
+          <h2 className="text-sm font-semibold" style={{ color: '#1f3b5e' }}>Actividad reciente</h2>
+          <Link href="/coach/athletes" className="text-xs font-medium" style={{ color: '#ea580c' }}>
             Ver todos los atletas →
           </Link>
         </div>
         {feedItems.length === 0 ? (
           <div className="px-4 py-8 text-center">
-            <p className="text-[11px]" style={{ color: '#808c99' }}>Sin actividad reciente</p>
+            <p className="text-xs" style={{ color: '#808c99' }}>Sin actividad reciente</p>
           </div>
         ) : (
           <ul className="divide-y divide-gray-50 max-h-[280px] overflow-y-auto">
@@ -107,7 +107,7 @@ export function CoachActivityFeed({
                 >
                   {item.type === 'checkin' ? '✓' : item.athleteName.slice(0, 1).toUpperCase()}
                 </div>
-                <p className="flex-1 text-[11px] min-w-0" style={{ color: '#33404d' }}>
+                <p className="flex-1 text-xs min-w-0" style={{ color: '#33404d' }}>
                   <span className="font-semibold">{item.athleteName}</span>
                   {' '}{item.detail}
                 </p>
@@ -132,12 +132,12 @@ function StatBlock({ label, value, sub, color, trend }: {
   const arrowColor = trend === 'up' ? '#22c35d' : '#ea580c'
   return (
     <div className="px-4 py-3">
-      <p className="text-[9px] font-medium uppercase tracking-wider" style={{ color: '#738090' }}>{label}</p>
+      <p className="text-[10px] font-medium uppercase tracking-wider" style={{ color: '#738090' }}>{label}</p>
       <div className="flex items-center gap-1 mt-0.5">
         <span className="text-xl font-bold leading-tight" style={{ color }}>{value}</span>
         <span className="text-xs font-bold" style={{ color: arrowColor }}>{arrow}</span>
       </div>
-      <p className="text-[9px] mt-0.5" style={{ color: '#808c99' }}>{sub}</p>
+      <p className="text-[10px] mt-0.5" style={{ color: '#808c99' }}>{sub}</p>
     </div>
   )
 }
