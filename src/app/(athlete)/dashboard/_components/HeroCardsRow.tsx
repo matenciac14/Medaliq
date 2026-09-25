@@ -14,7 +14,6 @@ type Props = {
   weeklyWeightChange: number | null
   weightProgressPct: number | null
   dashSummary: DashboardSummary
-  nutritionPlan: { targetKcalHard: number } | null
   todayConsumed: { kcal: number; proteinG: number; carbsG: number; fatG: number } | null
 }
 
@@ -22,7 +21,7 @@ export default function HeroCardsRow(props: Props) {
   const {
     dashboardMode, weekSessionCount, weekSessionTarget, streakDays,
     currentWeight, targetWeight, weeklyWeightChange, weightProgressPct,
-    dashSummary, nutritionPlan, todayConsumed,
+    dashSummary, todayConsumed,
   } = props
 
   return (
@@ -32,7 +31,6 @@ export default function HeroCardsRow(props: Props) {
       <NutritionProgressCard
         data={dashSummary.nutritionTarget ? { kcal: dashSummary.nutritionTarget.kcal, proteinG: dashSummary.nutritionTarget.proteinG, carbsG: dashSummary.nutritionTarget.carbsG, fatG: dashSummary.nutritionTarget.fatG } : null}
         variant="card"
-        targetKcalHard={nutritionPlan?.targetKcalHard ?? null}
         consumed={todayConsumed}
       />
     </div>

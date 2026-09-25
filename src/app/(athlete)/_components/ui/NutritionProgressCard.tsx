@@ -18,7 +18,6 @@ type ConsumedData = {
 type Props = {
   data: NutritionData | null
   variant: 'card' | 'compact' | 'banner'
-  targetKcalHard?: number | null
   consumed?: ConsumedData | null
 }
 
@@ -35,9 +34,9 @@ const MINI_CIRCUM = 2 * Math.PI * MINI_RADIUS
 
 const TRACK_COLOR = '#f3f4f6'
 
-export default function NutritionProgressCard({ data, variant, targetKcalHard, consumed }: Props) {
+export default function NutritionProgressCard({ data, variant, consumed }: Props) {
   if (variant === 'banner') return <BannerVariant data={data} />
-  if (variant === 'card') return <CardVariant data={data} targetKcalHard={targetKcalHard ?? null} consumed={consumed} />
+  if (variant === 'card') return <CardVariant data={data} consumed={consumed} />
   // compact — same design as plan page NutritionCard (mobile view)
   return <CompactVariant data={data} consumed={consumed ?? null} />
 }
@@ -151,7 +150,7 @@ function CompactVariant({ data, consumed: consumedData }: { data: NutritionData 
 
 // ── Card variant (desktop hero — donut chart) ────────────────────────
 
-function CardVariant({ data, targetKcalHard, consumed: consumedData }: { data: NutritionData | null; targetKcalHard: number | null; consumed?: ConsumedData | null }) {
+function CardVariant({ data, consumed: consumedData }: { data: NutritionData | null; consumed?: ConsumedData | null }) {
   if (!data) {
     return (
       <Link href="/nutrition" className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden block transition-shadow hover:shadow-md">
@@ -170,7 +169,8 @@ function CardVariant({ data, targetKcalHard, consumed: consumedData }: { data: N
     )
   }
 
-  const targetKcal = targetKcalHard ?? data.kcal
+  // Use intensity-adjusted target (data.kcal), not hard-day fallback
+  const targetKcal = data.kcal
   const consumed = consumedData?.kcal ?? 0
 
   return (

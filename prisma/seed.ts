@@ -747,7 +747,7 @@ async function seedFoodLogs(userId: string, days: number) {
   if (foods.length < 3) return
 
   const meals: MealType[] = [MealType.BREAKFAST, MealType.LUNCH, MealType.DINNER]
-  for (let d = 0; d < days; d++) {
+  for (let d = 1; d <= days; d++) {
     const date = dateOnly(daysAgo(d))
     for (let m = 0; m < meals.length; m++) {
       const food = foods[(m + d) % foods.length]

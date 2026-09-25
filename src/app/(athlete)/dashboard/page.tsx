@@ -146,7 +146,6 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         weeklyWeightChange={d.weeklyWeightChange}
         weightProgressPct={d.weightProgressPct}
         dashSummary={d.dashSummary}
-        nutritionPlan={d.nutritionPlan}
         todayConsumed={d.todayConsumed}
       />
 

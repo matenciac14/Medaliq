@@ -125,7 +125,7 @@ export type DashboardData = {
   todayRoutineDay: RoutineDayConfig | null
 
   // Nutrition
-  nutritionPlan: { targetKcalHard: number } | null
+  // nutritionPlan removed — calorie target now comes from dashSummary.nutritionTarget (intensity-adjusted)
   todayConsumed: { kcal: number; proteinG: number; carbsG: number; fatG: number } | null
 
   // Suggestions
@@ -328,6 +328,9 @@ export async function getDashboardData(userId: string, rawWeekOffset: number, se
   let weekOffset = rawWeekOffset
   let selectedWeekNum = 0
   let isCurrentWeek = weekOffset === 0
+  // Hoisted so it's accessible for activePlanForSummary below
+  type FullSession = Awaited<ReturnType<typeof prisma.plannedSession.findMany>>[number] & { log: { id: string } | null }
+  let currentWeekFullSessions: FullSession[] = []
 
   if (activePlan) {
     const currentWeek = getPlanWeekNumber(activePlan.startDate, activePlan.totalWeeks)
@@ -346,7 +349,7 @@ export async function getDashboardData(userId: string, rawWeekOffset: number, se
     }
 
     if (currentPlanWeek) {
-      const currentWeekFullSessions = await prisma.plannedSession.findMany({
+      currentWeekFullSessions = await prisma.plannedSession.findMany({
         where: { week: { planId: activePlan.id, weekNumber: currentWeek } },
         include: { log: true },
         orderBy: { dayOfWeek: 'asc' },
@@ -390,6 +393,8 @@ export async function getDashboardData(userId: string, rawWeekOffset: number, se
   }
 
   // ── getDashboardSummary (shared use case) ──────────────────────────────
+  // BUG-FIX: use currentWeekFullSessions (includes intensity, durationMin, etc.)
+  // so the shared use case can compute intensity-based nutrition targets correctly.
   const activePlanForSummary = activePlan ? {
     id: activePlan.id,
     name: activePlan.name,
@@ -399,10 +404,16 @@ export async function getDashboardData(userId: string, rawWeekOffset: number, se
       weekNumber: w.weekNumber,
       phase: w.phase,
       volumeKm: w.volumeKm ?? null,
-      sessions: w.sessions.map(s => ({
-        id: s.id, type: s.type, dayOfWeek: s.dayOfWeek, durationMin: null,
-        zone: null, intensity: null, description: null, log: s.log,
-      })),
+      sessions: w.weekNumber === planData.currentWeek && currentWeekFullSessions.length > 0
+        ? currentWeekFullSessions.map(s => ({
+            id: s.id, type: s.type, dayOfWeek: s.dayOfWeek, durationMin: s.durationMin,
+            zone: s.zoneTarget, intensity: s.intensity, description: s.detailText,
+            coachNotes: s.coachNote, log: s.log,
+          }))
+        : w.sessions.map(s => ({
+            id: s.id, type: s.type, dayOfWeek: s.dayOfWeek, durationMin: null,
+            zone: null, intensity: null, description: null, log: s.log,
+          })),
     })),
   } : null
 
@@ -522,7 +533,6 @@ export async function getDashboardData(userId: string, rawWeekOffset: number, se
 
     todayRoutineDay,
 
-    nutritionPlan: nutritionPlan ? { targetKcalHard: nutritionPlan.targetKcalHard } : null,
     todayConsumed: computeFoodTotals(todayFoodLogs),
 
     pendingSuggestionsCount,

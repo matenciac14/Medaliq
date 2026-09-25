@@ -46,10 +46,6 @@ export default async function NutritionPage() {
   const todayDow = todayDowInTz(tz)
   const currentWeek = activePlan ? getPlanWeekNumber(activePlan.startDate, activePlan.totalWeeks) : null
 
-  // Tomorrow = today + 1 day (for date range queries)
-  const tomorrow = new Date(todayStart)
-  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1)
-
   // Last 7 days
   const weekStart = new Date(todayStart)
   weekStart.setUTCDate(weekStart.getUTCDate() - 6)
@@ -185,8 +181,9 @@ export default async function NutritionPage() {
       orderBy: { date: 'asc' },
     }),
     // Today's food logs with full macro data (for DeficitHero + consumed totals)
+    // Uses exact date match (same as queryTodayFoodLogs) — date is @db.Date (no time component)
     prisma.foodLog.findMany({
-      where: { userId, date: { gte: todayStart, lt: tomorrow } },
+      where: { userId, date: todayStart },
       select: {
         id: true, mealType: true, grams: true,
         kcalLogged: true, proteinLogged: true, carbsLogged: true, fatLogged: true,

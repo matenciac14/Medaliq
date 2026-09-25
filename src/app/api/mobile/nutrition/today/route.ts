@@ -37,8 +37,7 @@ export async function GET(req: NextRequest) {
   })
   const currentWeek = activePlan ? getPlanWeekNumber(activePlan.startDate, activePlan.totalWeeks) : null
 
-  const todayStart = todayInTz(tz)
-  const todayEnd = new Date(todayStart.getTime() + 86_399_999)
+  const todayStart = todayInTz(tz)  // date is @db.Date — exact match, no range needed
 
   // Week bounds for weekly summary
   const weekMonday = getWeekMonday(0, tz)
@@ -99,7 +98,7 @@ export async function GET(req: NextRequest) {
     }),
 
     prisma.plannedMeal.findMany({
-      where: { userId, date: { gte: todayStart, lte: todayEnd } },
+      where: { userId, date: todayStart },
       include: {
         food: { select: { id: true, name: true, category: true, kcalPer100g: true, proteinPer100g: true, carbsPer100g: true, fatPer100g: true, servingG: true, servingLabel: true } },
         overrides: {
@@ -115,7 +114,7 @@ export async function GET(req: NextRequest) {
     }),
 
     prisma.foodLog.findMany({
-      where: { userId, date: { gte: todayStart, lte: todayEnd } },
+      where: { userId, date: todayStart },
       include: {
         food: { select: { id: true, name: true, category: true, kcalPer100g: true, proteinPer100g: true, carbsPer100g: true, fatPer100g: true, servingG: true, servingLabel: true } },
       },
