@@ -1,15 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
-import { signMobileToken } from '@/lib/auth/mobile_auth'
+import { signMobileToken, buildMobileTokenPayload, MOBILE_USER_SELECT } from '@/lib/auth/mobile_auth'
 import { DEFAULT_USER_CONFIG } from '@/lib/config/user_config'
 import { rateLimitAsync } from '@/lib/rate_limit'
-
-const USER_SELECT = {
-  id: true, email: true, name: true, role: true, status: true, image: true,
-  featurePlan: true, featureCheckin: true, featureNutrition: true,
-  featureProgress: true, featureLog: true, featureCoach: true, featureGym: true,
-  onboardingCompleted: true, needsRoleSelection: true,
-} as const
 
 type GoogleTokenInfo = {
   sub: string
@@ -55,7 +48,6 @@ export async function POST(req: NextRequest) {
 
     const googleUser = await verifyGoogleToken(idToken)
 
-    // Rate limit por email verificado: 20 intentos/min
     const { allowed } = await rateLimitAsync(`mobile-google-${googleUser.email}`, { limit: 20, windowMs: 60_000 })
     if (!allowed) return NextResponse.json({ error: 'Demasiados intentos. Intenta en un minuto.' }, { status: 429 })
 
@@ -65,13 +57,12 @@ export async function POST(req: NextRequest) {
 
     let dbUser = await prisma.user.findUnique({
       where: { email: googleUser.email },
-      select: USER_SELECT,
+      select: { ...MOBILE_USER_SELECT, image: true },
     })
 
     let needsRoleSelection = false
 
     if (!dbUser) {
-      // Usuario nuevo — crear con needsRoleSelection = true
       dbUser = await prisma.user.create({
         data: {
           email: googleUser.email,
@@ -81,47 +72,46 @@ export async function POST(req: NextRequest) {
           needsRoleSelection: true,
           onboardingCompleted: false,
         },
-        select: USER_SELECT,
+        select: { ...MOBILE_USER_SELECT, image: true },
       })
       needsRoleSelection = true
     } else if (dbUser.needsRoleSelection) {
       needsRoleSelection = true
     }
 
-    const features = dbUser.needsRoleSelection
-      ? DEFAULT_USER_CONFIG.features
-      : {
-          plan:      dbUser.featurePlan,
-          checkin:   dbUser.featureCheckin,
-          nutrition: dbUser.featureNutrition,
-          progress:  dbUser.featureProgress,
-          log:       dbUser.featureLog,
-          coach:     dbUser.featureCoach,
-          gym:       dbUser.featureGym,
+    const payload = needsRoleSelection
+      ? {
+          id: dbUser.id,
+          email: dbUser.email,
+          name: dbUser.name ?? '',
+          role: dbUser.role,
+          status: dbUser.status as 'ACTIVE',
+          onboardingCompleted: false,
+          activated: false,
+          isB2B: false,
+          userPlan: 'FREE' as const,
+          profileComplete: false,
+          needsRoleSelection: true,
+          features: DEFAULT_USER_CONFIG.features,
         }
+      : buildMobileTokenPayload(dbUser, { isB2B: false })
 
-    const token = await signMobileToken({
-      id: dbUser.id,
-      email: dbUser.email,
-      name: dbUser.name ?? '',
-      role: dbUser.role,
-      status: dbUser.status ?? 'ACTIVE',
-      onboardingCompleted: dbUser.onboardingCompleted,
-      userPlan: 'PRO',
-      features,
-    })
+    const token = await signMobileToken(payload)
 
     return NextResponse.json({
       token,
       needsRoleSelection,
       user: {
-        id: dbUser.id,
-        email: dbUser.email,
-        name: dbUser.name,
-        role: dbUser.role,
-        onboardingCompleted: dbUser.onboardingCompleted,
-        userPlan: 'PRO',
-        features,
+        id: payload.id,
+        email: payload.email,
+        name: payload.name,
+        role: payload.role,
+        onboardingCompleted: payload.onboardingCompleted,
+        activated: payload.activated,
+        isB2B: payload.isB2B,
+        userPlan: payload.userPlan,
+        profileComplete: payload.profileComplete,
+        features: payload.features,
       },
     })
   } catch (err: unknown) {

@@ -1,17 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
-import { getMobileUser } from '@/lib/auth/mobile_auth'
+import { getMobileUser, buildMobileTokenPayload, MOBILE_USER_SELECT } from '@/lib/auth/mobile_auth'
 import { rateLimitAsync } from '@/lib/rate_limit'
 
-const USER_SELECT = {
-  id: true, email: true, name: true, role: true,
-  featurePlan: true, featureCheckin: true, featureNutrition: true,
-  featureProgress: true, featureLog: true, featureCoach: true, featureGym: true,
-  onboardingCompleted: true,
-} as const
-
 // PATCH /api/mobile/auth/me — actualizar timezone y locale desde la app mobile
-// expo-localization: Localization.getCalendars()[0].timeZone + Localization.getLocales()[0].languageTag
 export async function PATCH(req: NextRequest) {
   const mobile = await getMobileUser(req)
   if (!mobile) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
@@ -47,30 +39,25 @@ export async function GET(req: NextRequest) {
   const { allowed } = await rateLimitAsync(`mobile-${mobile.id}:auth-me`, { limit: 300, windowMs: 60_000 })
   if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes. Intenta en un minuto.' }, { status: 429 })
 
-  const user = await prisma.user.findUnique({
-    where: { id: mobile.id },
-    select: USER_SELECT,
-  })
+  const [user, coachRelation] = await Promise.all([
+    prisma.user.findUnique({ where: { id: mobile.id }, select: MOBILE_USER_SELECT }),
+    prisma.coachAthlete.findFirst({ where: { athleteId: mobile.id, status: 'ACTIVE' }, select: { id: true } }),
+  ])
 
   if (!user) return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 })
 
-  const features = {
-    plan:      user.featurePlan,
-    checkin:   user.featureCheckin,
-    nutrition: user.featureNutrition,
-    progress:  user.featureProgress,
-    log:       user.featureLog,
-    coach:     user.featureCoach,
-    gym:       user.featureGym,
-  }
+  const payload = buildMobileTokenPayload(user, { isB2B: !!coachRelation })
 
   return NextResponse.json({
-    id: user.id,
-    email: user.email,
-    name: user.name,
-    role: user.role,
-    onboardingCompleted: user.onboardingCompleted,
-    userPlan: 'PRO',
-    features,
+    id: payload.id,
+    email: payload.email,
+    name: payload.name,
+    role: payload.role,
+    onboardingCompleted: payload.onboardingCompleted,
+    activated: payload.activated,
+    isB2B: payload.isB2B,
+    userPlan: payload.userPlan,
+    profileComplete: payload.profileComplete,
+    features: payload.features,
   })
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/db/prisma'
-import { getMobileUser, signMobileToken } from '@/lib/auth/mobile_auth'
+import { getMobileUser, signMobileToken, buildMobileTokenPayload, MOBILE_USER_SELECT } from '@/lib/auth/mobile_auth'
 import { rateLimitAsync } from '@/lib/rate_limit'
 import { roleSchema, parseBody } from '@/lib/validation'
 
@@ -26,7 +26,6 @@ export async function POST(req: NextRequest) {
     data: {
       role,
       needsRoleSelection: false,
-      // Coach: onboarding marcado como completado, solo feature coach activa
       ...(isCoach ? {
         featurePlan:      false,
         featureCheckin:   false,
@@ -37,49 +36,27 @@ export async function POST(req: NextRequest) {
         featureGym:       false,
         onboardingCompleted:   true,
         onboardingCompletedAt: now,
-      } : {
-        // Athlete: defaults (all features=true) son correctos ya en columnas
-      }),
+      } : {}),
     },
-    select: {
-      id: true, email: true, name: true, role: true, status: true,
-      featurePlan: true, featureCheckin: true, featureNutrition: true,
-      featureProgress: true, featureLog: true, featureCoach: true, featureGym: true,
-      onboardingCompleted: true,
-    },
+    select: MOBILE_USER_SELECT,
   })
 
-  const features = {
-    plan:      updatedUser.featurePlan,
-    checkin:   updatedUser.featureCheckin,
-    nutrition: updatedUser.featureNutrition,
-    progress:  updatedUser.featureProgress,
-    log:       updatedUser.featureLog,
-    coach:     updatedUser.featureCoach,
-    gym:       updatedUser.featureGym,
-  }
-
-  const token = await signMobileToken({
-    id: updatedUser.id,
-    email: updatedUser.email,
-    name: updatedUser.name ?? '',
-    role: updatedUser.role,
-    status: updatedUser.status,
-    onboardingCompleted: updatedUser.onboardingCompleted,
-    userPlan: 'PRO',
-    features,
-  })
+  const payload = buildMobileTokenPayload(updatedUser, { isB2B: false })
+  const token = await signMobileToken(payload)
 
   return NextResponse.json({
     token,
     user: {
-      id: updatedUser.id,
-      email: updatedUser.email,
-      name: updatedUser.name,
-      role: updatedUser.role,
-      onboardingCompleted: updatedUser.onboardingCompleted,
-      userPlan: 'PRO',
-      features,
+      id: payload.id,
+      email: payload.email,
+      name: payload.name,
+      role: payload.role,
+      onboardingCompleted: payload.onboardingCompleted,
+      activated: payload.activated,
+      isB2B: payload.isB2B,
+      userPlan: payload.userPlan,
+      profileComplete: payload.profileComplete,
+      features: payload.features,
     },
   })
 }

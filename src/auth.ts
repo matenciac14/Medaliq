@@ -7,6 +7,7 @@ import { prisma } from '@/lib/db/prisma'
 import bcrypt from 'bcryptjs'
 import { DEFAULT_USER_CONFIG } from '@/lib/config/user_config'
 import { rateLimitAsync } from '@/lib/rate_limit'
+import { mapUserToToken, mapTokenToSession } from '@/lib/auth/session_mappers'
 
 // Shape de columnas de User que se leen en auth
 const USER_SELECT = {
@@ -118,24 +119,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // Invalidación masiva sin rotar el secret.
       // Para invalidar JWTs emitidos antes de una fecha: setear AUTH_MIN_ISSUED_AT
       // en Vercel con el timestamp Unix del corte (date +%s) → Redeploy.
-      // Solo afecta usuarios con sesiones antiguas — los activos recientes no sienten nada.
       const minIat = parseInt(process.env.AUTH_MIN_ISSUED_AT ?? '0')
       if (!user && minIat > 0 && typeof token.iat === 'number' && token.iat < minIat) {
         return { ...token, exp: 0 }
       }
 
-      if (user) {
-        token.id = user.id
-        token.role = user.role
-        token.status = user.status ?? 'ACTIVE'
-        token.onboardingCompleted = user.onboardingCompleted ?? false
-        token.activated = user.activated ?? false
-        token.isB2B = user.isB2B ?? false
-        token.userPlan = user.userPlan ?? 'FREE'
-        token.features = user.features ?? DEFAULT_USER_CONFIG.features
-        token.needsRoleSelection = user.needsRoleSelection ?? false
-        token.profileComplete = user.profileComplete ?? false
-      }
+      // Login — mapear user al token (shared mapper)
+      if (user) mapUserToToken(token, user)
 
       // Google OAuth — siempre leer desde DB (PrismaAdapter no llama authorize())
       const t = token as JWT
@@ -173,6 +163,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
       }
 
+      // Validar que el user sigue existiendo en la DB (protege contra DB switch o borrado de user)
+      // Corre max 1 vez cada 5 min para no sobrecargar la DB
+      if (!user && trigger !== 'update' && t.id) {
+        const now = Math.floor(Date.now() / 1000)
+        const lastCheck = (t.userExistsCheckedAt as number) ?? 0
+        if (now - lastCheck > 300) {
+          const exists = await prisma.user.findUnique({ where: { id: t.id }, select: { id: true } })
+          if (!exists) {
+            token.userInvalid = true
+            token.id = undefined
+          } else {
+            token.userExistsCheckedAt = now
+          }
+        }
+      }
+
       // Refresh desde DB al actualizar sesión (post set-role o onboarding)
       if (trigger === 'update' && t.id) {
         try {
@@ -200,20 +206,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return token
     },
     async session({ session, token }) {
-      const t = token as JWT
-      if (t) {
-        session.user.id = t.id ?? ''
-        session.user.role = t.role ?? 'ATHLETE'
-        session.user.status = t.status ?? 'ACTIVE'
-        session.user.onboardingCompleted = t.onboardingCompleted ?? false
-        session.user.activated = t.activated ?? false
-        session.user.isB2B = t.isB2B ?? false
-        session.user.userPlan = t.userPlan ?? 'FREE'
-        session.user.needsRoleSelection = t.needsRoleSelection ?? false
-        session.user.features = t.features ?? DEFAULT_USER_CONFIG.features
-        session.user.profileComplete = t.profileComplete ?? false
-      }
-      return session
+      return mapTokenToSession(session, token)
     },
   },
 })

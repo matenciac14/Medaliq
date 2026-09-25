@@ -61,6 +61,7 @@ export const GROUPS: RoadmapGroup[] = [
       { title: 'Flujo email-first en /coach/clients/new (check → link → create unificado)', done: true, note: 'GET /api/coach/clients/check. POST /api/coach/clients/link. Un solo punto de entrada.' },
       { title: 'tempPassword eliminada del JSON — link de reset firmado (JWT 1h)', done: true, note: '/api/coach/clients/create y /api/coach/athletes/[id]/reset-password. Contraseña nunca en texto plano.' },
       { title: 'Validación Zod en todos los endpoints de auth', done: true, note: 'emailSchema, passwordSchema, nameSchema, roleSchema + parseBody(). Register, forgot-password, set-password, set-role, mobile/auth/login.' },
+      { title: 'Auth alignment web↔mobile: shared mappers + middleware cookie cleanup + Docker PostgreSQL local', done: true, priority: 'P1', note: 'session_mappers.ts: mapUserToToken/mapTokenToSession usados por auth.ts y auth.config.ts (campos sincronizados: isB2B, profileComplete, needsRoleSelection). mobile_auth.ts: buildMobileTokenPayload + MOBILE_USER_SELECT como SSOT para 6 endpoints mobile. Middleware: cookie cleanup v5 (authjs.*/Secure-authjs.*), user-exists-check con throttle 5min, excluye /api/. Docker PostgreSQL local para dev (Neon solo prod). 44 tests: session_mappers(25), middleware_cookies(12), mobile_auth(7).' },
     ],
   },
 
@@ -90,6 +91,7 @@ export const GROUPS: RoadmapGroup[] = [
       { title: 'Arquitectura hexagonal: domain/ports/infrastructure separados', done: true, note: 'domain/checkin, domain/plan, domain/onboarding + ports. infrastructure/db repositories. domain no importa Prisma ni Next.js.' },
       { title: 'Localización: User.timezone + User.locale detectados y persistidos', done: true, note: 'Web: PATCH /api/me. Mobile: PATCH /api/mobile/auth/me con expo-localization. Usado en dashboard, plan, check-in, gym.' },
       { title: 'Scope Running + Strength: CICLA/NATACION eliminados de templates y selectores UI', done: true, note: 'Schema DB intacto para compatibilidad histórica. intensity.ts conserva CICLA/NATACION → MODERATE.' },
+      { title: 'Docker PostgreSQL local para desarrollo — Neon solo en producción', done: true, note: 'postgres:16-alpine en Docker. DATABASE_URL local apunta a localhost:5432/medaliq. Neon URLs comentadas en .env para dev. Elimina consumo de compute units durante desarrollo.' },
       { title: 'Error pages personalizadas (404, 500) con diseño Medaliq', done: true, note: 'src/app/not-found.tsx + error.tsx.' },
       { title: 'DB — Índices faltantes: SessionLog.completedAt, CoachProfile.isPublic, WorkoutTemplate(isPublic, isActive)', done: true, priority: 'P2', note: 'Fix: migración 20260630000001_fix_invitecode_fk_and_db_indices. Agregados: SessionLog(completedAt), CoachProfile(isPublic), WorkoutTemplate(isPublic,isActive), InviteCode(coachId), InviteCode(expiresAt), CoachAthlete(athleteId).' },
       { title: 'DB — Payment.amount Float → Int o Decimal(12,2) para valores monetarios', done: true, priority: 'P2', note: 'Fix: migración 20260701000001 → Decimal @db.Decimal(12,2). Number() en todos los sitios de aritmética: coach/finanzas, admin/finanzas, cron/payment-overdue, email/resend.' },

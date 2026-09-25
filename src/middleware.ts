@@ -8,22 +8,22 @@ const PUBLIC_ROUTES = ['/', '/login', '/register', '/set-password', '/forgot-pas
 
 export default auth((req) => {
   const { nextUrl, auth: session } = req
-  const isLoggedIn = !!session?.user
+  const isLoggedIn = !!session?.user?.id
   const pathname = nextUrl.pathname
 
-  // Cookie de sesión inválida (JWT expirado o secret rotado) → limpiar en /login para romper el loop
-  // Sin esto: Auth.js reintenta verificar el token cada vez → redirect a /api/auth/error → /login → loop
-  if (!isLoggedIn && pathname === '/login') {
+  // Sesión sin user válido (JWT expirado, secret rotado, o user no existe en DB) → limpiar cookies
+  // Excluir /api/ para no romper el flujo de auth (signIn client necesita JSON, no redirect a HTML)
+  if (!isLoggedIn && !pathname.startsWith('/api/')) {
     const hasStaleCookie =
-      req.cookies.has('next-auth.session-token') ||
-      req.cookies.has('__Secure-next-auth.session-token')
+      req.cookies.has('authjs.session-token') ||
+      req.cookies.has('__Secure-authjs.session-token')
     if (hasStaleCookie) {
-      const res = NextResponse.next()
-      res.cookies.delete('next-auth.session-token')
-      res.cookies.delete('__Secure-next-auth.session-token')
-      res.cookies.delete('next-auth.csrf-token')
-      res.cookies.delete('__Secure-next-auth.csrf-token')
-      return res
+      const dest = pathname === '/login' ? NextResponse.next() : NextResponse.redirect(new URL('/login', nextUrl))
+      dest.cookies.delete('authjs.session-token')
+      dest.cookies.delete('__Secure-authjs.session-token')
+      dest.cookies.delete('authjs.csrf-token')
+      dest.cookies.delete('__Secure-authjs.csrf-token')
+      return dest
     }
   }
 

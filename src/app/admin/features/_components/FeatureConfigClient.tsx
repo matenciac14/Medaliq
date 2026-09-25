@@ -104,7 +104,7 @@ export default function FeatureConfigClient({ initialConfigs }: Props) {
                 </div>
                 <p className="text-xs text-gray-500 mt-1">{meta.desc}</p>
                 {config?.updatedAt && (
-                  <p className="text-[11px] text-gray-400 mt-1.5">
+                  <p className="text-xs text-gray-400 mt-1.5">
                     Actualizado {new Date(config.updatedAt).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                   </p>
                 )}

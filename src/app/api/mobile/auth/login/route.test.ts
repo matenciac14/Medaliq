@@ -10,12 +10,17 @@ vi.mock('bcryptjs', () => ({
 vi.mock('@/lib/db/prisma', () => ({
   prisma: {
     user: { findUnique: vi.fn() },
+    coachAthlete: { findFirst: vi.fn() },
     healthProfile: { findUnique: vi.fn() },
   },
 }))
-vi.mock('@/lib/auth/mobile_auth', () => ({
-  signMobileToken: vi.fn().mockResolvedValue('signed-jwt'),
-}))
+vi.mock('@/lib/auth/mobile_auth', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/auth/mobile_auth')>()
+  return {
+    ...actual,
+    signMobileToken: vi.fn().mockResolvedValue('signed-jwt'),
+  }
+})
 
 import bcrypt from 'bcryptjs'
 import { rateLimitAsync } from '@/lib/rate_limit'
@@ -39,6 +44,9 @@ const ACTIVE_USER = {
   featureCoach: false,
   featureGym: true,
   onboardingCompleted: true,
+  needsRoleSelection: false,
+  identification: null,
+  phoneWa: null,
 }
 
 function req(body: object) {
@@ -53,6 +61,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   vi.mocked(rateLimitAsync).mockResolvedValue({ allowed: true } as any)
   vi.mocked(prisma.healthProfile.findUnique).mockResolvedValue(null)
+  vi.mocked(prisma.coachAthlete.findFirst).mockResolvedValue(null)
 })
 
 describe('POST /api/mobile/auth/login', () => {
@@ -87,7 +96,7 @@ describe('POST /api/mobile/auth/login', () => {
     expect(res.status).toBe(400)
   })
 
-  it('retorna 200 con token y features en login exitoso', async () => {
+  it('retorna 200 con token y campos alineados en login exitoso', async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue(ACTIVE_USER as any)
     vi.mocked(bcrypt.compare).mockResolvedValue(true as never)
 
@@ -100,9 +109,12 @@ describe('POST /api/mobile/auth/login', () => {
       plan: true, checkin: true, nutrition: true,
       progress: true, log: true, coach: false, gym: true,
     })
+    expect(body.user.isB2B).toBe(false)
+    expect(body.user.activated).toBe(true)
+    expect(body.user.profileComplete).toBe(false)
   })
 
-  it('llama signMobileToken con los datos correctos del usuario', async () => {
+  it('llama signMobileToken con payload construido por buildMobileTokenPayload', async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue(ACTIVE_USER as any)
     vi.mocked(bcrypt.compare).mockResolvedValue(true as never)
 
@@ -114,6 +126,9 @@ describe('POST /api/mobile/auth/login', () => {
         email: 'atleta@test.com',
         role: 'ATHLETE',
         onboardingCompleted: true,
+        activated: true,
+        isB2B: false,
+        profileComplete: false,
         features: expect.objectContaining({ plan: true, gym: true, coach: false }),
       })
     )

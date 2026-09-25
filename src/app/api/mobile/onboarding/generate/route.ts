@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
-import { getMobileUser, signMobileToken } from '@/lib/auth/mobile_auth'
+import { getMobileUser, signMobileToken, buildMobileTokenPayload, MOBILE_USER_SELECT } from '@/lib/auth/mobile_auth'
 import { rateLimitAsync } from '@/lib/rate_limit'
 import { completeOnboardingUseCase } from '@/domain/onboarding/complete_onboarding.use_case'
 import { PrismaPlanRepository } from '@/infrastructure/db/plan.repository'
@@ -147,32 +147,12 @@ export async function POST(req: NextRequest) {
     // Mobile needs a refreshed token with onboardingCompleted=true and updated features
     const updatedUser = await prisma.user.findUnique({
       where: { id: mobile.id },
-      select: {
-        featurePlan: true, featureCheckin: true, featureNutrition: true,
-        featureProgress: true, featureLog: true, featureCoach: true, featureGym: true,
-      },
+      select: MOBILE_USER_SELECT,
     })
-    const features = updatedUser
-      ? {
-          plan:      updatedUser.featurePlan,
-          checkin:   updatedUser.featureCheckin,
-          nutrition: updatedUser.featureNutrition,
-          progress:  updatedUser.featureProgress,
-          log:       updatedUser.featureLog,
-          coach:     updatedUser.featureCoach,
-          gym:       updatedUser.featureGym,
-        }
-      : mobile.features
-    const token = await signMobileToken({
-      id: mobile.id,
-      email: mobile.email,
-      name: mobile.name,
-      role: mobile.role,
-      status: mobile.status ?? 'ACTIVE',
-      onboardingCompleted: true,
-      userPlan: 'PRO',
-      features,
-    })
+    const payload = updatedUser
+      ? buildMobileTokenPayload(updatedUser, { isB2B: mobile.isB2B ?? false })
+      : { ...mobile, onboardingCompleted: true as const }
+    const token = await signMobileToken(payload)
 
     return NextResponse.json({ success: true, ...result, token })
   } catch (error) {
