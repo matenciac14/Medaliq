@@ -66,10 +66,23 @@ export async function PATCH(
     return NextResponse.json(updated)
   }
 
+  // Leer valores actuales para recalcular fatG como macro residual
+  const current = await prisma.nutritionPlan.findUnique({
+    where: { userId: athleteId },
+    select: { targetKcalHard: true, proteinG: true, carbsHardG: true },
+  })
+  if (!current) return NextResponse.json({ error: 'Sin plan nutricional' }, { status: 404 })
+
+  const finalKcal = data.targetKcalHard ?? current.targetKcalHard
+  const finalProtein = data.proteinG ?? current.proteinG
+  const finalCarbs = current.carbsHardG
+  const fatG = Math.max(Math.round((finalKcal - finalProtein * 4 - finalCarbs * 4) / 9), 0)
+
   const updated = await prisma.nutritionPlan.update({
     where: { userId: athleteId },
     data: {
       ...data,
+      fatG,
       source: 'COACH',
     },
     select: { targetKcalHard: true, targetKcalEasy: true, targetKcalRest: true, proteinG: true, kcalAdjustment: true, source: true },

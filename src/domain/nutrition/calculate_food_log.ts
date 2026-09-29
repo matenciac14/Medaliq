@@ -3,7 +3,7 @@
  */
 
 import { intensityToDayType, type DayType } from '@/domain/nutrition/day_type'
-import { LOW_KCAL_MULTIPLIER, LOW_CARBS_MULTIPLIER, REST_CARBS_MULTIPLIER } from '@/domain/nutrition/nutrition_constants'
+import { getDailyNutritionTarget, type NutritionPlanTargets } from '@/domain/nutrition/daily_target'
 
 export const VALID_MEAL_TYPES = ['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK', 'PRE_WORKOUT', 'POST_WORKOUT'] as const
 export type MealType = typeof VALID_MEAL_TYPES[number]
@@ -13,16 +13,6 @@ type FoodMacros = {
   proteinPer100g: number
   carbsPer100g: number
   fatPer100g: number
-}
-
-type NutritionPlan = {
-  targetKcalHard: number
-  targetKcalEasy: number
-  targetKcalRest: number
-  proteinG: number
-  carbsHardG: number
-  carbsEasyG: number
-  fatG: number
 }
 
 export type MacroTotals = { kcal: number; proteinG: number; carbsG: number; fatG: number }
@@ -35,23 +25,6 @@ export function calcMacros(grams: number, food: FoodMacros): MacroTotals {
     carbsG:   Math.round(food.carbsPer100g   * r * 10) / 10,
     fatG:     Math.round(food.fatPer100g     * r * 10) / 10,
   }
-}
-
-export function calcNutritionTarget(
-  nutritionPlan: NutritionPlan,
-  dayType: DayType
-): MacroTotals {
-  const kcal =
-    dayType === 'hard' ? nutritionPlan.targetKcalHard
-    : dayType === 'rest' ? nutritionPlan.targetKcalRest
-    : dayType === 'low'  ? Math.round(nutritionPlan.targetKcalEasy * LOW_KCAL_MULTIPLIER)
-    : nutritionPlan.targetKcalEasy
-  const carbsG =
-    dayType === 'hard' ? nutritionPlan.carbsHardG
-    : dayType === 'rest' ? Math.round(nutritionPlan.carbsEasyG * REST_CARBS_MULTIPLIER)
-    : dayType === 'low'  ? Math.round(nutritionPlan.carbsEasyG * LOW_CARBS_MULTIPLIER)
-    : nutritionPlan.carbsEasyG
-  return { kcal, proteinG: nutritionPlan.proteinG, carbsG, fatG: nutritionPlan.fatG }
 }
 
 export function calcProgressPct(totals: MacroTotals, target: MacroTotals): MacroTotals {
@@ -79,14 +52,13 @@ type FoodLogEntry = {
 
 export function buildFoodLogResponse(
   logs: FoodLogEntry[],
-  nutritionPlan: NutritionPlan | null,
+  nutritionPlan: NutritionPlanTargets | null,
   sessionIntensity: string | null | undefined,
   dateParam: string
 ) {
   const dayType: DayType = intensityToDayType(sessionIntensity)
 
   const logsWithMacros = logs.map(log => {
-    // Usar snapshot si está disponible (registros nuevos), sino calcular en runtime (backward compat)
     const macros: MacroTotals = log.kcalLogged != null
       ? { kcal: Math.round(log.kcalLogged), proteinG: log.proteinLogged!, carbsG: log.carbsLogged!, fatG: log.fatLogged! }
       : calcMacros(log.grams, log.food)
@@ -101,13 +73,20 @@ export function buildFoodLogResponse(
     }
   })
 
-  const totals = logsWithMacros.reduce<MacroTotals>(
+  const raw = logsWithMacros.reduce<MacroTotals>(
     (acc, l) => ({ kcal: acc.kcal + l.kcal, proteinG: acc.proteinG + l.proteinG, carbsG: acc.carbsG + l.carbsG, fatG: acc.fatG + l.fatG }),
     { kcal: 0, proteinG: 0, carbsG: 0, fatG: 0 }
   )
+  const totals: MacroTotals = {
+    kcal: Math.round(raw.kcal),
+    proteinG: Math.round(raw.proteinG),
+    carbsG: Math.round(raw.carbsG),
+    fatG: Math.round(raw.fatG),
+  }
 
-  const target = nutritionPlan ? calcNutritionTarget(nutritionPlan, dayType) : null
-  const pct    = target ? calcProgressPct(totals, target) : null
+  const nt = nutritionPlan ? getDailyNutritionTarget(sessionIntensity, nutritionPlan) : null
+  const target: MacroTotals | null = nt ? { kcal: nt.kcal, proteinG: nt.proteinG, carbsG: nt.carbsG, fatG: nt.fatG } : null
+  const pct = target ? calcProgressPct(totals, target) : null
 
   return { date: dateParam, dayType, logs: logsWithMacros, totals, target, pct }
 }

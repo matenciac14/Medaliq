@@ -277,10 +277,10 @@ export default async function NutritionPage() {
           targetKcalHard: hard.kcal,
           targetKcalEasy: easy.kcal,
           targetKcalRest: rest.kcal,
-          proteinG: easy.proteinG,
+          proteinG: hard.proteinG,
           carbsHardG: hard.carbsG,
           carbsEasyG: easy.carbsG,
-          fatG: easy.fatG,
+          fatG: hard.fatG,
         }
       })()
     : null

@@ -6,7 +6,7 @@ import { calculateTDEE, calculateMacros, KCAL_ADJUSTMENT_MIN, KCAL_ADJUSTMENT_MA
 
 const EDITABLE_FIELDS = [
   'targetKcalHard', 'targetKcalEasy', 'targetKcalRest',
-  'proteinG', 'carbsHardG', 'carbsEasyG', 'fatG',
+  'proteinG', 'carbsHardG', 'carbsEasyG',
 ] as const
 
 const patchSchema = z.object({
@@ -16,7 +16,6 @@ const patchSchema = z.object({
   proteinG: z.number().int().positive().optional(),
   carbsHardG: z.number().int().positive().optional(),
   carbsEasyG: z.number().int().positive().optional(),
-  fatG: z.number().int().positive().optional(),
   kcalAdjustment: z.number().int().min(KCAL_ADJUSTMENT_MIN).max(KCAL_ADJUSTMENT_MAX).optional(),
 }).refine(
   (obj) => EDITABLE_FIELDS.some((f) => obj[f] !== undefined) || obj.kcalAdjustment !== undefined,
@@ -99,6 +98,18 @@ export async function PATCH(req: NextRequest) {
   for (const field of EDITABLE_FIELDS) {
     const value = parsed.data[field]
     if (value !== undefined) data[field] = value
+  }
+
+  // Recalcular fatG como macro residual para mantener consistencia en DB
+  const current = await prisma.nutritionPlan.findUnique({
+    where: { userId },
+    select: { targetKcalHard: true, proteinG: true, carbsHardG: true },
+  })
+  if (current) {
+    const finalKcal = (data.targetKcalHard as number) ?? current.targetKcalHard
+    const finalProtein = (data.proteinG as number) ?? current.proteinG
+    const finalCarbs = (data.carbsHardG as number) ?? current.carbsHardG
+    data.fatG = Math.max(Math.round((finalKcal - finalProtein * 4 - finalCarbs * 4) / 9), 0)
   }
 
   const updated = await prisma.nutritionPlan.update({

@@ -1,44 +1,37 @@
 /**
  * Usuarios de test E2E — MedalIQ
  *
- * Estos datos deben coincidir con el seed de test (global.setup.ts).
- * NUNCA usar emails/passwords de producción aquí.
+ * Coinciden con el seed de desarrollo (prisma/seed.ts).
+ * Para CI, el global.setup corre el seed antes de autenticar.
  */
 
 export const USERS = {
-  // Atleta B2C con plan activo y check-ins
+  // Atleta B2C con plan activo + nutricion + gym (Miguel seed)
   atletaB2C: {
-    email: 'e2e-atleta-b2c@test.medaliq.com',
-    password: 'Test1234!',
-    name: 'Ana Test B2C',
+    email: 'miguel@medaliq.com',
+    password: 'atleta123',
+    name: 'Miguel',
   },
 
-  // Atleta B2B conectado al coach de test
+  // Atleta B2B conectada al coach Carlos (Ana seed)
   atletaB2B: {
-    email: 'e2e-atleta-b2b@test.medaliq.com',
-    password: 'Test1234!',
-    name: 'Carlos Test B2B',
+    email: 'ana@medaliq.com',
+    password: 'atleta123',
+    name: 'Ana',
   },
 
-  // Atleta B2C nuevo (sin plan, primer login)
-  atletaNuevo: {
-    email: 'e2e-atleta-nuevo@test.medaliq.com',
-    password: 'Test1234!',
-    name: 'Luis Test Nuevo',
-  },
-
-  // Coach con atletas activos
+  // Coach con atletas activos (Carlos seed)
   coach: {
-    email: 'e2e-coach@test.medaliq.com',
-    password: 'Test1234!',
-    name: 'Diego Test Coach',
+    email: 'coach@medaliq.com',
+    password: 'coach123',
+    name: 'Carlos',
   },
 
   // Admin
   admin: {
-    email: 'e2e-admin@test.medaliq.com',
-    password: 'Test1234!',
-    name: 'Admin Test',
+    email: 'admin@medaliq.com',
+    password: 'admin123!',
+    name: 'Admin',
   },
 } as const
 

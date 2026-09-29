@@ -28,7 +28,6 @@ export async function loginAs(page: Page, key: UserKey): Promise<void> {
   const targetUrls: Record<UserKey, RegExp> = {
     atletaB2C:   /\/(dashboard|checkin|plan)/,
     atletaB2B:   /\/(dashboard|pending)/,
-    atletaNuevo: /\/(dashboard|onboarding)/,
     coach:       /\/coach\/dashboard/,
     admin:       /\/admin/,
   }

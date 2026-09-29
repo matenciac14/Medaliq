@@ -157,7 +157,7 @@ export async function PATCH(
     proteinG: 120,
     carbsHardG: 250,
     carbsEasyG: 200,
-    fatG: 60,
+    fatG: 80,
   }
 
   const updated = await prisma.nutritionPlan.upsert({

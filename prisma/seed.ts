@@ -346,7 +346,7 @@ async function seedMiguelData(userId: string, coachId: string) {
     create: {
       userId, source: NutritionSource.COACH, tdee: 2750,
       targetKcalHard: 2900, targetKcalEasy: 2500, targetKcalRest: 2200,
-      proteinG: 150, carbsHardG: 350, carbsEasyG: 280, fatG: 80, waterMlTarget: 3000,
+      proteinG: 150, carbsHardG: 350, carbsEasyG: 280, fatG: 100, waterMlTarget: 3000,
     },
   })
 
