@@ -109,6 +109,9 @@ model User {
   // Rutina semanal self-directed (sin plan)
   weeklyRoutine      WeeklyRoutine?
 
+  // Session templates (coach — sesiones reutilizables en Plan Builder)
+  sessionTemplates   SessionTemplate[] @relation("CoachSessionTemplates")
+
   // Constructor Visual de Nutrición (coach y atleta B2C)
   nutritionTemplates        NutritionTemplate[]    @relation("CoachNutritionTemplates")
   athleteNutritionTemplates NutritionTemplate[]    @relation("AthleteNutritionTemplates")
@@ -374,6 +377,23 @@ model PlannedSession {
 
   @@index([weekId])
   @@index([date])
+}
+
+model SessionTemplate {
+  id          String      @id @default(cuid())
+  coachId     String
+  name        String
+  type        SessionType
+  durationMin Int
+  distanceKm  Float?
+  zoneTarget  String?
+  detailText  String?
+  sportLabel  String?
+  createdAt   DateTime    @default(now())
+
+  coach User @relation("CoachSessionTemplates", fields: [coachId], references: [id], onDelete: Cascade)
+
+  @@index([coachId])
 }
 
 enum SessionIntensity {

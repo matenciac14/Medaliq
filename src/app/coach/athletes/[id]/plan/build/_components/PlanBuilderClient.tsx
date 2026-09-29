@@ -101,6 +101,11 @@ type AssignedRoutine = {
   days: AssignedRoutineDay[]
 }
 
+type SessionTemplateData = {
+  id: string; name: string; type: string; durationMin: number
+  distanceKm: number | null; zoneTarget: string | null; detailText: string | null; sportLabel: string | null
+}
+
 type Props = {
   athleteId: string
   athleteName: string
@@ -110,6 +115,7 @@ type Props = {
   assignedRoutine: AssignedRoutine | null
   coachNutritionTemplates: { id: string; name: string }[]
   linkedNutritionTemplateId: string | null
+  initialSessionTemplates: SessionTemplateData[]
 }
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -210,8 +216,9 @@ const PHASE_COLORS: Record<string, string> = {
   BASE: '#1e3a5f', DESARROLLO: '#ea580c', ESPECIFICO: '#dc2626', AFINAMIENTO: '#7c3aed',
 }
 
-export default function PlanBuilderClient({ athleteId, athleteName, initialPlan, gymTemplates, nutritionPlan, assignedRoutine, coachNutritionTemplates, linkedNutritionTemplateId }: Props) {
+export default function PlanBuilderClient({ athleteId, athleteName, initialPlan, gymTemplates, nutritionPlan, assignedRoutine, coachNutritionTemplates, linkedNutritionTemplateId, initialSessionTemplates }: Props) {
   const [plan, setPlan] = useState<BuilderPlan | null>(initialPlan)
+  const [sessionTemplates, setSessionTemplates] = useState<SessionTemplateData[]>(initialSessionTemplates)
 
   // ── Estado para crear plan ────────────────────────────────────────────────
   type CreateMode = 'initial' | 'blank-form' | 'template-form'
@@ -1221,6 +1228,26 @@ export default function PlanBuilderClient({ athleteId, athleteName, initialPlan,
           onClose={() => setModal(null)}
           saving={saving}
           gymTemplates={gymTemplates}
+          sessionTemplates={sessionTemplates}
+          onSaveTemplate={async (tpl) => {
+            const res = await fetch('/api/coach/session-templates', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(tpl),
+            })
+            if (!res.ok) return
+            const { template } = await res.json()
+            setSessionTemplates(prev => [template, ...prev])
+          }}
+          onDeleteTemplate={async (id) => {
+            const res = await fetch('/api/coach/session-templates', {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id }),
+            })
+            if (!res.ok) return
+            setSessionTemplates(prev => prev.filter(t => t.id !== id))
+          }}
         />
       )}
 
@@ -1308,6 +1335,9 @@ function SessionModal({
   onClose,
   saving,
   gymTemplates,
+  sessionTemplates,
+  onSaveTemplate,
+  onDeleteTemplate,
 }: {
   modal: ModalState
   onSave: (data: { type: string; durationMin: number; distanceKm: number | null; zoneTarget: string; detailText: string; sportLabel: string; workoutDayId: string | null }) => void
@@ -1315,6 +1345,9 @@ function SessionModal({
   onClose: () => void
   saving: boolean
   gymTemplates: GymTemplate[]
+  sessionTemplates: SessionTemplateData[]
+  onSaveTemplate: (tpl: { name: string; type: string; durationMin: number; distanceKm: number | null; zoneTarget: string; detailText: string; sportLabel: string }) => Promise<void>
+  onDeleteTemplate: (id: string) => Promise<void>
 }) {
   const [type, setType] = useState(modal.session?.type ?? modal.preselectedType ?? 'RODAJE_Z2')
   const [durationMin, setDurationMin] = useState(modal.session?.durationMin ?? 45)
@@ -1327,6 +1360,29 @@ function SessionModal({
   const allGymDays = gymTemplates.flatMap(t => t.days.map(d => ({ ...d, templateName: t.name })))
   const selectedGymDay = allGymDays.find(d => d.id === workoutDayId) ?? null
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [showTemplates, setShowTemplates] = useState(false)
+  const [savingTemplate, setSavingTemplate] = useState(false)
+  const [templateName, setTemplateName] = useState('')
+  const [showSaveAs, setShowSaveAs] = useState(false)
+
+  function applyTemplate(tpl: SessionTemplateData) {
+    setType(tpl.type)
+    setDurationMin(tpl.durationMin)
+    setDistanceKm(tpl.distanceKm)
+    setZoneTarget(tpl.zoneTarget ?? '')
+    setDetailText(tpl.detailText ?? '')
+    setSportLabel(tpl.sportLabel ?? '')
+    setShowTemplates(false)
+  }
+
+  async function handleSaveAsTemplate() {
+    if (!templateName.trim()) return
+    setSavingTemplate(true)
+    await onSaveTemplate({ name: templateName.trim(), type, durationMin, distanceKm, zoneTarget, detailText, sportLabel })
+    setSavingTemplate(false)
+    setShowSaveAs(false)
+    setTemplateName('')
+  }
 
   const isEdit = !!modal.session
   const dayName = DAY_NAMES[modal.dayOfWeek]
@@ -1344,7 +1400,46 @@ function SessionModal({
           </button>
         </div>
 
-        <div className="px-6 py-5 space-y-5">
+        <div className="px-6 py-5 space-y-5 max-h-[70vh] overflow-y-auto">
+          {/* Template picker (only when creating, not editing) */}
+          {!isEdit && sessionTemplates.length > 0 && (
+            <div>
+              <button
+                onClick={() => setShowTemplates(!showTemplates)}
+                className="flex items-center gap-1.5 text-[10px] font-semibold text-blue-600 uppercase tracking-wider hover:text-blue-800 transition-colors"
+              >
+                <span>{showTemplates ? '▾' : '▸'}</span>
+                Desde template ({sessionTemplates.length})
+              </button>
+              {showTemplates && (
+                <div className="mt-2 space-y-1 max-h-36 overflow-y-auto">
+                  {sessionTemplates.map(tpl => {
+                    const tplCfg = getSessionConfig(tpl.type)
+                    return (
+                      <div key={tpl.id} className="flex items-center gap-1">
+                        <button
+                          onClick={() => applyTemplate(tpl)}
+                          className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left hover:bg-blue-50 transition-colors border border-gray-100"
+                        >
+                          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: tplCfg.color }} />
+                          <span className="font-medium text-gray-800 truncate">{tpl.name}</span>
+                          <span className="text-xs text-gray-400 ml-auto shrink-0">{tpl.durationMin}min</span>
+                        </button>
+                        <button
+                          onClick={() => onDeleteTemplate(tpl.id)}
+                          className="p-1 text-gray-300 hover:text-red-500 transition-colors"
+                          title="Eliminar template"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Type selector */}
           <div>
             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
@@ -1501,6 +1596,41 @@ function SessionModal({
             />
           </div>
         </div>
+
+        {/* Save as template */}
+        {!showSaveAs ? (
+          <div className="px-6 pt-2">
+            <button
+              onClick={() => { setShowSaveAs(true); setTemplateName(sportLabel || `${getSessionConfig(type).label} ${durationMin}min`) }}
+              className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors"
+            >
+              💾 Guardar como template
+            </button>
+          </div>
+        ) : (
+          <div className="px-6 pt-2 flex items-center gap-2">
+            <input
+              autoFocus
+              type="text"
+              value={templateName}
+              onChange={(e) => setTemplateName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSaveAsTemplate()}
+              placeholder="Nombre del template"
+              className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-200"
+            />
+            <button
+              onClick={handleSaveAsTemplate}
+              disabled={savingTemplate || !templateName.trim()}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white disabled:opacity-50"
+              style={{ backgroundColor: '#1e3a5f' }}
+            >
+              {savingTemplate ? '...' : 'Guardar'}
+            </button>
+            <button onClick={() => setShowSaveAs(false)} className="text-gray-400 hover:text-gray-600">
+              <X size={14} />
+            </button>
+          </div>
+        )}
 
         {/* Actions */}
         <div className="px-6 py-4 border-t border-gray-100 flex items-center gap-3">
