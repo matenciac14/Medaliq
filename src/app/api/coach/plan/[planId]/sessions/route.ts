@@ -26,7 +26,7 @@ export async function POST(
   if (!relation) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const body = await req.json()
-  const { weekId, dayOfWeek, type, durationMin, zoneTarget, detailText, sportLabel, workoutDayId } = body
+  const { weekId, dayOfWeek, type, durationMin, distanceKm, zoneTarget, detailText, sportLabel, workoutDayId } = body
 
   if (!weekId || dayOfWeek === undefined || !type || !durationMin)
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -55,6 +55,7 @@ export async function POST(
       type,
       intensity: getSessionIntensity(type),
       durationMin: Number(durationMin),
+      distanceKm:  typeof distanceKm === 'number' && distanceKm > 0 ? distanceKm : null,
       zoneTarget:  zoneTarget?.trim()  || null,
       detailText:  detailText?.trim()  || null,
       sportLabel:  sportLabel?.trim()  || null,

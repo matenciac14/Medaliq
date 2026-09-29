@@ -28,6 +28,7 @@ type BuilderSession = {
   dayOfWeek: number
   type: string
   durationMin: number
+  distanceKm: number | null
   zoneTarget: string | null
   detailText: string | null
   sportLabel: string | null
@@ -335,6 +336,7 @@ export default function PlanBuilderClient({ athleteId, athleteName, initialPlan,
   async function handleSaveSession(data: {
     type: string
     durationMin: number
+    distanceKm: number | null
     zoneTarget: string
     detailText: string
     sportLabel: string
@@ -1005,7 +1007,7 @@ export default function PlanBuilderClient({ athleteId, athleteName, initialPlan,
                               {cfg.label}
                             </p>
                             <p className="text-[10px] text-gray-400 mt-0.5">
-                              {s.durationMin} min{s.zoneTarget && s.zoneTarget !== 'N/A' && s.type !== 'FUERZA' ? ` · ${s.zoneTarget}` : ''}
+                              {s.durationMin} min{s.distanceKm ? ` · ${s.distanceKm} km` : ''}{s.zoneTarget && s.zoneTarget !== 'N/A' && s.type !== 'FUERZA' ? ` · ${s.zoneTarget}` : ''}
                             </p>
                             {s.sportLabel && (
                               <p className="text-[10px] text-blue-500 mt-0.5 truncate font-medium">
@@ -1255,7 +1257,7 @@ function SessionModal({
   gymTemplates,
 }: {
   modal: ModalState
-  onSave: (data: { type: string; durationMin: number; zoneTarget: string; detailText: string; sportLabel: string; workoutDayId: string | null }) => void
+  onSave: (data: { type: string; durationMin: number; distanceKm: number | null; zoneTarget: string; detailText: string; sportLabel: string; workoutDayId: string | null }) => void
   onDelete?: () => void
   onClose: () => void
   saving: boolean
@@ -1263,6 +1265,7 @@ function SessionModal({
 }) {
   const [type, setType] = useState(modal.session?.type ?? modal.preselectedType ?? 'RODAJE_Z2')
   const [durationMin, setDurationMin] = useState(modal.session?.durationMin ?? 45)
+  const [distanceKm, setDistanceKm] = useState<number | null>(modal.session?.distanceKm ?? null)
   const [zoneTarget, setZoneTarget] = useState(modal.session?.zoneTarget ?? '')
   const [detailText, setDetailText] = useState(modal.session?.detailText ?? '')
   const [sportLabel, setSportLabel] = useState(modal.session?.sportLabel ?? '')
@@ -1346,6 +1349,24 @@ function SessionModal({
               />
             </div>
           </div>
+
+          {/* Distance — only for running types */}
+          {DISCIPLINE_RUNNING.has(type) && (
+            <div>
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                Distancia (km) <span className="text-gray-300 font-normal normal-case">(opcional)</span>
+              </p>
+              <input
+                type="number"
+                min={0}
+                step={0.1}
+                value={distanceKm ?? ''}
+                onChange={(e) => setDistanceKm(e.target.value ? Number(e.target.value) : null)}
+                placeholder="Ej: 10.5"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-200"
+              />
+            </div>
+          )}
 
           {/* Zone */}
           <div>
@@ -1447,7 +1468,7 @@ function SessionModal({
             Cancelar
           </button>
           <button
-            onClick={() => onSave({ type, durationMin, zoneTarget, detailText, sportLabel, workoutDayId: type === 'FUERZA' ? workoutDayId : null })}
+            onClick={() => onSave({ type, durationMin, distanceKm: DISCIPLINE_RUNNING.has(type) ? distanceKm : null, zoneTarget, detailText, sportLabel, workoutDayId: type === 'FUERZA' ? workoutDayId : null })}
             disabled={saving}
             className="px-5 py-2 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
             style={{ backgroundColor: '#1e3a5f' }}

@@ -103,6 +103,7 @@ export default async function PlanBuildPage({
             dayOfWeek: s.dayOfWeek,
             type: s.type as string,
             durationMin: s.durationMin,
+            distanceKm:  s.distanceKm ?? null,
             zoneTarget:  s.zoneTarget,
             detailText:  s.detailText,
             sportLabel:  s.sportLabel ?? null,

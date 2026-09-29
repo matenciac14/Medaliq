@@ -199,6 +199,7 @@ export default function PlanClient({ plan, weeks, initialCalendarWeek, nutrition
   const weekOffset = selectedWeekNum - plan.currentWeek
   const [calWeek, setCalWeek] = useState<CalendarWeek | null>(initialCalendarWeek ?? null)
   const [calLoading, setCalLoading] = useState(false)
+  const [calError, setCalError] = useState(false)
   useEffect(() => {
     if (weekOffset === 0) {
       setCalWeek(initialCalendarWeek ?? null)
@@ -208,9 +209,9 @@ export default function PlanClient({ plan, weeks, initialCalendarWeek, nutrition
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
     const tzParam = tz ? `&tz=${encodeURIComponent(tz)}` : ''
     fetch(`/api/athlete/calendar?weekOffset=${weekOffset}${tzParam}`)
-      .then(r => r.json())
-      .then(data => { setCalWeek(data); setCalLoading(false) })
-      .catch(() => setCalLoading(false))
+      .then(r => { if (!r.ok) throw new Error(); return r.json() })
+      .then(data => { setCalWeek(data); setCalLoading(false); setCalError(false) })
+      .catch(() => { setCalLoading(false); setCalError(true) })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weekOffset])
 
@@ -344,6 +345,11 @@ export default function PlanClient({ plan, weeks, initialCalendarWeek, nutrition
       </div>
 
       {/* Day Pills — with skeleton while loading */}
+      {calError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-3">
+          <p className="text-sm text-red-700">Error al cargar el calendario. Intenta de nuevo.</p>
+        </div>
+      )}
       {calLoading ? (
         <CalendarSkeleton />
       ) : (

@@ -40,6 +40,7 @@ export async function PATCH(
     data.intensity = getSessionIntensity(body.type)
   }
   if (typeof body.durationMin === 'number' && body.durationMin > 0) data.durationMin = body.durationMin
+  if ('distanceKm' in body) data.distanceKm = typeof body.distanceKm === 'number' && body.distanceKm > 0 ? body.distanceKm : null
   if (typeof body.detailText === 'string') data.detailText = body.detailText.trim() || null
   if (typeof body.zoneTarget === 'string') data.zoneTarget = body.zoneTarget.trim() || null
   if (typeof body.structure === 'string') data.structure = body.structure.trim() || null

@@ -358,6 +358,7 @@ model PlannedSession {
   type         SessionType
   intensity    SessionIntensity @default(MODERATE)
   durationMin  Int
+  distanceKm   Float?
   zoneTarget   String?
   structure    String?
   detailText   String?

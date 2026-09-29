@@ -644,11 +644,11 @@ export const GROUPS: RoadmapGroup[] = [
           { title: 'BUILDER-01 — Selector de disciplina en sidebar (Running / Fuerza / Todas)', done: true, priority: 'P1', note: 'DONE: pills selector en sidebar — Todas/Running/Fuerza. DISCIPLINE_RUNNING y DISCIPLINE_FUERZA sets. SESSION_TYPES filtrado reactivamente. Estado discipline en PlanBuilderClient. Default: Todas.' },
           { title: 'BUILDER-02 — Vincular NutritionTemplate a nivel de plan (config, no sidebar)', done: true, priority: 'P1', note: 'DONE: TrainingPlan.nutritionTemplateId String? + FK + inverse relation en NutritionTemplate. prisma db push aplicado. PATCH /api/coach/athletes/[id]/plan/nutrition-template con ownership check. Selector en sidebar del builder — se muestra solo si el coach tiene templates. Estado linkedTemplate + indicador verde al vincular.' },
           { title: 'BUILDER-03 — Unificar AssignedWorkout vs PlannedSession.workoutDayId', done: false, priority: 'P2', note: 'Decisión tomada (2026-08-25): Plan Builder es el hub único. Tab Ejercicios eliminado. AssignedWorkout sigue útil para atletas SIN plan activo (gym-only). Para atletas CON plan, el builder usa PlannedSession.workoutDayId. Pendiente: migrar UI de asignación legacy al builder sidebar (drag gym day → session slot).' },
-          { title: 'BUILDER-04 — Campo distancia (km) en sesiones de running', done: false, priority: 'P2', note: 'PlannedSession.distanceKm Float? — campo nuevo. El coach puede especificar distancia objetivo además de duración. Visible en SessionCard y SessionModal del builder.' },
+          { title: 'BUILDER-04 — Campo distancia (km) en sesiones de running', done: true, priority: 'P2', note: 'DONE: distanceKm wired end-to-end. BuilderSession type + SessionModal input (solo running types) + session card display + API POST/PATCH accept distanceKm. Campo visible solo para DISCIPLINE_RUNNING session types.' },
           { title: 'BUILDER-05 — Session templates reutilizables (guardar/cargar sesiones frecuentes)', done: false, priority: 'P2', note: 'Coach guarda una sesión como template (ej: "Intervalos 5×1000m"). Al crear nueva sesión, puede elegir de su biblioteca de templates en vez de llenar desde cero. Tabla SessionTemplate { coachId, name, type, durationMin, zoneTarget, detailText, structure }.' },
           { title: 'BUILDER-06 — Distribución de intensidad visual (barra o gráfica por semana)', done: false, priority: 'P3', note: 'Mostrar proporción HIGH/MODERATE/LOW/REST por semana en el WeekNav o en un panel lateral. Ayuda al coach a verificar periodización sin contar sesiones manualmente.' },
           { title: 'BUILDER-07 — Detección de conflictos (dos sesiones alta intensidad consecutivas)', done: false, priority: 'P3', note: 'Warning visual si el coach coloca INTERVALOS + TEMPO en días consecutivos, o >3 sesiones HIGH en una semana. No bloquea, solo alerta.' },
-          { title: 'BUILDER-08 — CTA "Vincular a plan" en Constructor de comidas del coach', done: false, priority: 'P2', note: 'En /coach/nutrition/templates/[id]/build agregar botón que permite vincular el template al plan activo de un atleta. Hoy el coach crea templates pero no tiene camino directo desde el constructor de comidas al plan del builder.' },
+          { title: 'BUILDER-08 — CTA "Vincular a plan" en Constructor de comidas del coach', done: true, priority: 'P2', note: 'DONE: Al asignar/desasignar un template nutricional a un atleta, automáticamente se vincula/desvincula del plan activo del atleta (PATCH nutrition-template). Indicador visual azul "Se vinculará al plan activo" / "Vinculado al plan activo". hasActivePlan flag agregado al query de atletas.' },
         ],
       },
       {
@@ -2716,9 +2716,9 @@ export const GROUPS: RoadmapGroup[] = [
           },
           {
             title: 'UX-PLAN-02 — Empty state B2C sin plan: grid de 3 beneficios se rompe en mobile',
-            done: false,
+            done: true,
             priority: 'P2',
-            note: 'plan/page.tsx: sección con grid-cols-3 ("📊 Plan a medida", "❤️ Seguimiento real", "💬 Comunicación directa") en max-w-3xl. En pantallas <400px las columnas quedan muy estrechas y el texto se trunca. Fix: cambiar a grid-cols-1 sm:grid-cols-3 o usar flex-wrap.',
+            note: 'RESOLVED: El empty state fue reemplazado por PlanTrackingClient en refactor anterior. Ya no existe grid-cols-3 de beneficios — el tracking mode muestra calendario + nutrición + peso sin grid problemático.',
           },
           {
             title: 'UX-PLAN-03 — Empty state B2C sin plan: CTA solo apunta a /coaches, sin alternativa para GYM',
@@ -2728,9 +2728,9 @@ export const GROUPS: RoadmapGroup[] = [
           },
           {
             title: 'UX-PLAN-04 — Error silencioso en carga del plan: try-catch no muestra estado de error al usuario',
-            done: false,
+            done: true,
             priority: 'P2',
-            note: 'plan/page.tsx línea 217: el catch hace console.error pero el usuario cae al empty state "Sin plan activo" como si no tuviera plan — cuando en realidad falló la query. Fix: capturar el error en una variable hasError y mostrar un estado diferenciado: "Error cargando tu plan. Recarga la página." con botón de recarga.',
+            note: 'FIXED: PlanClient.tsx — estado calError + banner rojo "Error al cargar el calendario" cuando fetch /api/athlete/calendar falla. Reset al cargar exitosamente.',
           },
           {
             title: 'UX-PLAN-05 — Componentes de /plan siempre visibles: eliminar return null para evitar layout shifts',
@@ -2830,9 +2830,9 @@ export const GROUPS: RoadmapGroup[] = [
           },
           {
             title: 'UX-GYM-05 — Estado vacío cuando sesión completada sin sets registrados',
-            done: false,
+            done: true,
             priority: 'P2',
-            note: 'gym/page.tsx: el panel de detalle del día muestra sesión completada solo si selectedExerciseDetail.length > 0. Si el atleta completó la sesión sin registrar sets (edge case: completó directo sin logear), cae al bloque "Planificado" confundiendo completado con pendiente. Fix: verificar selectedSession?.completed independientemente de selectedExerciseDetail y mostrar "Sesión completada sin sets registrados" en ese caso.',
+            note: 'FIXED: gym/page.tsx — condición cambiada de `completed && exerciseDetail.length > 0` a solo `completed`. Si no hay sets, muestra "Sesión completada sin sets registrados" en vez de caer al bloque "Planificado".',
           },
         ],
       },
@@ -2884,9 +2884,9 @@ export const GROUPS: RoadmapGroup[] = [
           },
           {
             title: 'UX-COACH-03 — Feed de actividad reciente: solo muestra check-ins, no sesiones completadas',
-            done: false,
+            done: true,
             priority: 'P2',
-            note: 'coach/dashboard/page.tsx: recentActivity solo contiene weeklyCheckIn. El coach no ve "Ana completó sesión de gym hoy" ni "Carlos registró 14km de rodaje". Para tracking en tiempo real, incluir gymSession y sessionLog recientes en el feed. Fix: query paralela de las últimas 4 sesiones de los atletas del coach (sessionLog + gymSession), mezclarlos con check-ins y ordenar por fecha.',
+            note: 'RESOLVED: buildFeedItems() en get_coach_dashboard.use_case.ts ya incluye 4 tipos: checkin, gym, run, payment. Las queries recentGymSessions y recentRunSessions se ejecutan en get_coach_dashboard_data.ts (Promise.all batch 2). El bug fue corregido en un sprint anterior sin actualizar el roadmap.',
           },
           {
             title: 'UX-COACH-04 — Atleta B2B sin rutina asignada: empty state sin biblioteca de ejercicios ni plantillas',
@@ -2917,15 +2917,15 @@ export const GROUPS: RoadmapGroup[] = [
           },
           {
             title: 'UX-COPY-01 — Voseo argentino en múltiples páginas: auditar y reemplazar',
-            done: false,
+            done: true,
             priority: 'P1',
-            note: 'Confirmado "no tenés" en plan/page.tsx:50. Grep global por "tenés|hacés|podés|querés|sabés|venís" puede revelar más ocurrencias. El producto usa español colombiano — reemplazar todas las ocurrencias con tuteo. Comando: grep -r "tenés\\|hacés\\|podés\\|querés" src/ --include="*.tsx" --include="*.ts".',
+            note: 'FIXED: Grep confirma 0 ocurrencias de voseo en src/. La única instancia (plan/page.tsx "tenés") fue corregida en UX-PLAN-01. Producto usa tuteo colombiano consistente.',
           },
           {
             title: 'UX-COPY-02 — Nombre del módulo Gym inconsistente: "Tu gym" / "Rutina gym" / "Gym"',
-            done: false,
+            done: true,
             priority: 'P3',
-            note: 'gym/page.tsx: sin rutina asignada → h1 "Tu gym". Con rutina asignada → h1 "Rutina gym". El nombre del módulo en nav y breadcrumbs puede variar. Definir nombre canónico: "Gym" (corto, consistente) y usarlo en todos los h1, titles, breadcrumbs y nav items.',
+            note: 'FIXED: Nombre canónico = "Entreno" (título de página) + "Ejercicios" (catálogo). gym/page.tsx "Tu rutina" → "Entreno" para consistencia con el resto del módulo.',
           },
           {
             title: 'UX-EMPTY-01 — Auditar consistencia visual de todos los empty states del producto',

@@ -438,7 +438,7 @@ export default async function GymPage({ searchParams }: { searchParams: Promise<
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-[#1e3a5f]">Tu rutina</h1>
+          <h1 className="text-2xl font-bold text-[#1e3a5f]">Entreno</h1>
           <p className="text-sm text-gray-500 mt-0.5">
             {assigned.coach ? `Coach: ${assigned.coach.name ?? 'Tu coach'} · ` : ''}desde {formatDate(assigned.startDate)}
           </p>
@@ -672,7 +672,7 @@ export default async function GymPage({ searchParams }: { searchParams: Promise<
                 )
               }
 
-              if (selectedSession?.completed && selectedExerciseDetail.length > 0) {
+              if (selectedSession?.completed) {
                 return (
                   <div className="border-t border-gray-100">
                     <div className="px-4 py-3 flex items-center justify-between gap-3">
@@ -695,26 +695,32 @@ export default async function GymPage({ searchParams }: { searchParams: Promise<
                         )}
                       </div>
                     </div>
-                    <div className="divide-y divide-gray-50">
-                      {selectedExerciseDetail.map((ex, i) => (
-                        <div key={i} className="px-4 py-2.5">
-                          <p className="text-sm font-semibold text-gray-900 mb-1.5">{ex.name}</p>
-                          <div className="flex flex-wrap gap-1.5">
-                            {ex.sets.map((s) => (
-                              <div key={s.setNumber} className={`text-xs px-2 py-1 rounded-lg font-medium ${
-                                s.completed ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-gray-50 text-gray-400'
-                              }`}>
-                                {s.weightKg != null && s.repsCompleted != null
-                                  ? `${s.weightKg}kg × ${s.repsCompleted}`
-                                  : s.repsCompleted != null
-                                  ? `${s.repsCompleted} reps`
-                                  : `Serie ${s.setNumber}`}
-                              </div>
-                            ))}
+                    {selectedExerciseDetail.length > 0 ? (
+                      <div className="divide-y divide-gray-50">
+                        {selectedExerciseDetail.map((ex, i) => (
+                          <div key={i} className="px-4 py-2.5">
+                            <p className="text-sm font-semibold text-gray-900 mb-1.5">{ex.name}</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {ex.sets.map((s) => (
+                                <div key={s.setNumber} className={`text-xs px-2 py-1 rounded-lg font-medium ${
+                                  s.completed ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-gray-50 text-gray-400'
+                                }`}>
+                                  {s.weightKg != null && s.repsCompleted != null
+                                    ? `${s.weightKg}kg × ${s.repsCompleted}`
+                                    : s.repsCompleted != null
+                                    ? `${s.repsCompleted} reps`
+                                    : `Serie ${s.setNumber}`}
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="px-4 py-6 text-center">
+                        <p className="text-sm text-gray-400">Sesión completada sin sets registrados</p>
+                      </div>
+                    )}
                     {selectedSession.notes && (
                       <div className="px-4 py-2 border-t border-gray-100 bg-gray-50">
                         <p className="text-xs text-gray-500 italic">{selectedSession.notes}</p>
