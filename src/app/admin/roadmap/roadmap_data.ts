@@ -1718,6 +1718,7 @@ export const GROUPS: RoadmapGroup[] = [
         items: [
           { title: 'BUG-003 — FC máxima inconsistente: onboarding Fox (211-0.64×edad) vs perfil Tanaka (208-0.7×edad)', done: true, priority: 'P1', note: 'Fix: ProfileClient.tsx ahora usa Fox (211-0.64×edad). generate-plan.use-case persiste hrMax calculado a HealthProfile en Phase 3. help/page.tsx actualizado. Fox es fuente canónica en todo el sistema.' },
           { title: 'BUG-004 — TDEE inconsistente entre vistas (4 valores distintos el mismo día)', done: true, priority: 'P1', note: 'Fix: nutrition/page.tsx lazy init ahora usa daysPerWeek=5 (igual que syncWeight y nutrition/generate). Todas las recalculaciones de TDEE usan factor 1.725. Vistas solo leen NutritionPlan.tdee.' },
+          { title: 'BUG-005 — fatG inconsistente entre dashboard y mobile nutrition (derivado vs almacenado)', done: true, priority: 'P1', note: 'Fix completo: (1) eliminada calcNutritionTarget() duplicada — unificado en getDailyNutritionTarget(). (2) fatG removido de EDITABLE_FIELDS — grasa es macro residual. (3) PATCH parcial en athlete y coach targets ahora recalcula fatG automaticamente para mantener DB consistente. (4) Seed y coach defaults corregidos para que fatG almacenado = deriveFatG(kcal, protein, carbs). Invariante: proteinG*4 + carbsG*4 + fatG*9 ≈ kcal en DB y en UI.' },
           { title: 'BUG-007 — Progreso: "Objetivo 0 kg · Faltan 77 kg" sin meta de peso definida', done: true, priority: 'P2', note: 'Fix: ProgressClient.tsx cambia weightGoal !== null → !!weightGoal. Si no hay meta: CTA "Define tu meta de peso" con Link a /profile en lugar de mostrar 0 kg.' },
           { title: 'BUG-009 — FC reposo del check-in no sincroniza al perfil de salud', done: true, priority: 'P2', note: 'Ya implementado: process-check-in.use-case línea 145-148 hace txHealthProfile.updateHrResting(userId, data.heartRate). Web y mobile checkin routes mapean body.hrResting → heartRate correctamente.' },
           { title: 'BUG-010 — Dos métricas de adherencia distintas en la misma pantalla (/plan)', done: true, priority: 'P2', note: 'Fix: KPICard ahora dice "Adherencia / esta semana". Chart renombrado a "Historial de adherencia / Promedio histórico X%". Labels dejan claro que miden períodos distintos.' },
@@ -2167,7 +2168,7 @@ export const GROUPS: RoadmapGroup[] = [
             title: 'COACH-BUG-18 — Tab Adherencia: título "Adherencia al gym" y 0% para atletas de running',
             done: true,
             priority: 'P2',
-            note: 'FIXED: Creado GET /api/coach/athletes/[id]/running-adherence — obtiene TrainingPlan ACTIVE/COMPLETED del atleta, agrupa las últimas 4 semanas, cuenta PlannedSessions vs SessionLogs vinculados. AdherenciaTab.tsx refactorizado: (1) AdherenceGrid extraído como subcomponente reutilizable. (2) Secciones independientes "🏃 Adherencia al plan de running" y "🏋️ Adherencia al gym" con título dinámico. (3) Estado vacío solo si no hay datos de ningún tipo. AthleteDetailClient.tsx: nuevo estado runningAdherence/Loading/Loaded + useEffect en tab Adherencia.',
+            note: 'FIXED → SUPERSEDED by ARCH-06. running-adherence endpoint y AdherenciaTab.tsx eliminados (dead code — no tenían callers). Reemplazados por calculateTrainingAdherence() en domain/training/ + GET /api/coach/athletes/[id]/training-adherence.',
           },
           {
             title: 'COACH-BUG-19 — Tab Nutrición muestra "No hay plan nutricional asignado" aunque NutritionPlan existe en DB',
@@ -2235,6 +2236,12 @@ export const GROUPS: RoadmapGroup[] = [
             done: true,
             priority: 'P1',
             note: 'PlanCalendarView.tsx: navega semanas via /api/athlete/calendar, badges de color por tipo (sport/gym/freeRun), CheckCircle para días completados, panel de detalle al hacer click. Coexiste con PlanClient como vista principal en /plan. Mobile: pendiente sprint siguiente.',
+          },
+          {
+            title: 'ARCH-06 — Adherencia unificada: running + gym en función de dominio compartida',
+            done: true,
+            priority: 'P1',
+            note: 'calculateTrainingAdherence() en domain/training/get_training_adherence.ts — función pura que combina plan sessions (running + FUERZA) + rutina gym (AssignedWorkout). 8 tests. coach_athlete.mapper.ts y get_coach_dashboard_data.ts actualizados para incluir athleteAssignments + gymSessions. Endpoint GET /api/coach/athletes/[id]/training-adherence creado con desglose por disciplina + breakdown semanal. Domain docs reescritos: plan-running.md → plan.md, fuerza.md → ejercicios.md. Referencias cruzadas actualizadas en flujos-por-actor.md, flujos-cruzados.md, coach.md, CLAUDE.md.',
           },
           {
             title: 'ARCH-04 — Sesión libre con tipado completo por disciplina para atleta sin plan',
