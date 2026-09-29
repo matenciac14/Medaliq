@@ -410,6 +410,46 @@ export default function PlanBuilderClient({ athleteId, athleteName, initialPlan,
     }
   }
 
+  async function handleQuickAddSession(weekId: string, dayOfWeek: number, data: {
+    type: string; durationMin: number; distanceKm: number | null
+    zoneTarget: string; detailText: string; sportLabel: string; workoutDayId: string | null
+  }) {
+    if (!plan) return
+    setSaving(true)
+    const allDays = gymTemplates.flatMap(t => t.days)
+    const resolvedDay = data.workoutDayId ? (allDays.find(d => d.id === data.workoutDayId) ?? null) : null
+    try {
+      const res = await fetch(`/api/coach/plan/${plan.id}/sessions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ weekId, dayOfWeek, ...data }),
+      })
+      if (!res.ok) throw new Error('Error creando sesión')
+      const { session: created } = await res.json()
+      const createdWithGym = {
+        ...created,
+        workoutDayId: data.workoutDayId,
+        workoutDay: resolvedDay ? { id: resolvedDay.id, label: resolvedDay.label, exercises: resolvedDay.exercises } : null,
+      }
+      setPlan((prev) =>
+        prev
+          ? {
+              ...prev,
+              weeks: prev.weeks.map((w) =>
+                w.id === weekId
+                  ? { ...w, sessions: [...w.sessions, createdWithGym].sort((a, b) => a.dayOfWeek - b.dayOfWeek) }
+                  : w
+              ),
+            }
+          : prev
+      )
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   async function handleDeleteSession(sessionId: string) {
     if (!plan) return
     setSaving(true)
@@ -1057,25 +1097,38 @@ export default function PlanBuilderClient({ athleteId, athleteName, initialPlan,
                       + Añadir sesión
                     </button>
 
-                    {/* Gym routine for this day (from AssignedWorkout) */}
+                    {/* Gym routine suggestion (from AssignedWorkout) — click to add as FUERZA session */}
                     {assignedRoutine && (() => {
                       const gymDay = assignedRoutine.days.find(d => d.dayOfWeek === dayIdx + 1)
                       if (!gymDay) return null
                       const alreadyInPlan = sessions.some(s => s.type === 'FUERZA' && s.workoutDay)
                       if (alreadyInPlan) return null
+                      // Find matching WorkoutDay id from gymTemplates
+                      const matchingDay = gymTemplates.flatMap(t => t.days).find(d => d.id === gymDay.id)
                       return (
                         <div className="mt-auto pt-2 border-t border-dashed border-gray-100">
-                          <div className="px-2 py-1.5 rounded-md" style={{ backgroundColor: '#7c3aed0d' }}>
+                          <button
+                            onClick={() => handleQuickAddSession(week!.id, dayIdx, {
+                              type: 'FUERZA', durationMin: 60, distanceKm: null, zoneTarget: '', detailText: '', sportLabel: gymDay.label, workoutDayId: gymDay.id,
+                            })}
+                            disabled={saving}
+                            className="w-full text-left px-2 py-1.5 rounded-md transition-colors hover:opacity-80"
+                            style={{ backgroundColor: '#7c3aed0d' }}
+                            title="Click para agregar al plan"
+                          >
                             <div className="flex items-center gap-1.5">
                               <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#7c3aed' }} />
                               <span className="text-[10px] font-semibold" style={{ color: '#7c3aed' }}>
                                 {gymDay.label}
                               </span>
+                              <span className="ml-auto text-[9px] font-medium px-1.5 py-0.5 rounded" style={{ backgroundColor: '#7c3aed20', color: '#7c3aed' }}>
+                                + Plan
+                              </span>
                             </div>
                             <p className="text-[10px] mt-0.5" style={{ color: '#8c949e' }}>
                               {gymDay.exerciseCount} ejercicios · {gymDay.muscleGroups.slice(0, 2).join(', ')}
                             </p>
-                          </div>
+                          </button>
                         </div>
                       )
                     })()}
