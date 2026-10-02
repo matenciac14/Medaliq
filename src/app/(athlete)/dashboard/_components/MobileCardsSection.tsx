@@ -55,6 +55,7 @@ type Props = {
 
   // Flags
   hasEverLogged: boolean
+  hasAnyFoodLog?: boolean
 }
 
 export default function MobileCardsSection(props: Props) {
@@ -72,12 +73,13 @@ export default function MobileCardsSection(props: Props) {
 // -- FREE / GYM Mode --------------------------------------------------------
 
 function FreeMobileCards(props: Props) {
-  const { dashSummary, hasEverLogged, currentWeight, targetWeight, weeklyWeightChange, weightProgressPct, todayLogRaw, todayConsumed } = props
+  const { dashSummary, hasEverLogged, currentWeight, targetWeight, weeklyWeightChange, weightProgressPct, todayLogRaw, todayConsumed, hasAnyFoodLog } = props
+  const showNutritionCard = hasAnyFoodLog !== false
 
   return (
     <>
-      {/* Nutricion */}
-      {dashSummary.nutritionTarget && (
+      {/* Nutricion — hidden when WelcomeNutritionCard is showing */}
+      {showNutritionCard && dashSummary.nutritionTarget && (
         <NutritionProgressCard
           data={{ kcal: dashSummary.nutritionTarget.kcal, proteinG: dashSummary.nutritionTarget.proteinG, carbsG: dashSummary.nutritionTarget.carbsG, fatG: dashSummary.nutritionTarget.fatG }}
           variant="compact"
@@ -119,13 +121,14 @@ function ProMobileCards(props: Props) {
     formStatus, formMessage, lastCheckIn, formCheckInDate,
     isRecomp, currentWeight, targetWeight, raceDays,
     weeklyWeightChange, weightProgressPct, currentVolume, volumeDeltaPct,
-    dashSummary, todayLogRaw, todayConsumed,
+    dashSummary, todayLogRaw, todayConsumed, hasAnyFoodLog,
   } = props
+  const showNutritionCard = hasAnyFoodLog !== false
 
   return (
     <>
-      {/* Nutricion */}
-      {dashSummary.nutritionTarget && (
+      {/* Nutricion — hidden when WelcomeNutritionCard is showing */}
+      {showNutritionCard && dashSummary.nutritionTarget && (
         <NutritionProgressCard
           data={{ kcal: dashSummary.nutritionTarget.kcal, proteinG: dashSummary.nutritionTarget.proteinG, carbsG: dashSummary.nutritionTarget.carbsG, fatG: dashSummary.nutritionTarget.fatG, label: dashSummary.nutritionTarget.label }}
           variant="compact"

@@ -171,36 +171,37 @@ export default function TrackingSection({ target, foods, date }: Props) {
               {loading ? (
                 <span className="text-sm text-gray-400">Cargando...</span>
               ) : (
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-2xl font-black text-orange-600 leading-none">{consumed}</span>
-                  {target && (
-                    <span className="text-sm text-gray-400">/ {targetKcal} kcal</span>
-                  )}
-                </div>
+                <>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-2xl font-black text-orange-600 leading-none">
+                      {consumed > 0 ? consumed.toLocaleString('es') : '0'}
+                    </span>
+                    <span className="text-sm text-gray-400">kcal registradas</span>
+                  </div>
+                </>
               )}
             </div>
-            <div className="flex items-center gap-3">
-              {target && pct > 0 && (
-                <span className={`text-lg font-black ${pct >= 100 ? 'text-red-500' : pct >= 80 ? 'text-orange-600' : 'text-gray-400'}`}>
-                  {pct}%
-                </span>
-              )}
-              <button
-                onClick={() => setShowModal(true)}
-                className="text-xs font-semibold text-white bg-[#1e3a5f] hover:bg-[#162d4a] transition-colors px-3 py-1.5 rounded-lg"
-              >
-                + Registrar
-              </button>
-            </div>
+            <button
+              onClick={() => setShowModal(true)}
+              className="text-xs font-bold text-white bg-[#ea580c] hover:opacity-90 transition-opacity px-4 py-2 rounded-xl"
+            >
+              + Registrar comida
+            </button>
           </div>
-          {/* Barra kcal hero */}
+          {/* Barra kcal hero + porcentaje (Figma: TrackingSection) */}
           {target && (
-            <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all"
-                style={{ width: `${pct}%`, backgroundColor: pct >= 100 ? '#ef4444' : '#ea580c' }}
-              />
-            </div>
+            <>
+              <p className="text-xs font-semibold text-[#ea580c] mb-1">{pct}% completado</p>
+              <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all"
+                  style={{ width: `${pct}%`, backgroundColor: pct >= 100 ? '#ef4444' : '#ea580c' }}
+                />
+              </div>
+            </>
+          )}
+          {consumed === 0 && !loading && (
+            <p className="text-xs text-gray-400 mt-2">Registra tu primera comida del dia para ver tu progreso aqui</p>
           )}
           {/* NUT-DASH-03 — Macro pills siempre visibles (Proteína / Carbos / Grasas) */}
           {target && (

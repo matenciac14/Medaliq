@@ -146,6 +146,12 @@ export type DashboardData = {
 
   // Pre-fetched meal slot logs (eliminates zeros flash in MealSlotsWidget)
   initialMealSlotLogs: { mealType: string; kcal: number }[]
+
+  // Trial countdown
+  trialDaysLeft: number | null
+
+  // Welcome cards
+  hasAnyFoodLog: boolean
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -177,11 +183,12 @@ export async function getDashboardData(userId: string, rawWeekOffset: number, se
   const todayDow = todayDowInTz(userTz)
 
   // ── Shared + web-specific parallel fetch ─────────────────────────────────
-  const [core, activePlansRaw, initialCalendarWeek] = await Promise.all([
+  const [core, activePlansRaw, initialCalendarWeek, userSubscription, firstFoodLog] = await Promise.all([
     fetchCoreDashboardData(userId, userTz),
     prisma.trainingPlan.findMany({
       where: { userId, status: 'ACTIVE' },
       orderBy: { createdAt: 'desc' },
+      take: 2,
       include: {
         weeks: {
           orderBy: { weekNumber: 'asc' },
@@ -194,9 +201,21 @@ export async function getDashboardData(userId: string, rawWeekOffset: number, se
       },
     }),
     buildCalendarWeek(userId, rawWeekOffset, userTz),
+    prisma.userSubscription.findUnique({
+      where: { userId },
+      select: { tier: true, trialEndsAt: true },
+    }),
+    prisma.foodLog.findFirst({
+      where: { userId },
+      select: { id: true },
+    }),
   ])
 
   const { dbUser, recentLogs, nutritionPlan, assignedWorkout: assignedWorkoutRaw, weeklyRoutine, recentGymSessions, coachRelation: coachRelationRaw, pendingSuggestionsCount, todayLog: todayLogRaw, todayFoodLogs, todayWaterLog } = core
+
+  const trialDaysLeft = userSubscription?.tier === 'TRIAL' && userSubscription?.trialEndsAt
+    ? Math.max(0, Math.ceil((userSubscription.trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    : null
 
   // ── Plan lifecycle (dedup + expiration) — shared with Plan page ────────
   const { activePlan: activePlanResolved, expiredSnapshot } = handlePlanLifecycle(activePlansRaw)
@@ -274,23 +293,28 @@ export async function getDashboardData(userId: string, rawWeekOffset: number, se
     prisma.sessionLog.findMany({
       where: { userId, plannedSessionId: null, completedAt: { gte: weekStart, lte: weekEnd } },
       select: { completedAt: true, freeSessionType: true },
+      take: 50,
     }),
     prisma.gymSession.findMany({
       where: { athleteId: userId, completed: true, date: { gte: weekStart, lte: weekEnd } },
       orderBy: { date: 'asc' },
       select: { date: true, assignedWorkout: { select: { template: { select: { name: true } } } } },
+      take: 50,
     }),
     prisma.sessionLog.findMany({
       where: { userId, plannedSessionId: null, completedAt: { gte: prevWeekStart, lte: prevWeekEnd } },
       select: { completedAt: true },
+      take: 50,
     }),
     prisma.gymSession.findMany({
       where: { athleteId: userId, completed: true, date: { gte: prevWeekStart, lte: prevWeekEnd } },
       select: { date: true },
+      take: 50,
     }),
     prisma.foodLog.findMany({
       where: { userId, date: { gte: weekStart, lte: weekEnd } },
       select: { date: true, kcalLogged: true },
+      take: 200,
     }),
   ])
 
@@ -547,5 +571,9 @@ export async function getDashboardData(userId: string, rawWeekOffset: number, se
     initialWater: buildWaterData(todayWaterLog, nutritionPlan),
 
     initialMealSlotLogs: computeMealSlotLogs(todayFoodLogs),
+
+    trialDaysLeft,
+
+    hasAnyFoodLog: !!firstFoodLog,
   }
 }

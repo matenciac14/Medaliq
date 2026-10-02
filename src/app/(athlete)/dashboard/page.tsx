@@ -15,6 +15,9 @@ import MobileCardsSection from './_components/MobileCardsSection'
 import DesktopRecentActivity from './_components/DesktopRecentActivity'
 import MealSlotsWidget from './_components/MealSlotsWidget'
 import HydrationWidget from '../nutrition/_components/HydrationWidget'
+import TrialCountdownBanner from './_components/TrialCountdownBanner'
+import WelcomeNutritionCard from './_components/WelcomeNutritionCard'
+import FirstWorkoutCard from './_components/FirstWorkoutCard'
 
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ weekOffset?: string }> }) {
   const session = await auth()
@@ -44,6 +47,24 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       </div>
 
       <div className="px-4 lg:px-0 sm:space-y-5 space-y-4">
+
+      {/* Trial countdown banner */}
+      {d.trialDaysLeft != null && d.trialDaysLeft >= 0 && (
+        <TrialCountdownBanner daysLeft={d.trialDaysLeft} />
+      )}
+
+      {/* Welcome cards — first-time user */}
+      {!d.hasAnyFoodLog && d.dashSummary.nutritionTarget && (
+        <div className="space-y-3">
+          <WelcomeNutritionCard
+            kcal={d.dashSummary.nutritionTarget.kcal}
+            proteinG={d.dashSummary.nutritionTarget.proteinG}
+            carbsG={d.dashSummary.nutritionTarget.carbsG}
+            fatG={d.dashSummary.nutritionTarget.fatG}
+          />
+          <FirstWorkoutCard />
+        </div>
+      )}
 
       {/* Pending check-in suggestions banner */}
       {d.pendingSuggestionsCount > 0 && (
@@ -185,6 +206,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             } : null}
             checkinPending={d.checkinPending}
             hasActivePlan={!!d.activePlanId}
+            hasAnyFoodLog={d.hasAnyFoodLog}
           />
 
           {/* Desktop: Info banner row */}

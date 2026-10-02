@@ -17,6 +17,7 @@ type LogEntry = {
 type Props = {
   open: boolean
   onClose: () => void
+  onAddFood?: () => void
 }
 
 const MEAL_LABELS: Record<string, string> = {
@@ -24,7 +25,7 @@ const MEAL_LABELS: Record<string, string> = {
   SNACK: 'Merienda', PRE_WORKOUT: 'Pre-entreno', POST_WORKOUT: 'Post-entreno',
 }
 
-export default function ConsumedModal({ open, onClose }: Props) {
+export default function ConsumedModal({ open, onClose, onAddFood }: Props) {
   const router = useRouter()
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [loading, setLoading] = useState(true)
@@ -137,7 +138,15 @@ export default function ConsumedModal({ open, onClose }: Props) {
         {/* Footer CTA */}
         <div className="px-5 py-4 border-t border-gray-100">
           <button
-            onClick={onClose}
+            onClick={() => {
+              onClose()
+              if (onAddFood) {
+                onAddFood()
+              } else {
+                const el = document.getElementById('tracking') ?? document.getElementById('tracking-mobile')
+                el?.scrollIntoView({ behavior: 'smooth' })
+              }
+            }}
             className="w-full h-12 rounded-xl bg-[#1e3a5f] text-white text-sm font-bold hover:bg-[#162d4a] transition-colors"
           >
             + Agregar comida

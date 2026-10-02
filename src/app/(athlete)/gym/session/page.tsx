@@ -351,6 +351,17 @@ export default function GymSessionPage() {
   const [freeExercises, setFreeExercises] = useState<FreeExercise[]>([])
   const [newExerciseName, setNewExerciseName] = useState('')
 
+  // exercise swap state
+  const [exerciseOverrides, setExerciseOverrides] = useState<{
+    originalWorkoutExerciseId: string
+    replacedWithExerciseId: string
+    replacedExerciseName: string
+    reason: string
+  }[]>([])
+  const [swapTarget, setSwapTarget] = useState<{ weId: string; exerciseId: string } | null>(null)
+  const [swapResults, setSwapResults] = useState<PickerExercise[]>([])
+  const [swapLoading, setSwapLoading] = useState(false)
+
   // exercise picker
   const [showPicker, setShowPicker] = useState(false)
   const [pickerQuery, setPickerQuery] = useState('')
@@ -500,6 +511,47 @@ export default function GymSessionPage() {
     : sessionData?.exercises.length === 0
       || sessionData?.exercises.every((we) => setsMap[we.id]?.some((s) => s.completed)) === true
 
+  const openSwapModal = useCallback(async (weId: string, exerciseId: string) => {
+    setSwapTarget({ weId, exerciseId })
+    setSwapLoading(true)
+    try {
+      const res = await fetch(`/api/exercises/${exerciseId}/similar?limit=6`)
+      const data = await res.json()
+      setSwapResults(data.exercises ?? [])
+    } finally {
+      setSwapLoading(false)
+    }
+  }, [])
+
+  const confirmSwap = useCallback((newExercise: PickerExercise) => {
+    if (!swapTarget || !sessionData) return
+
+    setExerciseOverrides(prev => [
+      ...prev.filter(o => o.originalWorkoutExerciseId !== swapTarget.weId),
+      {
+        originalWorkoutExerciseId: swapTarget.weId,
+        replacedWithExerciseId: newExercise.id,
+        replacedExerciseName: newExercise.name,
+        reason: 'ATHLETE_SWAP',
+      },
+    ])
+
+    setSessionData(prev => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        exercises: prev.exercises.map(we =>
+          we.id === swapTarget.weId
+            ? { ...we, exercise: { ...we.exercise, id: newExercise.id, name: newExercise.name, gif: newExercise.gif, description: null, tips: null } }
+            : we
+        ),
+      }
+    })
+
+    setSwapTarget(null)
+    setSwapResults([])
+  }, [swapTarget, sessionData])
+
   const handleComplete = useCallback(async (data: { rpe: number; durationMin: number; notes: string; energyState?: EnergyState; discomfort?: Discomfort }) => {
     const { rpe, durationMin, notes, energyState, discomfort } = data
     if (!sessionData) return
@@ -556,6 +608,7 @@ export default function GymSessionPage() {
           discomfort,
           notes,
           sets,
+          exerciseOverrides: exerciseOverrides.length > 0 ? exerciseOverrides : undefined,
         }),
       })
 
@@ -572,7 +625,7 @@ export default function GymSessionPage() {
       setSubmitting(false)
       alert('Error al guardar la sesión. Intenta de nuevo.')
     }
-  }, [sessionData, setsMap, router])
+  }, [sessionData, setsMap, router, exerciseOverrides])
 
   if (!authSession?.user?.features?.gym) {
     return (
@@ -752,6 +805,9 @@ export default function GymSessionPage() {
                 <div className="flex-1 min-w-0">
                   <p className={`font-semibold text-sm truncate ${allDone ? 'text-green-700' : 'text-gray-900'}`}>
                     {we.exercise.name}
+                    {exerciseOverrides.some(o => o.originalWorkoutExerciseId === we.id) && (
+                      <span className="ml-1.5 text-[10px] font-medium text-[#ea580c] bg-orange-50 px-1.5 py-0.5 rounded">sustitución</span>
+                    )}
                   </p>
                   <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                     <span className="text-xs text-gray-500">{we.sets} series · {we.repsScheme} reps</span>
@@ -790,6 +846,17 @@ export default function GymSessionPage() {
                       {we.exercise.description && <p>{we.exercise.description}</p>}
                       {we.exercise.tips && <p className="text-[#1e3a5f] font-medium">💡 {we.exercise.tips}</p>}
                     </div>
+                  )}
+
+                  {/* Swap exercise button */}
+                  {!sessionData.freeSession && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); openSwapModal(we.id, we.exercise.id) }}
+                      className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-[#ea580c] transition-colors"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 3l4 4-4 4"/><path d="M20 7H4"/><path d="M8 21l-4-4 4-4"/><path d="M4 17h16"/></svg>
+                      Cambiar ejercicio
+                    </button>
                   )}
 
                   {/* Reps scheme guide */}
@@ -1040,6 +1107,56 @@ export default function GymSessionPage() {
             )
           })}
         </div>
+      )}
+
+      {/* Swap exercise modal */}
+      {swapTarget && createPortal(
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[80vh]">
+            <div className="px-5 pt-5 pb-3 border-b border-gray-100 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-gray-900">Cambiar ejercicio</h3>
+                <p className="text-xs text-gray-500 mt-0.5">Alternativas similares</p>
+              </div>
+              <button
+                onClick={() => { setSwapTarget(null); setSwapResults([]) }}
+                className="text-gray-400 hover:text-gray-700 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 py-2">
+              {swapLoading && (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 size={20} className="animate-spin text-gray-400" />
+                </div>
+              )}
+              {!swapLoading && swapResults.length === 0 && (
+                <p className="text-sm text-gray-400 text-center py-8">No se encontraron alternativas</p>
+              )}
+              {swapResults.map((ex) => (
+                <button
+                  key={ex.id}
+                  onClick={() => confirmSwap(ex)}
+                  className="w-full flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors text-left"
+                >
+                  {ex.gif ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={ex.gif} alt={ex.name} className="w-10 h-10 rounded-lg object-contain bg-gray-100 shrink-0" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-lg bg-gray-100 shrink-0" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 truncate">{ex.name}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{ex.bodyPart}</p>
+                  </div>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ea580c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M16 3l4 4-4 4"/><path d="M20 7H4"/></svg>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
 
       {/* Cardio notes */}
