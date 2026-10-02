@@ -29,6 +29,7 @@ export async function GET(
       where: { userId: athleteId, date: { gte: twentyEightDaysAgo } },
       select: { date: true, kcalLogged: true, grams: true, food: { select: { kcalPer100g: true } } },
       orderBy: { date: 'asc' },
+      take: 500,
     }),
     prisma.nutritionPlan.findUnique({
       where: { userId: athleteId },
@@ -44,7 +45,7 @@ export async function GET(
           select: {
             days: {
               include: {
-                meals: { include: { items: true } },
+                meals: { include: { items: { select: { kcal: true, proteinG: true, carbsG: true, fatG: true } } } },
               },
             },
           },

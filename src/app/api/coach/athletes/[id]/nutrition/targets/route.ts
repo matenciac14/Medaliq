@@ -3,6 +3,7 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import { z } from 'zod'
 import { calculateTDEE, calculateMacros, KCAL_ADJUSTMENT_MIN, KCAL_ADJUSTMENT_MAX } from '@/domain/plan/formulas'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 const Schema = z.object({
   targetKcalHard: z.number().int().min(500).max(10000).optional(),
@@ -20,6 +21,10 @@ export async function PATCH(
   if (!session?.user?.id || session.user.role !== 'COACH') {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
+
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:nutrition-targets-patch`, { limit: 60, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
+
 
   const { id: athleteId } = await params
 

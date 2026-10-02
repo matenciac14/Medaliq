@@ -3,6 +3,7 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import { z } from 'zod'
 import { getSessionIntensity } from '@/domain/plan/intensity'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 // ── Validation ────────────────────────────────────────────────────────────────
 
@@ -45,6 +46,9 @@ export async function POST(
   const session = await auth()
   if (!session?.user?.id || session.user.role !== 'COACH')
     return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
+
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:athlete-sessions-post`, { limit: 60, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
 
   const { id: athleteId } = await params
   const coachId = session.user.id

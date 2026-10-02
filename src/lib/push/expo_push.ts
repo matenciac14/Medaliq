@@ -32,5 +32,6 @@ export async function sendPushNotification(
       Accept: 'application/json',
     },
     body: JSON.stringify(message),
+    signal: AbortSignal.timeout(5_000),
   })
 }

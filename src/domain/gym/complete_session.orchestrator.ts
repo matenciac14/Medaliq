@@ -174,14 +174,14 @@ export async function completeGymSession(
 
   // Helper: fire-and-forget side effects
   function fireNotifications(newPRs: PRRecord[], sessionLabel: string) {
-    notifyCoach(athleteId, athleteName, sessionLabel, prisma).catch(() => {})
+    notifyCoach(athleteId, athleteName, sessionLabel, prisma).catch((err) => console.error('[gym/complete_session] notifyCoach failed:', err))
     if (newPRs.length > 0) {
       createNotification(
         athleteId,
         'LOGRO',
         '¡Nuevo récord personal!',
         `Lograste ${newPRs.length} PR${newPRs.length > 1 ? 's' : ''} en tu sesión de hoy. ¡Sigue así!`,
-      ).catch(() => {})
+      ).catch((err) => console.error('[gym/complete_session] createNotification PR failed:', err))
     }
   }
 
@@ -240,7 +240,7 @@ export async function completeGymSession(
     const newPRs = collectPRsByWeId(sets, weNameMap, weExIdMap, maxPerExercise)
 
     // DAT-5: autoComplete only on plan-based path
-    autoCompleteStrengthSession({ athleteId, rpe, durationMin, notes }).catch(() => {})
+    autoCompleteStrengthSession({ athleteId, rpe, durationMin, notes }).catch((err) => console.error('[gym/complete_session] autoCompleteStrengthSession failed:', err))
     persistProgression(sets)
     fireNotifications(newPRs, 'Sesión de fuerza completada 💪')
 
@@ -337,5 +337,5 @@ async function notifyCoach(athleteId: string, athleteName: string | null, sessio
   })
   if (!relation?.coach.pushToken) return
   const name = athleteName ?? 'Tu atleta'
-  sendPushNotification(relation.coach.pushToken, `${name} completó una sesión`, sessionLabel, { screen: 'coach' }).catch(() => {})
+  sendPushNotification(relation.coach.pushToken, `${name} completó una sesión`, sessionLabel, { screen: 'coach' }).catch((err) => console.error('[gym/complete_session] sendPushNotification to coach failed:', err))
 }

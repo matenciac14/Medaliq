@@ -283,7 +283,7 @@ export async function generatePlanUseCase(
       sport: { type: sportType, goal: sportGoal },
     }),
     // Persiste hrMax calculado (Fox) en HealthProfile — fuente canónica para todas las vistas
-    deps.db.healthProfile.update({ where: { userId: input.userId }, data: { hrMax } }).catch(() => {}),
+    deps.db.healthProfile.update({ where: { userId: input.userId }, data: { hrMax } }).catch((err) => console.error('[generate_plan] hrMax persist failed', err)),
   ])
 
   return { planId, hrZones, hrMax, tdee }

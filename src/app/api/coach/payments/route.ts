@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 // GET /api/coach/payments — todos los pagos del coach (con info del atleta)
 export async function GET(_req: NextRequest) {
@@ -13,6 +14,7 @@ export async function GET(_req: NextRequest) {
     where: { coachId: session.user.id },
     include: { athlete: { select: { id: true, name: true, email: true } } },
     orderBy: [{ status: 'asc' }, { dueDate: 'desc' }],
+    take: 500,
   })
 
   return NextResponse.json({ payments })
@@ -24,6 +26,9 @@ export async function POST(req: NextRequest) {
   if (!session?.user?.id || session.user.role !== 'COACH') {
     return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
   }
+
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:payments-post`, { limit: 60, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
 
   const body = await req.json() as {
     athleteId?: string

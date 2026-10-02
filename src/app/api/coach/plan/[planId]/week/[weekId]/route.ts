@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import { Phase } from '@/generated/prisma/enums'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 const VALID_PHASES = new Set<string>(Object.values(Phase))
 
@@ -12,6 +13,9 @@ export async function PATCH(
   const session = await auth()
   if (!session?.user?.id || session.user.role !== 'COACH')
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:plan-week-patch`, { limit: 60, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
 
   const { planId, weekId } = await params
   const coachId = session.user.id

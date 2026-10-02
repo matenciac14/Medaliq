@@ -35,6 +35,7 @@ export async function GET(req: NextRequest) {
       code,
       grant_type:    'authorization_code',
     }),
+    signal: AbortSignal.timeout(5_000),
   })
 
   if (!tokenRes.ok) {

@@ -79,6 +79,7 @@ async function createPaymentLink(
       Authorization: `Bearer ${privateKey}`,
     },
     body: JSON.stringify(body),
+    signal: AbortSignal.timeout(10_000),
   })
 
   if (!res.ok) {

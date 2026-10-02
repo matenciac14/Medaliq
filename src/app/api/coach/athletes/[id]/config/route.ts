@@ -1,5 +1,6 @@
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 // /config maneja solo metadatos del coach sobre el atleta: goal y notas privadas.
 // Para activar o pausar un atleta usar PATCH /api/coach/athletes/[id]/status.
@@ -9,6 +10,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (!session?.user?.id || session.user.role !== 'COACH') {
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:athlete-config-patch`, { limit: 60, windowMs: 60_000 })
+  if (!allowed) return Response.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
 
   const { id: athleteId } = await params
 

@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
   })
 
   const senderName = mobile.name ?? 'Tu atleta'
-  sendPushNotification(recipient?.pushToken, `Mensaje de ${senderName}`, content.trim(), { screen: 'messages' }).catch(() => {})
+  sendPushNotification(recipient?.pushToken, `Mensaje de ${senderName}`, content.trim(), { screen: 'messages' }).catch((err) => console.error('[mobile/messages] sendPushNotification failed:', err))
 
   // PLT-11: crear registro de notificación in-app (push ya enviado arriba)
   createNotification(
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
     `Mensaje de ${senderName}`,
     content.trim().slice(0, 120),
     { push: false, metadata: { fromId: mobile.id } },
-  ).catch(() => {})
+  ).catch((err) => console.error('[mobile/messages] createNotification failed:', err))
 
   return NextResponse.json({ message }, { status: 201 })
 }

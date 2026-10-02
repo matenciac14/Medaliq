@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import { getSessionIntensity } from '@/domain/plan/intensity'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 /**
  * POST /api/coach/sessions/[sessionId]/copy-to
@@ -18,6 +19,9 @@ export async function POST(
   const auth_ = await auth()
   if (!auth_?.user?.id || auth_.user.role !== 'COACH')
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { allowed } = await rateLimitAsync(`coach-${auth_.user.id}:sessions-copy-to`, { limit: 60, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
 
   const coachId = auth_.user.id
   const { sessionId } = await params

@@ -63,7 +63,7 @@ export async function GET(req: NextRequest) {
           athlete.pushToken,
           '¿Todo bien? 💪',
           `Llevas ${daysSince} días sin registrar actividad. Tu plan te espera.`,
-        ).catch(() => {})
+        ).catch((err) => console.error('[cron/inactive-athlete-reminder] sendPushNotification failed:', err))
       }
       if (athlete.email) {
         await sendReengagementEmail(athlete.email, athlete.name ?? 'Atleta', daysSince)

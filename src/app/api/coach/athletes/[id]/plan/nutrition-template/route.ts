@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import { z } from 'zod'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 const Schema = z.object({
   nutritionTemplateId: z.string().min(1).nullable(),
@@ -16,6 +17,9 @@ export async function PATCH(
   if (!session?.user?.id || session.user.role !== 'COACH') {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
+
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:plan-nutrition-template-patch`, { limit: 60, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
 
   const coachId = session.user.id
   const { id: athleteId } = await params

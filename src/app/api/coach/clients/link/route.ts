@@ -2,12 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import { sendAthleteCoachAssignedEmail } from '@/infrastructure/email/resend'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 export async function POST(req: NextRequest) {
   const session = await auth()
   if (!session?.user?.id || session.user.role !== 'COACH') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:clients-link`, { limit: 30, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
 
   const coachId = session.user.id
   const { athleteId } = (await req.json()) as { athleteId: string }
@@ -56,7 +60,7 @@ export async function POST(req: NextRequest) {
   }
 
   const loginUrl = `${process.env.NEXTAUTH_URL ?? 'https://medaliq.com'}/login`
-  sendAthleteCoachAssignedEmail(athlete.email!, athlete.name!, session.user.name ?? 'Tu coach', loginUrl).catch(() => {})
+  sendAthleteCoachAssignedEmail(athlete.email!, athlete.name!, session.user.name ?? 'Tu coach', loginUrl).catch((err) => console.error('[coach/clients/link] sendAthleteCoachAssignedEmail failed:', err))
 
   return NextResponse.json({
     ok: true,

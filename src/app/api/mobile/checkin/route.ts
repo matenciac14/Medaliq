@@ -3,13 +3,13 @@ import { getMobileUser } from '@/lib/auth/mobile_auth'
 import { rateLimitAsync } from '@/lib/rate_limit'
 import { prisma } from '@/lib/db/prisma'
 import { processCheckIn } from '@/domain/checkin/process_check_in.use_case'
+import { getCheckInStatus } from '@/domain/checkin/get_check_in_status.use_case'
 import { PrismaCheckInRepository } from '@/infrastructure/db/checkin.repository'
 import { PrismaPlanRepository } from '@/infrastructure/db/plan.repository'
 import { PrismaHealthProfileRepository } from '@/infrastructure/db/health_profile.repository'
 import { PrismaUserRepository } from '@/infrastructure/db/user.repository'
 import { unauthorized, ok, serverError, badRequest } from '@/lib/api/responses'
 import { requireFeature } from '@/lib/guards/feature_gate'
-import { getPlanWeekNumber, getCurrentISOWeek } from '@/lib/core/week_number'
 import { sendPlanUpdatedEmail, sendCoachCheckInEmail } from '@/infrastructure/email/resend'
 import { mapMobileCheckinBody } from '@/lib/api/checkin_mapper'
 import { z } from 'zod'
@@ -40,78 +40,8 @@ export async function GET(req: NextRequest) {
   if (!rlOk) return NextResponse.json({ error: 'Demasiadas solicitudes. Intenta en un minuto.' }, { status: 429 })
 
   try {
-    const plan = await prisma.trainingPlan.findFirst({
-      where: { userId: mobile.id, status: 'ACTIVE' },
-      orderBy: { createdAt: 'desc' },
-      select: {
-        startDate: true,
-        totalWeeks: true,
-        weeks: {
-          select: {
-            weekNumber: true,
-            sessions: {
-              select: {
-                dayOfWeek: true,
-                type: true,
-                log: { select: { id: true } },
-              },
-            },
-          },
-          orderBy: { weekNumber: 'asc' },
-        },
-      },
-    })
-
-    const weekNumber = plan
-      ? getPlanWeekNumber(plan.startDate, plan.totalWeeks)
-      : getCurrentISOWeek()
-
-    const [existing, pendingSuggestions, healthProfile] = await Promise.all([
-      prisma.weeklyCheckIn.findFirst({
-        where: { userId: mobile.id, weekNumber },
-        select: {
-          id: true,
-          weightKg: true,
-          hrResting: true,
-          sleepHours: true,
-          sleepScore: true,
-          energyLevel: true,
-          stressLevel: true,
-          motivationLevel: true,
-          hardestSessionRpe: true,
-          painLevel: true,
-          notes: true,
-          recordedAt: true,
-        },
-      }),
-      prisma.checkInSuggestion.findMany({
-        where: { userId: mobile.id, status: 'PENDING', expiresAt: { gt: new Date() } },
-        select: { id: true, type: true, title: true, description: true, expiresAt: true },
-        orderBy: { createdAt: 'desc' },
-      }),
-      prisma.healthProfile.findUnique({
-        where: { userId: mobile.id },
-        select: { weightKg: true, hrResting: true },
-      }),
-    ])
-
-    // Week sessions for adherence dots
-    const currentWeekData = plan?.weeks.find((w) => w.weekNumber === weekNumber)
-    const weekSessions = currentWeekData?.sessions
-      .filter((s) => s.type !== 'DESCANSO')
-      .map((s) => ({ dayOfWeek: s.dayOfWeek, completed: !!s.log })) ?? []
-
-    const hasAutoData = !!(healthProfile?.weightKg || healthProfile?.hrResting)
-
-    return ok({
-      submitted: !!existing,
-      weekNumber,
-      totalWeeks: plan?.totalWeeks ?? null,
-      weekSessions,
-      hasAutoData,
-      data: existing ?? null,
-      pendingSuggestions,
-    })
+    const result = await getCheckInStatus(mobile.id, prisma)
+    return ok(result)
   } catch (err) {
     console.error('[mobile/checkin GET]', err)
     return serverError()
@@ -150,7 +80,7 @@ export async function POST(req: NextRequest) {
     )
 
     if (result.adjustments.length > 0) {
-      sendPlanUpdatedEmail(mobile.email, mobile.name, result.adjustments).catch(() => {})
+      sendPlanUpdatedEmail(mobile.email, mobile.name, result.adjustments).catch((err) => console.error('[mobile/checkin] sendPlanUpdatedEmail failed:', err))
     }
 
     // Notify coach (fire-and-forget, B2B athletes only)
@@ -165,7 +95,7 @@ export async function POST(req: NextRequest) {
           weightKg:    body.weightKg,
         })
       }
-    }).catch(() => {})
+    }).catch((err) => console.error('[mobile/checkin] sendCoachCheckInEmail failed:', err))
 
     const suggestions = result.pendingSuggestions > 0
       ? await prisma.checkInSuggestion.findMany({

@@ -26,6 +26,7 @@ export class BancoRepublicaTrmAdapter implements ITrmProvider {
       headers: { Accept: 'application/json' },
       // next.js cache: no almacenar — siempre fresco en el cron
       cache: 'no-store',
+      signal: AbortSignal.timeout(10_000),
     })
 
     if (!res.ok) {

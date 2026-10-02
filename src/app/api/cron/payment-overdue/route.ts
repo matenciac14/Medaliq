@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
       // Registrar audit log por cada pago recordado (fire-and-forget, no bloquea el cron)
       prisma.paymentAuditLog.createMany({
         data: items.map(i => ({ paymentId: i.id, action: 'REMINDED', actorId: coachId })),
-      }).catch(() => {})
+      }).catch((err) => console.error('[cron/payment-overdue] paymentAuditLog.createMany failed:', err))
       sent++
     } catch {
       failed++

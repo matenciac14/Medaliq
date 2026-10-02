@@ -7,6 +7,7 @@ import { prisma } from '@/lib/db/prisma'
 import { MealType, NutritionDayType } from '@/generated/prisma/enums'
 import { z } from 'zod'
 import { getIntensityMapForDateRange } from '@/lib/nutrition/get_intensity_for_date'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 const bodySchema = z.object({
   weekStartDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato YYYY-MM-DD requerido'),
@@ -26,6 +27,9 @@ export async function POST(
   if (!session?.user?.id || session.user.role !== 'COACH') {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
+
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:nutrition-apply-template`, { limit: 30, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
 
   const { id: athleteId } = await params
 

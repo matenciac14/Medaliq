@@ -63,7 +63,7 @@ export async function GET(req: NextRequest) {
         `${athleteName} espera activación`,
         `Lleva ${hoursPending}h en tu panel sin acceso al plan. Actívalo ahora.`,
         { screen: `athlete-${rel.athleteId}` },
-      ).catch(() => {})
+      ).catch((err) => console.error('[cron/pending-athlete-reminder] sendPushNotification failed:', err))
 
       notified++
     } catch {

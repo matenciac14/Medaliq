@@ -5,6 +5,7 @@ import { PrismaUserRepository } from '@/infrastructure/db/user.repository'
 import { configToAthleteFeatures } from '@/domain/subscription/tier_features'
 import { getTierFeatureConfig } from '@/infrastructure/db/tier_feature_config.repository'
 import { sendPushNotification } from '@/lib/push/expo_push'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 // B2B-01: Al activar → features de tipo B2B según TierFeatureConfig (configurable por admin).
 // Al pausar → features de tipo B2C_FREE (configurable por admin).
@@ -18,6 +19,9 @@ export async function PATCH(
   if (!session?.user?.id || session.user.role !== 'COACH') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:athlete-status-patch`, { limit: 30, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
 
   const { id: athleteId } = await params
   const { status } = await req.json() as { status: 'ACTIVE' | 'PAUSED' }
@@ -56,7 +60,7 @@ export async function PATCH(
         : 'Sigues usando Medaliq en modo básico.'
       return sendPushNotification(athlete.pushToken, title, body, { type: 'features_updated' })
     })
-    .catch(() => {})
+    .catch((err) => console.error('[coach/athletes/status] sendPushNotification failed:', err))
 
   return NextResponse.json({ ok: true, status })
 }

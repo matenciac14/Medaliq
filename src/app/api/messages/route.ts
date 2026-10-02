@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
   })
 
   const senderName = session.user.name ?? 'Tu coach'
-  sendPushNotification(recipient.pushToken, `Mensaje de ${senderName}`, content.trim(), { screen: 'messages' }).catch(() => {})
+  sendPushNotification(recipient.pushToken, `Mensaje de ${senderName}`, content.trim(), { screen: 'messages' }).catch((err) => console.error('[messages] sendPushNotification failed:', err))
 
   // PLT-11: crear registro de notificación in-app (push ya enviado arriba)
   createNotification(
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
     `Mensaje de ${senderName}`,
     content.trim().slice(0, 120),
     { push: false, metadata: { fromId } },
-  ).catch(() => {})
+  ).catch((err) => console.error('[messages] createNotification failed:', err))
 
   return NextResponse.json({ message }, { status: 201 })
 }

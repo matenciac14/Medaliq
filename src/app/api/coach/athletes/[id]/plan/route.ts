@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
-import { generatePlanUseCase } from '@/domain/plan/generate_plan.use_case'
-import { PLAN_TEMPLATES } from '@/domain/plan/templates'
-import { PrismaPlanRepository } from '@/infrastructure/db/plan.repository'
-import { PrismaUserRepository } from '@/infrastructure/db/user.repository'
-
-const VALID_GOAL_TYPES = Object.keys(PLAN_TEMPLATES)
-const VALID_DAYS_PER_WEEK = [3, 4, 5, 6] as const
+import { generateCoachPlanUseCase, generateCoachPlanSchema } from '@/domain/plan/generate_coach_plan.use_case'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 export async function POST(
   req: NextRequest,
@@ -18,85 +13,26 @@ export async function POST(
     return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
   }
 
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:athlete-plan-post`, { limit: 30, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
+
   const { id: athleteId } = await params
-  const coachId = session.user.id
-
-  const relation = await prisma.coachAthlete.findFirst({
-    where: { coachId, athleteId, status: 'ACTIVE' },
-  })
-  if (!relation) {
-    return NextResponse.json({ error: 'Asesorado no encontrado.' }, { status: 404 })
-  }
-
   const body = await req.json()
-  const { goalType, daysPerWeek, hoursPerSession } = body
 
-  if (!goalType) {
-    return NextResponse.json({ error: 'goalType es requerido.' }, { status: 400 })
-  }
-  if (!VALID_GOAL_TYPES.includes(goalType)) {
-    return NextResponse.json({ error: `goalType inválido. Válidos: ${VALID_GOAL_TYPES.join(', ')}` }, { status: 400 })
-  }
-  if (daysPerWeek !== undefined && !VALID_DAYS_PER_WEEK.includes(daysPerWeek)) {
-    return NextResponse.json({ error: 'daysPerWeek debe ser 3, 4, 5 o 6.' }, { status: 400 })
-  }
-  if (hoursPerSession !== undefined && (typeof hoursPerSession !== 'number' || hoursPerSession < 0.5 || hoursPerSession > 3)) {
-    return NextResponse.json({ error: 'hoursPerSession debe estar entre 0.5 y 3.' }, { status: 400 })
+  const parsed = generateCoachPlanSchema.safeParse({ coachId: session.user.id, athleteId, ...body })
+  if (!parsed.success) {
+    const message = parsed.error.issues[0]?.message ?? 'Datos inválidos.'
+    return NextResponse.json({ error: message }, { status: 400 })
   }
 
-  // Load athlete health profile for plan generation
-  const athlete = await prisma.user.findUnique({
-    where: { id: athleteId },
-    include: { profile: true },
-  })
-
-  const profile = athlete?.profile
-
-  if (!profile) {
-    return NextResponse.json(
-      { error: 'El atleta no tiene perfil físico. Completa el onboarding antes de generar un plan.' },
-      { status: 400 }
-    )
+  try {
+    const result = await generateCoachPlanUseCase(parsed.data, prisma)
+    return NextResponse.json(result)
+  } catch (err: unknown) {
+    const e = err as { status?: number; message?: string }
+    if (e?.status && e?.message) {
+      return NextResponse.json({ error: e.message }, { status: e.status })
+    }
+    throw err
   }
-
-  // Look for a recent 5K benchmark to calibrate pace hints in running sessions
-  const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
-  const benchmark5K = await prisma.performanceBenchmark.findFirst({
-    where: {
-      userId: athleteId,
-      sport: 'RUNNING',
-      metric: '5K_TIME',
-      testedAt: { gte: ninetyDaysAgo },
-    },
-    orderBy: { testedAt: 'desc' },
-    select: { value: true },
-  })
-
-  const result = await generatePlanUseCase(
-    {
-      userId: athleteId,
-      goalType,
-      daysPerWeek: daysPerWeek ?? 4,
-      hoursPerSession: hoursPerSession ?? 1,
-      age: profile.age ?? 30,
-      heightCm: profile.heightCm ?? 170,
-      weightKg: profile.weightKg ?? 70,
-      gender: (profile.gender ?? 'male') as 'male' | 'female',
-      hrResting: profile.hrResting ?? undefined,
-      hrMax: profile.hrMax ?? undefined,
-      injuries: (profile?.injuries as string[]) ?? [],
-      conditions: (profile?.conditions as string[]) ?? [],
-      nutritionCommitment: 'moderate',
-      weightGoalKg: profile?.weightGoalKg ?? undefined,
-      generatedBy: 'COACH',
-      recentBenchmark5KSecs: benchmark5K ? Number(benchmark5K.value) : undefined,
-    },
-    {
-      db: prisma,
-      planRepo: new PrismaPlanRepository(),
-      userRepo: new PrismaUserRepository(),
-    },
-  )
-
-  return NextResponse.json({ success: true, planId: result.planId })
 }

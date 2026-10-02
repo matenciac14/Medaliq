@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
 
   if (coachRelation?.coach.pushToken) {
     const name = coachRelation.athlete.name ?? 'Tu atleta'
-    sendPushNotification(coachRelation.coach.pushToken, `${name} completó una sesión`, 'Sesión registrada 🏃', { screen: 'coach' }).catch(() => {})
+    sendPushNotification(coachRelation.coach.pushToken, `${name} completó una sesión`, 'Sesión registrada 🏃', { screen: 'coach' }).catch((err) => console.error('[athlete/log/session] sendPushNotification to coach failed:', err))
   }
 
   // ── Sugerencia nutricional informativa por intensidad real ────────────────
@@ -124,7 +124,7 @@ export async function POST(req: NextRequest) {
             adj.deltaKcal > 0
               ? `Tu sesión fue más intensa de lo planificado. Tu cuerpo necesita ~${adj.adjustedKcal} kcal y ~${adj.adjustedCarbsG}g de carbos para recuperarte bien.`
               : `Tu sesión fue más suave de lo planificado. Un target de ~${adj.adjustedKcal} kcal es suficiente para hoy.`,
-          ).catch(() => {})
+          ).catch((err) => console.error('[athlete/log/session] createNotification nutrition-suggestion failed:', err))
         }
       }
     } catch {

@@ -3,6 +3,7 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import { getSessionIntensity } from '@/domain/plan/intensity'
 import { createNotification } from '@/infrastructure/db/notification'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 const VALID_TYPES = [
   'RODAJE_Z2', 'FARTLEK', 'TEMPO', 'INTERVALOS', 'TIRADA_LARGA',
@@ -15,6 +16,9 @@ export async function PATCH(
 ) {
   const session = await auth()
   if (!session?.user?.id || session.user.role !== 'COACH') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:sessions-edit-patch`, { limit: 60, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
 
   const { sessionId } = await params
   const body = await req.json()
@@ -79,7 +83,7 @@ export async function PATCH(
     'Tu plan fue actualizado',
     'Tu coach modificó una sesión de tu plan de entrenamiento.',
     { metadata: { sessionId } },
-  ).catch(() => {})
+  ).catch((err) => console.error('[coach/sessions/edit] createNotification failed:', err))
 
   return NextResponse.json({ ok: true, session: updated })
 }
@@ -90,6 +94,9 @@ export async function DELETE(
 ) {
   const session = await auth()
   if (!session?.user?.id || session.user.role !== 'COACH') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:sessions-edit-delete`, { limit: 60, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
 
   const { sessionId } = await params
 
