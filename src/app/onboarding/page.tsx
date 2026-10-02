@@ -1,632 +1,403 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { MedaliqLogo } from '@/components/brand/MedaliqLogo'
-import { useRouter } from 'next/navigation'
-import { signOut, useSession } from 'next-auth/react'
-import {
-  WizardData,
-  INITIAL_DATA,
-  getSteps,
-  StepId,
-  ActivityType,
-  GymGoal,
-  RunningGoal,
-  ExperienceLevel,
-  isStepValid,
-} from './_types'
+import { useState } from 'react'
+import { Loader2 } from 'lucide-react'
+import type { WizardData, OnboardingGoal } from './_types'
+import { isStepValid } from './_types'
 
-// ---------------------------------------------------------------------------
-// UI helpers
-// ---------------------------------------------------------------------------
+const GOAL_OPTIONS: { value: OnboardingGoal; emoji: string; label: string; desc: string }[] = [
+  { value: 'LOSE_FAT', emoji: '🔥', label: 'Perder grasa', desc: 'Déficit calórico para bajar de peso' },
+  { value: 'GAIN_MUSCLE', emoji: '💪', label: 'Ganar músculo', desc: 'Superávit calórico' },
+  { value: 'STAY_HEALTHY', emoji: '⚡', label: 'Mantenerme saludable', desc: 'Comer bien' },
+]
 
-function cn(...classes: (string | false | null | undefined)[]) {
-  return classes.filter(Boolean).join(' ')
-}
+const GENDER_OPTIONS = [
+  { value: 'male' as const, label: 'Masculino' },
+  { value: 'female' as const, label: 'Femenino' },
+  { value: 'other' as const, label: 'Otro' },
+]
 
-function SelectCard({
-  selected,
-  onClick,
-  icon,
-  label,
-  subtext,
-}: {
-  selected: boolean
-  onClick: () => void
-  icon: string
-  label: string
-  subtext?: string
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'w-full text-left px-5 py-4 rounded-2xl border-2 transition-all duration-150 flex items-start gap-4',
-        selected
-          ? 'border-[#ea580c] bg-[#ea580c]/8'
-          : 'border-gray-200 bg-white hover:border-[#1e3a5f]/40'
-      )}
-    >
-      <span className="text-2xl leading-none mt-0.5">{icon}</span>
-      <span className="flex flex-col gap-0.5">
-        <span className={cn('font-semibold text-base', selected ? 'text-[#ea580c]' : 'text-[#1e3a5f]')}>
-          {label}
-        </span>
-        {subtext && <span className="text-sm text-gray-500">{subtext}</span>}
-      </span>
-      <span
-        className={cn(
-          'ml-auto w-5 h-5 rounded-full border-2 flex-shrink-0 mt-0.5 transition-colors',
-          selected ? 'border-[#ea580c] bg-[#ea580c]' : 'border-gray-300'
-        )}
-      >
-        {selected && (
-          <svg viewBox="0 0 20 20" fill="white" className="w-full h-full p-0.5">
-            <path
-              fillRule="evenodd"
-              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-              clipRule="evenodd"
-            />
-          </svg>
-        )}
-      </span>
-    </button>
-  )
-}
+const DAYS_OPTIONS = [2, 3, 4, 5, 6, 7]
 
-function PillBtn({
-  selected,
-  onClick,
-  label,
-}: {
-  selected: boolean
-  onClick: () => void
-  label: string
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'px-4 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all duration-150',
-        selected
-          ? 'border-[#ea580c] bg-[#ea580c] text-white'
-          : 'border-gray-200 bg-white text-[#1e3a5f] hover:border-[#1e3a5f]/40'
-      )}
-    >
-      {label}
-    </button>
-  )
-}
-
-function FieldLabel({ children, optional }: { children: React.ReactNode; optional?: boolean }) {
-  return (
-    <p className="text-sm font-medium text-[#1e3a5f] mb-1.5">
-      {children}
-      {optional && <span className="ml-1.5 text-xs text-gray-400 font-normal">opcional</span>}
-    </p>
-  )
-}
-
-function FieldInput(props: React.InputHTMLAttributes<HTMLInputElement> & { hasError?: boolean }) {
-  const { hasError, ...rest } = props
-  return (
-    <input
-      {...rest}
-      className={cn(
-        'w-full px-4 py-3 rounded-xl border-2 text-sm outline-none transition-colors bg-gray-50',
-        hasError ? 'border-red-400 focus:border-red-500' : 'border-gray-200 focus:border-[#1e3a5f]'
-      )}
-    />
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Step 1: Objetivo
-// ---------------------------------------------------------------------------
-
-function StepGoal({ data, update }: { data: WizardData; update: (d: Partial<WizardData>) => void }) {
-  const activities: { value: ActivityType; icon: string; label: string; subtext: string }[] = [
-    { value: 'RUNNING', icon: '🏃', label: 'Running', subtext: 'Correr, mejorar ritmo y resistencia' },
-    { value: 'GYM',     icon: '🏋️', label: 'Ejercicios', subtext: 'Gym, pesas y recomposición corporal' },
-  ]
-
-  const runningGoals: { value: RunningGoal; icon: string; label: string }[] = [
-    { value: 'GENERAL_FITNESS', icon: '💪', label: 'Fitness general' },
-    { value: 'RACE_5K',         icon: '🏅', label: 'Carrera 5K' },
-    { value: 'RACE_10K',        icon: '🏅', label: 'Carrera 10K' },
-  ]
-
-  const gymGoals: { value: GymGoal; icon: string; label: string }[] = [
-    { value: 'MUSCLE_GAIN',   icon: '📈', label: 'Ganar músculo' },
-    { value: 'FAT_LOSS',      icon: '🔥', label: 'Perder grasa' },
-    { value: 'RECOMPOSITION', icon: '⚖️', label: 'Los dos (recomposición)' },
-  ]
-
-  const showRunningGoal = data.activityType === 'RUNNING' || data.activityType === 'BOTH'
-  const showGymGoal = data.activityType === 'GYM' || data.activityType === 'BOTH'
-
-  return (
-    <div className="flex flex-col gap-3">
-      <h2 className="text-2xl font-bold text-[#1e3a5f] mb-1">¿Cómo quieres entrenar?</h2>
-      <p className="text-gray-500 text-sm mb-4">Medaliq se adapta a tu forma de entrenar — sin obligarte a seguir un plan.</p>
-
-      {activities.map((a) => (
-        <SelectCard
-          key={a.value}
-          selected={data.activityType === a.value}
-          onClick={() => update({ activityType: a.value, gymGoal: null, runningGoal: null })}
-          icon={a.icon}
-          label={a.label}
-          subtext={a.subtext}
-        />
-      ))}
-
-      {showRunningGoal && (
-        <SubGoalPanel title="¿Cuál es tu meta en running?">
-          {runningGoals.map((g) => (
-            <SubGoalButton
-              key={g.value}
-              icon={g.icon}
-              label={g.label}
-              selected={data.runningGoal === g.value}
-              onClick={() => update({ runningGoal: g.value })}
-            />
-          ))}
-        </SubGoalPanel>
-      )}
-
-      {showGymGoal && (
-        <SubGoalPanel title="¿Cuál es tu meta en el gym?">
-          {gymGoals.map((g) => (
-            <SubGoalButton
-              key={g.value}
-              icon={g.icon}
-              label={g.label}
-              selected={data.gymGoal === g.value}
-              onClick={() => update({ gymGoal: g.value })}
-            />
-          ))}
-        </SubGoalPanel>
-      )}
-    </div>
-  )
-}
-
-function SubGoalPanel({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="mt-1 p-4 rounded-2xl border-2 border-[#1e3a5f]/20 bg-[#1e3a5f]/3">
-      <p className="text-sm font-semibold text-[#1e3a5f] mb-3">{title}</p>
-      <div className="flex flex-col gap-2">{children}</div>
-    </div>
-  )
-}
-
-function SubGoalButton({ icon, label, selected, onClick }: { icon: string; label: string; selected: boolean; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'px-3 py-2.5 rounded-xl border-2 text-sm font-medium transition-all text-left flex items-center gap-2',
-        selected
-          ? 'border-[#ea580c] bg-[#ea580c]/10 text-[#ea580c]'
-          : 'border-gray-200 bg-white text-[#1e3a5f] hover:border-[#1e3a5f]/40'
-      )}
-    >
-      <span>{icon}</span>
-      <span>{label}</span>
-    </button>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Step 2: Tu perfil (dos columnas en desktop, una en mobile)
-// ---------------------------------------------------------------------------
-
-function StepProfile({ data, update, prefilled }: { data: WizardData; update: (d: Partial<WizardData>) => void; prefilled?: boolean }) {
-  const hasGym = data.activityType === 'GYM' || data.activityType === 'BOTH'
-
-  const levels: { value: ExperienceLevel; label: string; subtext: string }[] = [
-    { value: 'BEGINNER',     label: 'Principiante', subtext: '< 1 año' },
-    { value: 'INTERMEDIATE', label: 'Intermedio',   subtext: '1–3 años' },
-    { value: 'ADVANCED',     label: 'Avanzado',     subtext: '3+ años' },
-  ]
-
-  const sessionOptions = [30, 45, 60, 90]
-
-  const ageErr = data.age !== null && (data.age < 10 || data.age > 100)
-  const heightErr = data.heightCm !== null && (data.heightCm < 100 || data.heightCm > 250)
-  const weightErr = data.weightKg !== null && (data.weightKg < 30 || data.weightKg > 300)
-
-  return (
-    <div className="flex flex-col gap-5">
-      <div>
-        <h2 className="text-2xl font-bold text-[#1e3a5f] mb-1">Tu perfil</h2>
-        <p className="text-gray-500 text-sm">Con esto calculamos tus calorías, macros y ajustamos tu experiencia.</p>
-      </div>
-
-      {prefilled && (
-        <div className="flex items-start gap-2 px-4 py-3 rounded-xl bg-blue-50 border border-blue-200 text-sm text-blue-800">
-          <span className="shrink-0">ℹ️</span>
-          <span>Tu entrenador ya registró estos datos. Confirma que son correctos o ajústalos.</span>
-        </div>
-      )}
-
-      {/* Dos columnas en desktop, una en mobile */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Columna izquierda: Datos físicos */}
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 flex flex-col gap-4">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="w-8 h-8 rounded-lg bg-[#1e3a5f]/10 flex items-center justify-center text-base">📏</span>
-            <h3 className="font-semibold text-[#1e3a5f]">Datos físicos</h3>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <FieldLabel>Edad</FieldLabel>
-              <FieldInput
-                type="number"
-                placeholder="32"
-                value={data.age ?? ''}
-                onChange={(e) => update({ age: e.target.value ? Number(e.target.value) : null })}
-                hasError={ageErr}
-              />
-              {ageErr && <p className="text-xs text-red-500 mt-1">10–100 años</p>}
-            </div>
-            <div>
-              <FieldLabel>Altura (cm)</FieldLabel>
-              <FieldInput
-                type="number"
-                placeholder="170"
-                value={data.heightCm ?? ''}
-                onChange={(e) => update({ heightCm: e.target.value ? Number(e.target.value) : null })}
-                hasError={heightErr}
-              />
-              {heightErr && <p className="text-xs text-red-500 mt-1">100–250 cm</p>}
-            </div>
-          </div>
-
-          <div>
-            <FieldLabel>Peso actual (kg)</FieldLabel>
-            <FieldInput
-              type="number"
-              placeholder="68"
-              value={data.weightKg ?? ''}
-              onChange={(e) => update({ weightKg: e.target.value ? Number(e.target.value) : null })}
-              hasError={weightErr}
-            />
-            {weightErr && <p className="text-xs text-red-500 mt-1">30–300 kg</p>}
-          </div>
-
-          <div>
-            <FieldLabel>Género</FieldLabel>
-            <div className="flex gap-3 mt-0.5">
-              <button
-                type="button"
-                onClick={() => update({ gender: 'male' })}
-                className={cn(
-                  'flex-1 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all flex items-center justify-center gap-2',
-                  data.gender === 'male'
-                    ? 'border-[#1e3a5f] bg-[#1e3a5f]/5 text-[#1e3a5f]'
-                    : 'border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-300'
-                )}
-              >
-                <span className="text-lg">♂</span> Hombre
-              </button>
-              <button
-                type="button"
-                onClick={() => update({ gender: 'female' })}
-                className={cn(
-                  'flex-1 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all flex items-center justify-center gap-2',
-                  data.gender === 'female'
-                    ? 'border-[#1e3a5f] bg-[#1e3a5f]/5 text-[#1e3a5f]'
-                    : 'border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-300'
-                )}
-              >
-                <span className="text-lg">♀</span> Mujer
-              </button>
-            </div>
-            <button
-              type="button"
-              onClick={() => update({ gender: 'other' })}
-              className={cn(
-                'w-full mt-2 py-2 rounded-xl border-2 text-xs font-medium transition-all',
-                data.gender === 'other'
-                  ? 'border-[#1e3a5f] bg-[#1e3a5f]/5 text-[#1e3a5f]'
-                  : 'border-gray-200 bg-gray-50 text-gray-400 hover:border-gray-300 hover:text-gray-500'
-              )}
-            >
-              Prefiero no decir
-            </button>
-          </div>
-
-          {/* Peso objetivo — visible cuando el objetivo implica déficit calórico */}
-          {(hasGym || data.activityType === 'FREE' || data.gymGoal === 'FAT_LOSS' || data.gymGoal === 'RECOMPOSITION') && (
-            <div>
-              <FieldLabel optional>Peso objetivo (kg)</FieldLabel>
-              <FieldInput
-                type="number"
-                placeholder="65"
-                value={data.weightGoalKg ?? ''}
-                onChange={(e) => update({ weightGoalKg: e.target.value ? Number(e.target.value) : null })}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Columna derecha: Disponibilidad + Salud */}
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 flex flex-col gap-4">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="w-8 h-8 rounded-lg bg-[#1e3a5f]/10 flex items-center justify-center text-base">📅</span>
-            <h3 className="font-semibold text-[#1e3a5f]">Disponibilidad y salud</h3>
-          </div>
-
-          <div>
-            <FieldLabel>Días por semana</FieldLabel>
-            <div className="flex gap-2 mt-0.5 flex-wrap">
-              {[3, 4, 5, 6].map((d) => (
-                <PillBtn
-                  key={d}
-                  selected={data.daysPerWeek === d}
-                  onClick={() => update({ daysPerWeek: d })}
-                  label={`${d} días`}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <FieldLabel>Duración por sesión</FieldLabel>
-            <div className="flex gap-2 mt-0.5 flex-wrap">
-              {sessionOptions.map((m) => (
-                <PillBtn
-                  key={m}
-                  selected={data.sessionMinutes === m}
-                  onClick={() => update({ sessionMinutes: m })}
-                  label={`${m} min`}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <FieldLabel optional>Nivel de experiencia</FieldLabel>
-            <div className="flex flex-col gap-2 mt-0.5">
-              {levels.map((l) => (
-                <button
-                  key={l.value}
-                  type="button"
-                  onClick={() => update({ experienceLevel: data.experienceLevel === l.value ? null : l.value })}
-                  className={cn(
-                    'px-4 py-2.5 rounded-xl border-2 text-sm font-medium transition-all text-left flex items-center justify-between',
-                    data.experienceLevel === l.value
-                      ? 'border-[#1e3a5f] bg-[#1e3a5f]/5 text-[#1e3a5f]'
-                      : 'border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-300'
-                  )}
-                >
-                  <span className="font-semibold">{l.label}</span>
-                  <span className="text-xs text-gray-400">{l.subtext}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <FieldLabel optional>Lesiones o molestias</FieldLabel>
-            <FieldInput
-              type="text"
-              placeholder="Ej: dolor en rodilla derecha"
-              value={data.injuries}
-              onChange={(e) => update({ injuries: e.target.value })}
-            />
-          </div>
-
-          <div>
-            <FieldLabel optional>Condiciones médicas</FieldLabel>
-            <FieldInput
-              type="text"
-              placeholder="Ej: hipertensión, asma"
-              value={data.conditions}
-              onChange={(e) => update({ conditions: e.target.value })}
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Step 3: Configurando
-// ---------------------------------------------------------------------------
-
-function StepGenerating() {
-  return (
-    <div className="flex flex-col items-center justify-center gap-8 py-16">
-      <div className="relative w-20 h-20">
-        <div className="absolute inset-0 rounded-full border-4 border-[#1e3a5f]/10" />
-        <div className="absolute inset-0 rounded-full border-4 border-t-[#ea580c] animate-spin" />
-        <span className="absolute inset-0 flex items-center justify-center text-2xl">⚡</span>
-      </div>
-      <div className="text-center">
-        <p className="text-lg font-semibold text-[#1e3a5f]">Configurando tu cuenta...</p>
-        <p className="text-sm text-gray-400 mt-1">Calculando tus objetivos iniciales</p>
-      </div>
-    </div>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Main page
-// ---------------------------------------------------------------------------
-
-const STEP_LABELS: Record<StepId, string> = {
-  'goal':       'Tu objetivo',
-  'profile':    'Tu perfil',
-  'generating': 'Configurando',
-}
+/* ── Shared input classes ──────────────────────────────────────────────── */
+const INPUT_CLS = 'w-full border border-[#d9d9de] rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#ea580c]/40 focus:border-[#ea580c]'
+const LABEL_CLS = 'text-[13px] font-semibold text-[#1a2744] block mb-1.5'
 
 export default function OnboardingPage() {
-  const router = useRouter()
-  const { data: session, update: refreshSession } = useSession()
-  const [data, setData] = useState<WizardData>(INITIAL_DATA)
-  const [stepIndex, setStepIndex] = useState(0)
-  const [isGenerating, setIsGenerating] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [hasPrefilled, setHasPrefilled] = useState(false)
 
-  useEffect(() => {
-    const isB2B = (session?.user as { isB2B?: boolean } | undefined)?.isB2B
-    if (!isB2B) return
-    fetch('/api/athlete/onboarding/prefilled')
-      .then((r) => r.json())
-      .catch((err) => { console.error('[onboarding] prefill fetch failed:', err) })
-      .then(({ prefilled } = {}) => {
-        if (!prefilled) return
-        setHasPrefilled(true)
-        const dob = prefilled.dateOfBirth ? new Date(prefilled.dateOfBirth) : null
-        const age = dob
-          ? Math.floor((Date.now() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000))
-          : (prefilled.age ?? null)
-        setData((prev) => ({
-          ...prev,
-          age:             age || null,
-          heightCm:        prefilled.heightCm  ?? null,
-          weightKg:        prefilled.weightKg  ?? null,
-          gender:          (prefilled.gender as 'male' | 'female' | null) ?? null,
-          experienceLevel: (prefilled.experienceLevel as WizardData['experienceLevel']) ?? null,
-        }))
-      })
-      .catch(() => {})
-  }, [session?.user])
+  const [data, setData] = useState<WizardData>({
+    dateOfBirth: null,
+    heightCm: null,
+    weightKg: null,
+    gender: null,
+    goal: null,
+    weightGoalKg: null,
+    daysPerWeek: 4,
+  })
 
-  function update(partial: Partial<WizardData>) {
-    setData((prev) => ({ ...prev, ...partial }))
-  }
-
-  const steps = getSteps(data)
-  const currentStepId = steps[stepIndex]
-  const totalSteps = steps.filter(s => s !== 'generating').length
-  const progressPct = Math.min(((stepIndex + 1) / totalSteps) * 100, 100)
-  const isLastDataStep = steps[stepIndex + 1] === 'generating'
-
-  function nextStep() {
-    if (!isStepValid(currentStepId, data)) return
-    if (isLastDataStep) {
-      void handleSubmit()
-      return
-    }
-    const updatedSteps = getSteps(data)
-    if (stepIndex < updatedSteps.length - 1) {
-      setStepIndex(stepIndex + 1)
-    }
-  }
-
-  function prevStep() {
-    if (stepIndex === 0) return
-    setStepIndex(stepIndex - 1)
-  }
+  const update = (partial: Partial<WizardData>) => setData(prev => ({ ...prev, ...partial }))
+  const valid = isStepValid('profile', data)
 
   async function handleSubmit() {
-    setStepIndex(steps.indexOf('generating'))
-    setIsGenerating(true)
+    if (!valid || submitting) return
+    setSubmitting(true)
     setError(null)
-
     try {
       const res = await fetch('/api/athlete/onboarding/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       })
-
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.error ?? 'Error configurando la cuenta')
-
-      await refreshSession({ onboardingCompleted: true })
-      if (json.isB2B) {
-        router.push('/pending')
-      } else {
-        router.push('/dashboard')
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        setError(body.error ?? 'Error al configurar tu cuenta.')
+        setSubmitting(false)
+        return
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error desconocido')
-      setStepIndex(steps.indexOf('generating') > 0 ? steps.indexOf('generating') - 1 : 0)
-    } finally {
-      setIsGenerating(false)
+      const result = await res.json()
+      window.location.href = result.isB2B ? '/pending' : '/dashboard'
+    } catch {
+      setError('Error de conexión. Intenta de nuevo.')
+      setSubmitting(false)
     }
   }
 
-  const stepContent: Record<StepId, React.ReactNode> = {
-    goal:       <StepGoal data={data} update={update} />,
-    profile:    <StepProfile data={data} update={update} prefilled={hasPrefilled} />,
-    generating: <StepGenerating />,
+  /* ── Loading state ───────────────────────────────────────────────────── */
+  if (submitting) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#f7f7f9] px-4">
+        <div className="w-10 h-10 rounded-full bg-[#1e3a5f] mb-4 animate-pulse" />
+        <p className="text-lg font-semibold text-[#1e3a5f]">Calculando tus metas nutricionales...</p>
+        <p className="text-sm text-[#6b7380] mt-1">Esto toma unos segundos</p>
+      </div>
+    )
   }
 
-  const isGeneratingStep = currentStepId === 'generating'
+  /* ── Form sections (shared between mobile & desktop) ─────────────────── */
+  const physicalDataSection = (
+    <div className="space-y-5">
+      <div className="flex items-center gap-2 mb-1">
+        <span className="text-base">✏️</span>
+        <h3 className="text-sm font-bold text-[#1a2744]">Datos físicos</h3>
+      </div>
 
-  return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
-      <header className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
-          <MedaliqLogo variant="light" size="sm" />
-          <span className="text-gray-300">·</span>
-          <span className="text-gray-500 text-sm flex-1">
-            Paso {stepIndex + 1} de {totalSteps} — {STEP_LABELS[currentStepId]}
-          </span>
-          <button
-            onClick={() => signOut({ callbackUrl: '/login?from=signout' })}
-            className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            Salir
-          </button>
-        </div>
-        <div className="h-1 bg-gray-100 w-full">
-          <div
-            className="h-1 bg-[#ea580c] transition-all duration-300"
-            style={{ width: `${progressPct}%` }}
+      {/* Date of Birth */}
+      <div>
+        <label className={LABEL_CLS}>Fecha de nacimiento</label>
+        <input
+          type="date"
+          value={data.dateOfBirth ?? ''}
+          onChange={e => update({ dateOfBirth: e.target.value || null })}
+          max={new Date(Date.now() - 10 * 365.25 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+          min={new Date(Date.now() - 80 * 365.25 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+          className={INPUT_CLS}
+        />
+      </div>
+
+      {/* Height + Weight */}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={LABEL_CLS}>Altura (cm)</label>
+          <input
+            type="number"
+            inputMode="numeric"
+            placeholder="175"
+            value={data.heightCm ?? ''}
+            onChange={e => update({ heightCm: e.target.value ? Number(e.target.value) : null })}
+            className={INPUT_CLS}
           />
         </div>
+        <div>
+          <label className={LABEL_CLS}>Peso (kg)</label>
+          <input
+            type="number"
+            inputMode="decimal"
+            step="0.1"
+            placeholder="75"
+            value={data.weightKg ?? ''}
+            onChange={e => update({ weightKg: e.target.value ? Number(e.target.value) : null })}
+            className={INPUT_CLS}
+          />
+        </div>
+      </div>
+
+      {/* Weight goal — conditional */}
+      {data.goal === 'LOSE_FAT' && (
+        <div>
+          <label className={LABEL_CLS}>Peso objetivo (opc.)</label>
+          <input
+            type="number"
+            inputMode="decimal"
+            step="0.1"
+            min="20"
+            max="299"
+            placeholder="65"
+            value={data.weightGoalKg ?? ''}
+            onChange={e => update({ weightGoalKg: e.target.value ? Number(e.target.value) : null })}
+            className={INPUT_CLS}
+          />
+        </div>
+      )}
+
+      {/* Gender */}
+      <div>
+        <label className={LABEL_CLS}>Sexo</label>
+        <div className="grid grid-cols-3 gap-2">
+          {GENDER_OPTIONS.map(opt => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => update({ gender: opt.value })}
+              className={`py-2.5 rounded-xl border-[1.5px] text-[13px] font-semibold transition-colors ${
+                data.gender === opt.value
+                  ? 'border-[#ea580c] bg-[#ea580c]/5 text-[#ea580c]'
+                  : 'border-[#d9d9de] text-[#6b7380] hover:border-gray-400'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+
+  const goalSection = (
+    <div className="space-y-5">
+      <div className="flex items-center gap-2 mb-1">
+        <span className="text-base">🎯</span>
+        <h3 className="text-sm font-bold text-[#1a2744]">Tu objetivo</h3>
+      </div>
+
+      {/* Goal cards */}
+      <div className="space-y-2">
+        {GOAL_OPTIONS.map(opt => (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => update({
+              goal: opt.value,
+              weightGoalKg: opt.value !== 'LOSE_FAT' ? null : data.weightGoalKg,
+            })}
+            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border-[1.5px] text-left transition-colors ${
+              data.goal === opt.value
+                ? 'border-[#ea580c] bg-[#ea580c] text-white'
+                : 'border-[#d9d9de] hover:border-gray-400'
+            }`}
+          >
+            <span className="text-xl">{opt.emoji}</span>
+            <div>
+              <p className={`text-sm font-semibold ${data.goal === opt.value ? 'text-white' : 'text-[#1a2744]'}`}>{opt.label}</p>
+              <p className={`text-xs ${data.goal === opt.value ? 'text-white/80' : 'text-[#8c8c94]'}`}>{opt.desc}</p>
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {/* Days per week */}
+      <div>
+        <label className={LABEL_CLS}>Días por semana</label>
+        <div className="flex gap-2">
+          {DAYS_OPTIONS.map(d => (
+            <button
+              key={d}
+              type="button"
+              onClick={() => update({ daysPerWeek: d })}
+              className={`flex-1 py-2.5 rounded-xl border-[1.5px] text-sm font-bold transition-colors ${
+                data.daysPerWeek === d
+                  ? 'border-[#1a2744] bg-[#1a2744] text-white'
+                  : 'border-[#d9d9de] text-[#6b7380] hover:border-gray-400'
+              }`}
+            >
+              {d}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+
+  return (
+    <div className="min-h-screen bg-[#f7f7f9] flex flex-col">
+      {/* ── Navy header bar ─────────────────────────────────────────────── */}
+      <header className="bg-[#1a2744] px-4 sm:px-8 py-3 flex items-center justify-between shrink-0">
+        <span className="text-white text-lg font-bold tracking-tight">Medaliq</span>
+        <span className="bg-white/15 text-white text-[13px] font-medium px-3 py-1 rounded-full hidden sm:inline">
+          Paso único — Tu perfil
+        </span>
+        <span className="bg-white/15 text-white text-[13px] font-medium px-3 py-1 rounded-full sm:hidden">
+          Paso único
+        </span>
+        <a href="/api/auth/signout" className="text-white/70 text-sm hover:text-white transition-colors hidden sm:inline">
+          Salir
+        </a>
       </header>
 
-      {/* Content */}
-      <main className="flex-1 max-w-3xl w-full mx-auto px-4 py-8 pb-32">
-        <div key={currentStepId} className="animate-in fade-in slide-in-from-right-4 duration-200">
-          {stepContent[currentStepId]}
+      {/* ── Orange progress bar (full) ──────────────────────────────────── */}
+      <div className="h-1 bg-[#ea580c] shrink-0" />
+
+      {/* ── Content ─────────────────────────────────────────────────────── */}
+      <div className="flex-1 flex flex-col items-center px-4 sm:px-8 py-6 sm:py-10 overflow-y-auto">
+        {/* Title */}
+        <div className="w-full max-w-3xl mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-[28px] font-bold text-[#1a2744]">Cuéntanos sobre ti</h1>
+          <p className="text-sm text-[#8c8c94] mt-1">Con esto calculamos tus calorías, macros y personalizamos tu experiencia.</p>
         </div>
 
+        {/* ── Desktop: 2-column layout ─────────────────────────────────── */}
+        <div className="hidden sm:grid sm:grid-cols-2 gap-6 w-full max-w-3xl">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            {physicalDataSection}
+          </div>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            {goalSection}
+          </div>
+        </div>
+
+        {/* ── Mobile: single column ────────────────────────────────────── */}
+        <div className="sm:hidden w-full space-y-4">
+          {/* Mobile: Title sub-header */}
+          <div>
+            <h2 className="text-xl font-bold text-[#1a2744]">Tu perfil</h2>
+            <p className="text-sm text-[#8c8c94] mt-0.5">Con esto calculamos tus calorías y macros.</p>
+          </div>
+
+          {/* Form fields — flat on mobile (no card wrapper) */}
+          <div className="space-y-5">
+            {/* Date of Birth */}
+            <div>
+              <label className={LABEL_CLS}>Fecha de nacimiento</label>
+              <input
+                type="date"
+                value={data.dateOfBirth ?? ''}
+                onChange={e => update({ dateOfBirth: e.target.value || null })}
+                max={new Date(Date.now() - 10 * 365.25 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                min={new Date(Date.now() - 80 * 365.25 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                className={INPUT_CLS}
+              />
+            </div>
+
+            {/* Gender */}
+            <div>
+              <label className={LABEL_CLS}>Género</label>
+              <div className="grid grid-cols-3 gap-2">
+                {GENDER_OPTIONS.map(opt => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => update({ gender: opt.value })}
+                    className={`py-2.5 rounded-xl border-[1.5px] text-[13px] font-semibold transition-colors ${
+                      data.gender === opt.value
+                        ? 'border-[#1a2744] bg-[#1a2744]/5 text-[#1a2744]'
+                        : 'border-[#d9d9de] text-[#6b7380] hover:border-gray-400'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Height + Weight */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={LABEL_CLS}>Altura (cm)</label>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  placeholder="175"
+                  value={data.heightCm ?? ''}
+                  onChange={e => update({ heightCm: e.target.value ? Number(e.target.value) : null })}
+                  className={INPUT_CLS}
+                />
+              </div>
+              <div>
+                <label className={LABEL_CLS}>Peso (kg)</label>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  step="0.1"
+                  placeholder="75"
+                  value={data.weightKg ?? ''}
+                  onChange={e => update({ weightKg: e.target.value ? Number(e.target.value) : null })}
+                  className={INPUT_CLS}
+                />
+              </div>
+            </div>
+
+            {/* Goal cards */}
+            <div>
+              <label className={LABEL_CLS}>¿Cuál es tu objetivo?</label>
+              <div className="space-y-2 mt-1">
+                {GOAL_OPTIONS.map(opt => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => update({
+                      goal: opt.value,
+                      weightGoalKg: opt.value !== 'LOSE_FAT' ? null : data.weightGoalKg,
+                    })}
+                    className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border-[1.5px] text-left transition-colors ${
+                      data.goal === opt.value
+                        ? 'border-[#ea580c] bg-[#ea580c] text-white'
+                        : 'border-[#d9d9de] hover:border-gray-400'
+                    }`}
+                  >
+                    <span className="text-xl">{opt.emoji}</span>
+                    <div>
+                      <p className={`text-sm font-semibold ${data.goal === opt.value ? 'text-white' : 'text-[#1a2744]'}`}>{opt.label}</p>
+                      <p className={`text-xs ${data.goal === opt.value ? 'text-white/80' : 'text-[#8c8c94]'}`}>{opt.desc}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Days per week */}
+            <div>
+              <label className={LABEL_CLS}>Días por semana</label>
+              <div className="flex gap-2">
+                {DAYS_OPTIONS.map(d => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => update({ daysPerWeek: d })}
+                    className={`flex-1 py-2.5 rounded-xl border-[1.5px] text-sm font-bold transition-colors ${
+                      data.daysPerWeek === d
+                        ? 'border-[#1a2744] bg-[#1a2744] text-white'
+                        : 'border-[#d9d9de] text-[#6b7380] hover:border-gray-400'
+                    }`}
+                  >
+                    {d}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Error */}
         {error && (
-          <div className="mt-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+          <div className="w-full max-w-3xl mt-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">
             {error}
           </div>
         )}
-      </main>
 
-      {/* Footer nav */}
-      {!isGeneratingStep && (
-        <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
-          <div className="max-w-3xl mx-auto px-4 py-4 flex gap-3">
-            {stepIndex > 0 && (
-              <button
-                onClick={prevStep}
-                disabled={isGenerating}
-                className="flex-1 border-2 border-gray-200 text-[#1e3a5f] font-semibold py-3 rounded-xl"
-              >
-                ← Atrás
-              </button>
-            )}
-            <button
-              onClick={nextStep}
-              disabled={!isStepValid(currentStepId, data) || isGenerating}
-              className="flex-1 bg-[#ea580c] hover:bg-[#ea6c0a] text-white font-semibold py-3 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            >
-              {isLastDataStep ? 'Guardar y entrar →' : 'Siguiente →'}
-            </button>
-          </div>
-        </footer>
-      )}
+        {/* ── CTA button ───────────────────────────────────────────────── */}
+        <div className="w-full max-w-3xl sm:max-w-md mt-8">
+          <button
+            onClick={handleSubmit}
+            disabled={!valid || submitting}
+            className="w-full py-3.5 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90"
+            style={{ backgroundColor: '#ea580c' }}
+          >
+            <span className="hidden sm:inline">Guardar y entrar →</span>
+            <span className="sm:hidden">Empezar →</span>
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

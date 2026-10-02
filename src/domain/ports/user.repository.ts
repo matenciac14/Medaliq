@@ -20,7 +20,7 @@ export interface IUserRepository {
     opts: {
       features?: Partial<Record<FeatureKey, boolean>>
       onboarding: { completed: boolean; completedAt: string }
-      sport: { type: string; goal: string }
+      sport: { type: string | null; goal: string | null }
     }
   ): Promise<void>
 }

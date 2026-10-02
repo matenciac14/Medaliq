@@ -20,11 +20,7 @@ export class PrismaUserRepository implements IUserRepository {
   constructor(private db: PrismaDbClient = prisma) {}
 
   async enableFeature(userId: string, feature: FeatureKey): Promise<void> {
-    const col = FEATURE_COLUMN[feature]
-    await this.db.$executeRawUnsafe(
-      `UPDATE "User" SET "${col}" = true WHERE id = $1`,
-      userId
-    )
+    await this.mergeFeatures(userId, { [feature]: true })
   }
 
   async enableFeatures(userId: string, features: FeatureKey[]): Promise<void> {
@@ -36,11 +32,12 @@ export class PrismaUserRepository implements IUserRepository {
     const entries = Object.entries(patch) as [FeatureKey, boolean][]
     if (entries.length === 0) return
 
-    const sets = entries.map(([k, v]) => `"${FEATURE_COLUMN[k]}" = ${v}`).join(', ')
-    await this.db.$executeRawUnsafe(
-      `UPDATE "User" SET ${sets} WHERE id = $1`,
-      userId
-    )
+    const data: Record<string, boolean> = {}
+    for (const [k, v] of entries) {
+      const col = FEATURE_COLUMN[k]
+      if (col) data[col] = v
+    }
+    await this.db.user.update({ where: { id: userId }, data })
   }
 
   async completeOnboarding(
@@ -48,34 +45,28 @@ export class PrismaUserRepository implements IUserRepository {
     opts: {
       features?: Partial<Record<FeatureKey, boolean>>
       onboarding: { completed: boolean; completedAt: string }
-      sport: { type: string; goal: string }
+      sport: { type: string | null; goal: string | null }
     }
   ): Promise<void> {
-    const featureSets = opts.features
-      ? (Object.entries(opts.features) as [FeatureKey, boolean][])
-          .map(([k, v]) => `"${FEATURE_COLUMN[k]}" = ${v}`)
-          .join(', ') + ', '
-      : ''
+    // Build update data from features + onboarding fields (typed, no raw SQL interpolation)
+    const updateData: Record<string, unknown> = {
+      onboardingCompleted: opts.onboarding.completed,
+      onboardingCompletedAt: new Date(opts.onboarding.completedAt),
+    }
+    if (opts.features) {
+      for (const [k, v] of Object.entries(opts.features) as [FeatureKey, boolean][]) {
+        const col = FEATURE_COLUMN[k]
+        if (col) updateData[col] = v
+      }
+    }
 
-    await this.db.$executeRawUnsafe(
-      `UPDATE "User" SET
-        ${featureSets}
-        "onboardingCompleted"   = $2,
-        "onboardingCompletedAt" = $3
-       WHERE id = $1`,
-      userId,
-      opts.onboarding.completed,
-      new Date(opts.onboarding.completedAt)
-    )
+    await this.db.user.update({ where: { id: userId }, data: updateData })
 
-    // sport type + goal → HealthProfile
-    await this.db.$executeRawUnsafe(
-      `UPDATE "HealthProfile"
-       SET sport = $2, "sportGoal" = $3
-       WHERE "userId" = $1`,
-      userId,
-      opts.sport.type,
-      opts.sport.goal
-    )
+    // sport type + goal → HealthProfile (upsertProfile ya escribe estos campos,
+    // pero completeOnboarding puede ser llamado sin upsertProfile en algunos paths)
+    await this.db.healthProfile.updateMany({
+      where: { userId },
+      data: { sport: opts.sport.type, sportGoal: opts.sport.goal },
+    })
   }
 }

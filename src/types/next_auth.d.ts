@@ -10,6 +10,7 @@ declare module 'next-auth' {
       activated: boolean
       isB2B: boolean
       userPlan: 'FREE' | 'PRO'
+      trialDaysLeft?: number | null
       profileComplete: boolean
       features: {
         plan: boolean
@@ -34,6 +35,7 @@ declare module 'next-auth' {
     activated?: boolean
     isB2B?: boolean
     userPlan?: 'FREE' | 'PRO'
+    trialDaysLeft?: number | null
     profileComplete?: boolean
     needsRoleSelection?: boolean
     features?: {
@@ -57,8 +59,11 @@ declare module 'next-auth/jwt' {
     activated?: boolean
     isB2B?: boolean
     userPlan?: 'FREE' | 'PRO'
+    trialDaysLeft?: number | null
     profileComplete?: boolean
     needsRoleSelection?: boolean
+    userInvalid?: boolean
+    userExistsCheckedAt?: number
     features?: {
       plan: boolean
       checkin: boolean
@@ -82,8 +87,11 @@ declare module '@auth/core/jwt' {
     activated?: boolean
     isB2B?: boolean
     userPlan?: 'FREE' | 'PRO'
+    trialDaysLeft?: number | null
     profileComplete?: boolean
     needsRoleSelection?: boolean
+    userInvalid?: boolean
+    userExistsCheckedAt?: number
     features?: {
       plan: boolean
       checkin: boolean
@@ -105,8 +113,11 @@ declare module '@auth/core/jwt.js' {
     activated?: boolean
     isB2B?: boolean
     userPlan?: 'FREE' | 'PRO'
+    trialDaysLeft?: number | null
     profileComplete?: boolean
     needsRoleSelection?: boolean
+    userInvalid?: boolean
+    userExistsCheckedAt?: number
     features?: {
       plan: boolean
       checkin: boolean

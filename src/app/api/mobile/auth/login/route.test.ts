@@ -91,6 +91,34 @@ describe('POST /api/mobile/auth/login', () => {
     expect(res.status).toBe(403)
   })
 
+  it('retorna 403 si EMAIL_GATE_ENABLED y email no verificado', async () => {
+    const originalEnv = process.env.EMAIL_GATE_ENABLED
+    process.env.EMAIL_GATE_ENABLED = 'true'
+    try {
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({ ...ACTIVE_USER, emailVerified: null } as any)
+      vi.mocked(bcrypt.compare).mockResolvedValue(true as never)
+      const res = await POST(req({ email: 'atleta@test.com', password: 'Password123!' }))
+      expect(res.status).toBe(403)
+      const body = await res.json()
+      expect(body.error).toContain('verificar')
+    } finally {
+      process.env.EMAIL_GATE_ENABLED = originalEnv
+    }
+  })
+
+  it('permite login con EMAIL_GATE_ENABLED si email esta verificado', async () => {
+    const originalEnv = process.env.EMAIL_GATE_ENABLED
+    process.env.EMAIL_GATE_ENABLED = 'true'
+    try {
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({ ...ACTIVE_USER, emailVerified: new Date() } as any)
+      vi.mocked(bcrypt.compare).mockResolvedValue(true as never)
+      const res = await POST(req({ email: 'atleta@test.com', password: 'Password123!' }))
+      expect(res.status).toBe(200)
+    } finally {
+      process.env.EMAIL_GATE_ENABLED = originalEnv
+    }
+  })
+
   it('retorna 400 si el email tiene formato inválido', async () => {
     const res = await POST(req({ email: 'no-es-email', password: 'Password123!' }))
     expect(res.status).toBe(400)

@@ -90,6 +90,7 @@ export async function POST(req: NextRequest) {
           activated: false,
           isB2B: false,
           userPlan: 'FREE' as const,
+          trialDaysLeft: null,
           profileComplete: false,
           needsRoleSelection: true,
           features: DEFAULT_USER_CONFIG.features,

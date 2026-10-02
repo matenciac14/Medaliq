@@ -12,6 +12,7 @@ export type MobileTokenPayload = {
   activated: boolean
   isB2B: boolean
   userPlan: 'FREE' | 'PRO'
+  trialDaysLeft: number | null
   profileComplete: boolean
   needsRoleSelection: boolean
   features: UserConfig['features']
@@ -61,6 +62,7 @@ export function buildMobileTokenPayload(
     activated: user.featurePlan,
     isB2B: opts.isB2B,
     userPlan: 'PRO',
+    trialDaysLeft: null,
     profileComplete: !!(user.identification && user.phoneWa),
     needsRoleSelection: user.needsRoleSelection,
     features: {

@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { email: normalizedEmail },
-      select: { ...MOBILE_USER_SELECT, password: true },
+      select: { ...MOBILE_USER_SELECT, password: true, emailVerified: true },
     })
 
     if (!user || !user.password) {
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Credenciales incorrectas.' }, { status: 401 })
     }
 
-    if (process.env.EMAIL_GATE_ENABLED === 'true' && !('emailVerified' in user)) {
+    if (process.env.EMAIL_GATE_ENABLED === 'true' && !user.emailVerified) {
       return NextResponse.json({ error: 'Debes verificar tu correo antes de iniciar sesión.' }, { status: 403 })
     }
 

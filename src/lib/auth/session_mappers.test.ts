@@ -116,6 +116,16 @@ describe('mapUserToToken', () => {
     expect(token.sub).toBe('sub-val')
   })
 
+  it('sets userExistsCheckedAt to defer the 5-min DB check', () => {
+    const token: JWT = { iat: 1000, exp: 2000, sub: '' }
+    const before = Math.floor(Date.now() / 1000)
+    mapUserToToken(token, makeUser())
+    const after = Math.floor(Date.now() / 1000)
+
+    expect(token.userExistsCheckedAt).toBeGreaterThanOrEqual(before)
+    expect(token.userExistsCheckedAt).toBeLessThanOrEqual(after)
+  })
+
   it('mapea coach correctamente', () => {
     const token: JWT = { iat: 1000, exp: 2000, sub: '' }
     const coach = makeUser({

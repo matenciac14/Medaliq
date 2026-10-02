@@ -74,6 +74,7 @@ export class PrismaHealthProfileRepository implements IHealthProfileRepository {
   async upsertProfile(userId: string, data: CreateHealthProfile): Promise<void> {
     const payload = {
       age: data.age,
+      ...(data.dateOfBirth !== undefined && { dateOfBirth: data.dateOfBirth }),
       heightCm: data.heightCm,
       weightKg: data.weightKg,
       ...(data.weightGoalKg !== undefined && { weightGoalKg: data.weightGoalKg }),
@@ -85,6 +86,7 @@ export class PrismaHealthProfileRepository implements IHealthProfileRepository {
       ...(data.conditions !== undefined && { conditions: data.conditions }),
       ...(data.sessionMinutes !== undefined && { sessionMinutes: data.sessionMinutes }),
       ...(data.sport !== undefined && { sport: data.sport }),
+      ...(data.sportGoal !== undefined && { sportGoal: data.sportGoal }),
       ...(data.experienceLevel !== undefined && { experienceLevel: data.experienceLevel }),
       ...(data.sportDetails !== undefined && { sportDetails: data.sportDetails as object }),
       ...(data.dataSources !== undefined && { dataSources: data.dataSources as object }),

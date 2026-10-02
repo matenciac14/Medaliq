@@ -20,6 +20,9 @@ export function mapUserToToken(token: JWT, user: User): JWT {
   token.features = user.features ?? DEFAULT_USER_CONFIG.features
   token.needsRoleSelection = user.needsRoleSelection ?? false
   token.profileComplete = user.profileComplete ?? false
+  token.trialDaysLeft = user.trialDaysLeft ?? null
+  // Defer the DB existence check by 5 minutes from login
+  token.userExistsCheckedAt = Math.floor(Date.now() / 1000)
   return token
 }
 
@@ -35,11 +38,12 @@ export function mapTokenToSession(session: Session, token: JWT): Session {
   session.user.needsRoleSelection = token.needsRoleSelection ?? false
   session.user.features = token.features ?? DEFAULT_USER_CONFIG.features
   session.user.profileComplete = token.profileComplete ?? false
+  session.user.trialDaysLeft = token.trialDaysLeft ?? null
   return session
 }
 
 /** Campos que deben existir en Session.user — usado por tests para validar sincronización */
 export const SESSION_USER_FIELDS = [
   'id', 'role', 'status', 'onboardingCompleted', 'activated',
-  'isB2B', 'userPlan', 'needsRoleSelection', 'features', 'profileComplete',
+  'isB2B', 'userPlan', 'needsRoleSelection', 'features', 'profileComplete', 'trialDaysLeft',
 ] as const

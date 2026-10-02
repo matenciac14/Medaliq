@@ -40,7 +40,7 @@ export default auth((req) => {
   }
 
   if (isLoggedIn) {
-    const onboardingCompleted = session.user.onboardingCompleted ?? true
+    const onboardingCompleted = session.user.onboardingCompleted ?? false
     const role = session.user.role
     const status = session.user.status ?? 'ACTIVE'
     const activated = session.user.activated ?? false
@@ -59,8 +59,8 @@ export default auth((req) => {
       return NextResponse.redirect(new URL('/select-role', nextUrl))
     }
 
-    // Redirige a onboarding si no lo completó
-    if (!onboardingCompleted && !pathname.startsWith('/onboarding') && !pathname.startsWith('/select-role') && !pathname.startsWith('/api') && !isPublicRoute) {
+    // Redirige a onboarding si no lo completó (solo ATHLETE — COACH y ADMIN no pasan por onboarding)
+    if (role === 'ATHLETE' && !onboardingCompleted && !pathname.startsWith('/onboarding') && !pathname.startsWith('/select-role') && !pathname.startsWith('/api') && !isPublicRoute) {
       return NextResponse.redirect(new URL('/onboarding', nextUrl))
     }
 
@@ -74,6 +74,7 @@ export default auth((req) => {
       !pathname.startsWith('/pending') &&
       !pathname.startsWith('/log') &&
       !pathname.startsWith('/nutrition') &&
+      !pathname.startsWith('/gym') &&
       !pathname.startsWith('/api') &&
       !isPublicRoute
     ) {
@@ -108,10 +109,10 @@ export default auth((req) => {
       return NextResponse.redirect(new URL('/coach/dashboard', nextUrl))
     }
 
-    // ATHLETE con onboarding ya completado que intenta volver a /onboarding → dashboard
-    if (role === 'ATHLETE' && onboardingCompleted && pathname.startsWith('/onboarding')) {
-      return NextResponse.redirect(new URL('/dashboard', nextUrl))
-    }
+    // ATHLETE con onboarding ya completado: el layout de /onboarding ya se encarga
+    // de redirigir si el usuario intenta volver. No bloquear aquí para evitar
+    // desincronización JWT vs DB que causa redirect loops.
+
   }
 
   return NextResponse.next()

@@ -5,7 +5,7 @@ import Credentials from 'next-auth/providers/credentials'
 import Google from 'next-auth/providers/google'
 import { prisma } from '@/lib/db/prisma'
 import bcrypt from 'bcryptjs'
-import { DEFAULT_USER_CONFIG } from '@/lib/config/user_config'
+import { DEFAULT_USER_CONFIG, getUserPlan } from '@/lib/config/user_config'
 import { rateLimitAsync } from '@/lib/rate_limit'
 import { mapUserToToken, mapTokenToSession } from '@/lib/auth/session_mappers'
 
@@ -91,10 +91,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const features = buildFeaturesFromUser(user)
 
-        const coachRelation = await prisma.coachAthlete.findFirst({
-          where: { athleteId: user.id, status: 'ACTIVE' },
-          select: { id: true },
-        })
+        const [coachRelation, subscription] = await Promise.all([
+          prisma.coachAthlete.findFirst({
+            where: { athleteId: user.id, status: 'ACTIVE' },
+            select: { id: true },
+          }),
+          prisma.userSubscription.findUnique({
+            where: { userId: user.id },
+            select: { tier: true, trialEndsAt: true },
+          }),
+        ])
+
+        const trialDaysLeft = subscription?.tier === 'TRIAL' && subscription?.trialEndsAt
+          ? Math.max(0, Math.ceil((subscription.trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+          : null
 
         return {
           id: user.id,
@@ -106,7 +116,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           onboardingCompleted: user.onboardingCompleted,
           activated: user.featurePlan,
           isB2B: !!coachRelation,
-          userPlan: 'PRO' as const,
+          userPlan: getUserPlan(features, subscription?.tier, !!coachRelation, subscription?.trialEndsAt),
+          trialDaysLeft,
           features,
           needsRoleSelection: user.needsRoleSelection,
           profileComplete: !!(user.identification && user.phoneWa),
@@ -131,11 +142,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       const t = token as JWT
       if (account?.provider === 'google' && t.id) {
         try {
-          const [dbUser, coachRelation] = await Promise.all([
+          let [dbUser, coachRelation, subscription] = await Promise.all([
             prisma.user.findUnique({ where: { id: t.id }, select: USER_SELECT }),
             prisma.coachAthlete.findFirst({ where: { athleteId: t.id, status: 'ACTIVE' }, select: { id: true } }),
+            prisma.userSubscription.findUnique({ where: { userId: t.id }, select: { tier: true, trialEndsAt: true } }),
           ])
+
+          // Ensure UserSubscription exists (Google OAuth bypasses /register)
+          if (dbUser && !subscription) {
+            await prisma.userSubscription.create({
+              data: { userId: t.id, tier: 'PRO' },
+            }).catch(() => {}) // Ignore if already created by concurrent request
+            subscription = { tier: 'PRO' as const, trialEndsAt: null }
+          }
           if (dbUser) {
+            const trialDaysLeft = subscription?.tier === 'TRIAL' && subscription?.trialEndsAt
+              ? Math.max(0, Math.ceil((subscription.trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+              : null
             if (dbUser.needsRoleSelection) {
               token.needsRoleSelection = true
               token.status = 'ACTIVE'
@@ -143,6 +166,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               token.activated = false
               token.isB2B = false
               token.userPlan = 'FREE'
+              token.trialDaysLeft = null
               token.features = DEFAULT_USER_CONFIG.features
               token.profileComplete = false
             } else {
@@ -153,13 +177,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               token.onboardingCompleted = dbUser.onboardingCompleted
               token.activated = dbUser.featurePlan
               token.isB2B = !!coachRelation
-              token.userPlan = 'PRO'
+              token.userPlan = getUserPlan(features, subscription?.tier, !!coachRelation, subscription?.trialEndsAt)
+              token.trialDaysLeft = trialDaysLeft
               token.features = features
               token.profileComplete = !!(dbUser.identification && dbUser.phoneWa)
             }
           }
-        } catch {
-          // silently fail
+        } catch (e) {
+          console.error('[auth] Google OAuth jwt callback DB read failed:', e)
         }
       }
 
@@ -182,24 +207,29 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // Refresh desde DB al actualizar sesión (post set-role o onboarding)
       if (trigger === 'update' && t.id) {
         try {
-          const [dbUser, coachRelation] = await Promise.all([
+          const [dbUser, coachRelation, subscription] = await Promise.all([
             prisma.user.findUnique({ where: { id: t.id }, select: USER_SELECT }),
             prisma.coachAthlete.findFirst({ where: { athleteId: t.id, status: 'ACTIVE' }, select: { id: true } }),
+            prisma.userSubscription.findUnique({ where: { userId: t.id }, select: { tier: true, trialEndsAt: true } }),
           ])
           if (dbUser) {
             const features = buildFeaturesFromUser(dbUser)
+            const trialDaysLeft = subscription?.tier === 'TRIAL' && subscription?.trialEndsAt
+              ? Math.max(0, Math.ceil((subscription.trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+              : null
             token.role = dbUser.role
             token.status = dbUser.status
             token.activated = dbUser.featurePlan
             token.isB2B = !!coachRelation
             token.onboardingCompleted = dbUser.onboardingCompleted
-            token.userPlan = 'PRO'
+            token.userPlan = getUserPlan(features, subscription?.tier, !!coachRelation, subscription?.trialEndsAt)
+            token.trialDaysLeft = trialDaysLeft
             token.features = features
             token.needsRoleSelection = false
             token.profileComplete = !!(dbUser.identification && dbUser.phoneWa)
           }
-        } catch {
-          // silently fail — token retains last known value
+        } catch (e) {
+          console.error('[auth] session update jwt callback DB read failed:', e)
         }
       }
 
