@@ -682,7 +682,7 @@ model GymSession {
   athleteId         String
   assignedWorkoutId String?  // null when session comes from a TrainingPlan (plannedSessionId set)
   plannedSessionId  String?  @unique  // link to PlannedSession — exclusive with assignedWorkoutId
-  dayOfWeek         Int
+  dayOfWeek         Int      // 0-6 (formato JS: 0=Dom, 1=Lun...6=Sab)
   date              DateTime
   durationMin       Int?
   rpe               Int?     // 1-10
@@ -1218,7 +1218,7 @@ model AssignedNutritionPlan {
 model Notification {
   id        String   @id @default(cuid())
   userId    String
-  type      String   // SESION_HOY | CHECKIN_DISPONIBLE | PLAN_ACTUALIZADO | MENSAJE_COACH | AJUSTE_NUTRICIONAL | LOGRO | PROPUESTA_COACH
+  type      String   // SESION_HOY | CHECKIN_DISPONIBLE | PLAN_ACTUALIZADO | MENSAJE_COACH | AJUSTE_NUTRICIONAL | LOGRO | PROPUESTA_COACH | SUGERENCIA_NUTRICIONAL
   title     String
   body      String
   read      Boolean  @default(false)
