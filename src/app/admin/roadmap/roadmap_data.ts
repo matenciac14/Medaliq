@@ -3025,9 +3025,27 @@ export const GROUPS: RoadmapGroup[] = [
           },
           {
             title: 'DEBT-ARCH-08 — mobile/progress/route.ts fat route (275 lineas, 11 queries sin use case)',
+            done: true,
+            priority: 'P2',
+            note: 'DONE (2026-10-02). Extraido a domain/progress/get_progress_data.use_case.ts. Route queda en ~18 lineas.',
+          },
+          {
+            title: 'DEBT-ARCH-09 — 10 fat routes refactorizadas: business logic extraida a domain use cases',
+            done: true,
+            priority: 'P1',
+            note: 'DONE (2026-10-02). dashboard(177→21L), week-sessions(237→22L), gym/routines(154→35L), coach/profile(160→47L), coach/clients/create(176→45L), coach/athletes/nutrition(174→72L), copy-from(152→37L), from-template(157→33L), onboarding/generate(199→67L), coach/gym/routines/[id](191→63L). 15 use cases nuevos en domain/.',
+          },
+          {
+            title: 'DEBT-PERF-01 — Mobile API performance: queries secuenciales + over-fetch en endpoints criticos',
+            done: true,
+            priority: 'P1',
+            note: 'DONE (2026-10-02). Dashboard: lastCompletedPlan parallelized. Nutrition/today: buildWeeklySummary sync (plannedSessions pre-fetched). Gym/today: direct plannedSession query, exercise select 10 campos. Dashboard queries: exercise include scoped a 5 campos.',
+          },
+          {
+            title: 'DEBT-PERF-02 — gym/history over-fetch template days + progress 600 setLogs + plan/route all weeks',
             done: false,
             priority: 'P2',
-            note: 'No hay use case para progress. 11 queries paralelas + agregacion + chart data todo inline. Extraer a infrastructure/db/ query file + domain use case.',
+            note: 'Pendiente: gym/history include template.days redundante. progress usa take:600 setLogs (candidato a aggregation). plan/route carga todas las semanas (candidato a paginacion). Indices faltantes: SessionLog(userId,freeSessionType), SessionLog(userId,externalId).',
           },
         ],
       },
