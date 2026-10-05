@@ -104,7 +104,11 @@ export default function AthletePlanClient({
   const handleUpgrade = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/billing/athlete/checkout', { method: 'POST' })
+      const res = await fetch('/api/billing/athlete/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ returnTo: '/settings/plan' }),
+      })
       const data = await res.json() as { checkoutUrl?: string; error?: string }
       if (!res.ok) throw new Error(data.error ?? 'Error al crear checkout.')
       window.location.href = data.checkoutUrl!

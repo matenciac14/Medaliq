@@ -4,6 +4,7 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import { roleSchema, parseBody } from '@/lib/validation'
 import { setFreshJwtCookie } from '@/lib/auth/refresh_jwt_cookie'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 const SetRoleSchema = z.object({ role: roleSchema })
 
@@ -12,6 +13,9 @@ export async function POST(req: NextRequest) {
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'No autenticado.' }, { status: 401 })
   }
+
+  const { allowed } = await rateLimitAsync(`set-role:${session.user.id}`, { limit: 10, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiados intentos.' }, { status: 429 })
 
   // Only Google OAuth users pending role selection can use this endpoint
   if (!session.user.needsRoleSelection) {

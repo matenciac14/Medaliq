@@ -8,6 +8,7 @@ import { rateLimitAsync } from '@/lib/rate_limit'
 import { prisma } from '@/lib/db/prisma'
 import { MealType, NutritionDayType } from '@/generated/prisma/enums'
 import { z } from 'zod'
+import { requireFeature } from '@/lib/guards/feature_gate'
 
 const bodySchema = z.object({
   weekStart:    z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -17,6 +18,8 @@ const bodySchema = z.object({
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const mobile = await getMobileUser(req)
   if (!mobile) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  const gate = requireFeature(mobile.features, 'nutrition')
+  if (gate) return gate
   const { allowed } = await rateLimitAsync(`mobile-${mobile.id}:template-apply`, { limit: 100, windowMs: 60_000 })
   if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 

@@ -20,6 +20,9 @@ export async function GET(
   if (!session?.user?.id || session.user.role !== 'COACH') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:coach-athlete-benchmarks`, { limit: 300, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
+
   const { id: athleteId } = await params
   if (!await verifyCoach(session.user.id, athleteId)) {
     return NextResponse.json({ error: 'Atleta no encontrado' }, { status: 404 })

@@ -10,6 +10,9 @@ export async function GET(_req: NextRequest) {
     return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
   }
 
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:coach-nutrition-templates`, { limit: 300, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
+
   const templates = await prisma.nutritionTemplate.findMany({
     where: { coachId: session.user.id },
     include: {

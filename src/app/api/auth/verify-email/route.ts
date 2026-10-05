@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 export async function GET(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for') ?? 'unknown'
+  const { allowed } = await rateLimitAsync(`verify-email:${ip}`, { limit: 10, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiados intentos.' }, { status: 429 })
+
   const token = req.nextUrl.searchParams.get('token')
   if (!token) {
     return NextResponse.redirect(new URL('/login?error=token-invalido', req.url))

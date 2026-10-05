@@ -15,7 +15,7 @@ vi.mock('@/lib/db/prisma', () => ({
 import { getMobileUser } from '@/lib/auth/mobile_auth'
 import { prisma } from '@/lib/db/prisma'
 
-const MOBILE_USER = { id: 'user-1', email: 'test@test.com', name: 'Test', role: 'ATHLETE', features: {}, onboardingCompleted: true, userPlan: 'PRO' }
+const MOBILE_USER = { id: 'user-1', email: 'test@test.com', name: 'Test', role: 'ATHLETE', features: { nutrition: true }, onboardingCompleted: true, userPlan: 'PRO' }
 
 function getReq(qs = '') {
   return new NextRequest(new URL(`/api/mobile/nutrition/foods${qs}`, 'http://localhost'), {

@@ -4,6 +4,7 @@ import { rateLimitAsync } from '@/lib/rate_limit'
 import { prisma } from '@/lib/db/prisma'
 import { ok, unauthorized, badRequest, serverError } from '@/lib/api/responses'
 import { z } from 'zod'
+import { requireFeature } from '@/lib/guards/feature_gate'
 
 const createSchema = z.object({
   name:     z.string().min(1).max(100),
@@ -17,6 +18,8 @@ const createSchema = z.object({
 export async function GET(req: NextRequest) {
   const mobile = await getMobileUser(req)
   if (!mobile) return unauthorized()
+  const gate = requireFeature(mobile.features, 'nutrition')
+  if (gate) return gate
   const { allowed } = await rateLimitAsync(`mobile-${mobile.id}:meal-templates-get`, { limit: 300, windowMs: 60_000 })
   if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 
@@ -48,6 +51,8 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const mobile = await getMobileUser(req)
   if (!mobile) return unauthorized()
+  const gate2 = requireFeature(mobile.features, 'nutrition')
+  if (gate2) return gate2
   const { allowed } = await rateLimitAsync(`mobile-${mobile.id}:meal-templates-post`, { limit: 100, windowMs: 60_000 })
   if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 

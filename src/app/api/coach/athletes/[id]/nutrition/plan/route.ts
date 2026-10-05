@@ -17,6 +17,9 @@ export async function GET(
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
 
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:coach-athlete-nutrition-plan`, { limit: 300, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
+
   const { id: athleteId } = await params
 
   const link = await prisma.coachAthlete.findFirst({

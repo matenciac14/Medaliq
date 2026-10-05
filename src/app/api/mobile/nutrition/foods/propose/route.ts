@@ -3,6 +3,7 @@ import { getMobileUser } from '@/lib/auth/mobile_auth'
 import { z } from 'zod'
 import { rateLimitAsync } from '@/lib/rate_limit'
 import { PrismaFoodProposalRepository } from '@/infrastructure/db/food_proposal.repository'
+import { requireFeature } from '@/lib/guards/feature_gate'
 
 const VALID_CATEGORIES = ['PROTEIN', 'CARB', 'FAT', 'VEGETABLE', 'FRUIT', 'DAIRY', 'LEGUME', 'OTHER']
 
@@ -24,6 +25,8 @@ const repo = new PrismaFoodProposalRepository()
 export async function POST(req: NextRequest) {
   const mobile = await getMobileUser(req)
   if (!mobile) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  const gate = requireFeature(mobile.features, 'nutrition')
+  if (gate) return gate
 
   const { allowed } = await rateLimitAsync(`propose-food:${mobile.id}`, { limit: 10, windowMs: 3_600_000 })
   if (!allowed) return NextResponse.json({ error: 'Límite de propuestas por hora alcanzado.' }, { status: 429 })

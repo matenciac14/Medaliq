@@ -14,7 +14,7 @@ export function requireFeature(
 ): NextResponse | null {
   if (!features?.[feature]) {
     return NextResponse.json(
-      { error: 'Función no disponible en tu plan actual.', upgrade: 'https://medaliq.com/upgrade' },
+      { error: 'Función no disponible en tu plan actual.', upgrade: '/upgrade' },
       { status: 402 }
     )
   }

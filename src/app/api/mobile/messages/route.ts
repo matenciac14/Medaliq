@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
   const [recipient, relationship] = await Promise.all([
     prisma.user.findUnique({ where: { id: toId }, select: { pushToken: true, name: true } }),
     prisma.coachAthlete.findFirst({
-      where: { OR: [{ coachId: mobile.id, athleteId: toId }, { coachId: toId, athleteId: mobile.id }] },
+      where: { status: 'ACTIVE', OR: [{ coachId: mobile.id, athleteId: toId }, { coachId: toId, athleteId: mobile.id }] },
       select: { id: true },
     }),
   ])

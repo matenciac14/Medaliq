@@ -144,8 +144,8 @@ export default async function AdminFinanzasPage() {
             <p className="text-xs text-gray-400 mt-0.5">Lo que cada coach debe pagar a Medaliq mensualmente</p>
           </div>
           <div className="text-right text-xs text-gray-400">
-            <p className="font-medium text-gray-600">Starter $0 · Growth $39 · Pro $79</p>
-            <p>Scale $129/mes · Scale+ $129 + $1.50/atleta &gt;100</p>
+            <p className="font-medium text-gray-600">Starter $0 · Growth $59 · Pro $139</p>
+            <p>Scale $139/mes · Scale+ $139 + $4/atleta &gt;30</p>
           </div>
         </div>
 

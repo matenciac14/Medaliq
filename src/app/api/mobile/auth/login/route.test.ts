@@ -12,6 +12,7 @@ vi.mock('@/lib/db/prisma', () => ({
     user: { findUnique: vi.fn() },
     coachAthlete: { findFirst: vi.fn() },
     healthProfile: { findUnique: vi.fn() },
+    userSubscription: { findUnique: vi.fn() },
   },
 }))
 vi.mock('@/lib/auth/mobile_auth', async (importOriginal) => {
@@ -62,6 +63,7 @@ beforeEach(() => {
   vi.mocked(rateLimitAsync).mockResolvedValue({ allowed: true } as any)
   vi.mocked(prisma.healthProfile.findUnique).mockResolvedValue(null)
   vi.mocked(prisma.coachAthlete.findFirst).mockResolvedValue(null)
+  vi.mocked(prisma.userSubscription.findUnique).mockResolvedValue(null)
 })
 
 describe('POST /api/mobile/auth/login', () => {

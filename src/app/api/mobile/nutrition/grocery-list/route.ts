@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getMobileUser } from '@/lib/auth/mobile_auth'
 import { rateLimitAsync } from '@/lib/rate_limit'
 import { prisma } from '@/lib/db/prisma'
+import { requireFeature } from '@/lib/guards/feature_gate'
 
 const CATEGORY_LABELS: Record<string, string> = {
   PROTEIN:   'Proteínas',
@@ -18,6 +19,8 @@ const CATEGORY_LABELS: Record<string, string> = {
 export async function GET(req: NextRequest) {
   const mobile = await getMobileUser(req)
   if (!mobile) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  const gate = requireFeature(mobile.features, 'nutrition')
+  if (gate) return gate
   const { allowed } = await rateLimitAsync(`mobile-${mobile.id}:grocery-list`, { limit: 60, windowMs: 60_000 })
   if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 

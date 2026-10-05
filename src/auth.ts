@@ -150,10 +150,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
           // Ensure UserSubscription exists (Google OAuth bypasses /register)
           if (dbUser && !subscription) {
+            const billingEnabled = process.env.BILLING_ENABLED === 'true'
+            const initialTier = billingEnabled ? 'FREE' : 'PRO'
             await prisma.userSubscription.create({
-              data: { userId: t.id, tier: 'PRO' },
+              data: { userId: t.id, tier: initialTier },
             }).catch(() => {}) // Ignore if already created by concurrent request
-            subscription = { tier: 'PRO' as const, trialEndsAt: null }
+            subscription = { tier: initialTier as 'FREE' | 'PRO', trialEndsAt: null }
           }
           if (dbUser) {
             const trialDaysLeft = subscription?.tier === 'TRIAL' && subscription?.trialEndsAt

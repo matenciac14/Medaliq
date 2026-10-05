@@ -8,9 +8,9 @@ import type { CoachTier } from '../subscription/tier_features'
 
 export const COACH_TIER_PRICES_USD: Record<CoachTier, number> = {
   STARTER: 0,
-  GROWTH: 39,
-  PRO: 79,
-  SCALE: 129,
+  GROWTH: 59,
+  PRO: 139,
+  SCALE: 139,  // base — variable pricing: +$4/atleta sobre 30
 }
 
 export const ATHLETE_PRO_PRICE_USD = 9.99

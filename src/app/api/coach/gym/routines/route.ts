@@ -42,6 +42,9 @@ export async function GET(_req: NextRequest) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
 
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:coach-routines`, { limit: 300, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
+
   const templates = await getCoachRoutines(session.user.id, prisma)
   return NextResponse.json(templates)
 }

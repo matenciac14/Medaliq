@@ -6,9 +6,6 @@ import { getPaymentGateway } from '@/infrastructure/billing/payment_gateway.fact
 import { createAthleteCheckout } from '@/domain/billing/checkout.use_case'
 
 export async function POST(req: NextRequest) {
-  // NextRequest es requerido por la firma pero no se usa el body aquí
-  void req
-
   const session = await auth()
   if (!session?.user?.id || session.user.role !== 'ATHLETE') {
     return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
@@ -32,9 +29,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Ya tienes Plan Pro activo.' }, { status: 409 })
   }
 
+  // returnTo permite que cada página caller reciba el redirect post-pago
+  const body = await req.json().catch(() => ({})) as { returnTo?: string }
+  const allowedReturns = ['/upgrade', '/settings/plan']
+  const returnTo = allowedReturns.includes(body.returnTo ?? '') ? body.returnTo! : '/upgrade'
+
   const baseUrl    = process.env.NEXT_PUBLIC_APP_URL ?? 'https://medaliq.com'
-  const successUrl = `${baseUrl}/dashboard?billing=success`
-  const cancelUrl  = `${baseUrl}/dashboard?billing=cancelled`
+  const successUrl = `${baseUrl}${returnTo}?billing=success`
+  const cancelUrl  = `${baseUrl}${returnTo}?billing=cancelled`
 
   const result = await createAthleteCheckout(
     { userId: session.user.id, successUrl, cancelUrl },

@@ -3,6 +3,7 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import { calculateTrainingAdherence } from '@/domain/training/get_training_adherence'
 import { getPlanWeekNumber } from '@/lib/core/week_number'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 export async function GET(
   _req: Request,
@@ -12,6 +13,9 @@ export async function GET(
   if (!session?.user?.id || session.user.role !== 'COACH') {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
+
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:coach-athlete-training-adherence`, { limit: 300, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
 
   const { id: athleteId } = await params
 

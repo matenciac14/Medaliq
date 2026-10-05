@@ -9,6 +9,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(req: NextRequest) {
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Not available in production' }, { status: 404 })
+  }
+
   if (process.env.PAYMENT_GATEWAY && process.env.PAYMENT_GATEWAY !== 'stub') {
     return NextResponse.json({ error: 'Stub no disponible en producción.' }, { status: 403 })
   }

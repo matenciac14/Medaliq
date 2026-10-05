@@ -55,7 +55,6 @@ type Props = {
 
   // Flags
   hasEverLogged: boolean
-  hasAnyFoodLog?: boolean
 }
 
 export default function MobileCardsSection(props: Props) {
@@ -73,13 +72,12 @@ export default function MobileCardsSection(props: Props) {
 // -- FREE / GYM Mode --------------------------------------------------------
 
 function FreeMobileCards(props: Props) {
-  const { dashSummary, hasEverLogged, currentWeight, targetWeight, weeklyWeightChange, weightProgressPct, todayLogRaw, todayConsumed, hasAnyFoodLog } = props
-  const showNutritionCard = hasAnyFoodLog !== false
+  const { dashSummary, hasEverLogged, currentWeight, targetWeight, weeklyWeightChange, weightProgressPct, todayLogRaw, todayConsumed } = props
 
   return (
     <>
-      {/* Nutricion — hidden when WelcomeNutritionCard is showing */}
-      {showNutritionCard && dashSummary.nutritionTarget && (
+      {/* Nutricion */}
+      {dashSummary.nutritionTarget && (
         <NutritionProgressCard
           data={{ kcal: dashSummary.nutritionTarget.kcal, proteinG: dashSummary.nutritionTarget.proteinG, carbsG: dashSummary.nutritionTarget.carbsG, fatG: dashSummary.nutritionTarget.fatG }}
           variant="compact"
@@ -121,14 +119,13 @@ function ProMobileCards(props: Props) {
     formStatus, formMessage, lastCheckIn, formCheckInDate,
     isRecomp, currentWeight, targetWeight, raceDays,
     weeklyWeightChange, weightProgressPct, currentVolume, volumeDeltaPct,
-    dashSummary, todayLogRaw, todayConsumed, hasAnyFoodLog,
+    dashSummary, todayLogRaw, todayConsumed,
   } = props
-  const showNutritionCard = hasAnyFoodLog !== false
 
   return (
     <>
-      {/* Nutricion — hidden when WelcomeNutritionCard is showing */}
-      {showNutritionCard && dashSummary.nutritionTarget && (
+      {/* Nutricion */}
+      {dashSummary.nutritionTarget && (
         <NutritionProgressCard
           data={{ kcal: dashSummary.nutritionTarget.kcal, proteinG: dashSummary.nutritionTarget.proteinG, carbsG: dashSummary.nutritionTarget.carbsG, fatG: dashSummary.nutritionTarget.fatG, label: dashSummary.nutritionTarget.label }}
           variant="compact"
@@ -366,7 +363,7 @@ function RecentActivityCard({ recentActivity, hasEverLogged, streakDays }: {
 
 function UpsellBannerPro() {
   return (
-    <Link href="/pricing" className="flex items-center gap-3 bg-[#fff7ed] border border-[rgba(234,89,9,0.3)] rounded-xl overflow-hidden px-4 py-3.5">
+    <Link href="/upgrade" className="flex items-center gap-3 bg-[#fff7ed] border border-[rgba(234,89,9,0.3)] rounded-xl overflow-hidden px-4 py-3.5">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
           <span className="text-sm">⚡</span>

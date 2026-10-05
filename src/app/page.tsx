@@ -56,11 +56,11 @@ export default function Home() {
         '@type': 'FAQPage',
         mainEntity: [
           { '@type': 'Question', name: 'Mis atletas de verdad lo van a usar?', acceptedAnswer: { '@type': 'Answer', text: 'Si. Entran desde su celular o navegador, como cualquier app — sin instalar nada complicado. Tu los invitas con tu codigo.' } },
-          { '@type': 'Question', name: 'Mis atletas tambien pagan?', acceptedAnswer: { '@type': 'Answer', text: 'No. Tu pagas tu plan de coach (o empiezas gratis con hasta 5 asesorados). Ellos usan su app sin costo extra.' } },
+          { '@type': 'Question', name: 'Mis atletas tambien pagan?', acceptedAnswer: { '@type': 'Answer', text: 'No. Tu pagas tu plan de coach (o empiezas gratis con hasta 2 asesorados). Ellos usan su app sin costo extra.' } },
           { '@type': 'Question', name: 'Como subo lo que ya tengo?', acceptedAnswer: { '@type': 'Answer', text: 'Invitas a tus atletas con tu codigo unico y suben su perfil en minutos. Te ayudamos a cargar los primeros.' } },
           { '@type': 'Question', name: 'Y si no me sirve?', acceptedAnswer: { '@type': 'Answer', text: 'Cancela cuando quieras — sin letra chica, sin permanencia.' } },
           { '@type': 'Question', name: 'Que es Medaliq?', acceptedAnswer: { '@type': 'Answer', text: 'Medaliq es una plataforma de tracking y coaching deportivo para Latinoamerica. Permite a entrenadores gestionar sus atletas con planes periodizados, nutricion personalizada y seguimiento semanal desde un solo panel. Los atletas registran sesiones, nutricion y ejercicios desde la app.' } },
-          { '@type': 'Question', name: 'Cuanto cuesta Medaliq para coaches?', acceptedAnswer: { '@type': 'Answer', text: 'Medaliq tiene 4 planes para coaches: Starter (gratis, hasta 5 atletas), Growth ($39/mes, 6-25 atletas), Pro ($79/mes, 26-75 atletas) y Scale ($129/mes, +75 atletas). 0% de fee sobre pagos de atletas.' } },
+          { '@type': 'Question', name: 'Cuanto cuesta Medaliq para coaches?', acceptedAnswer: { '@type': 'Answer', text: 'Medaliq tiene 4 planes para coaches: Starter (gratis, hasta 2 atletas), Growth ($59/mes, 3-10 atletas), Pro ($139/mes, 11-30 atletas) y Scale ($139/mes + $4/atleta sobre 30). 0% de fee sobre pagos de atletas.' } },
         ],
       }} />
       <JsonLd data={{
@@ -1146,25 +1146,25 @@ export default function Home() {
                   {
                     name: "STARTER",
                     price: "Gratis",
-                    athletes: "≤ 5 asesorados",
+                    athletes: "≤ 2 asesorados",
                     highlight: false,
                   },
                   {
                     name: "GROWTH",
-                    price: "$39/mes",
-                    athletes: "6 – 25 asesorados",
+                    price: "$59/mes",
+                    athletes: "3 – 10 asesorados",
                     highlight: true,
                   },
                   {
                     name: "PRO",
-                    price: "$79/mes",
-                    athletes: "26 – 75 asesorados",
+                    price: "$139/mes",
+                    athletes: "11 – 30 asesorados",
                     highlight: false,
                   },
                   {
                     name: "SCALE",
-                    price: "$129/mes",
-                    athletes: "+75 asesorados",
+                    price: "$139 + $4/atleta",
+                    athletes: "+30 asesorados",
                     highlight: false,
                   },
                 ].map((tier) => (

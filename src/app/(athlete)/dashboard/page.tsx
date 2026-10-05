@@ -15,9 +15,6 @@ import MobileCardsSection from './_components/MobileCardsSection'
 import DesktopRecentActivity from './_components/DesktopRecentActivity'
 import MealSlotsWidget from './_components/MealSlotsWidget'
 import HydrationWidget from '../nutrition/_components/HydrationWidget'
-import TrialCountdownBanner from './_components/TrialCountdownBanner'
-import WelcomeNutritionCard from './_components/WelcomeNutritionCard'
-import FirstWorkoutCard from './_components/FirstWorkoutCard'
 
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ weekOffset?: string }> }) {
   const session = await auth()
@@ -47,24 +44,6 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       </div>
 
       <div className="px-4 lg:px-0 sm:space-y-5 space-y-4">
-
-      {/* Trial countdown banner */}
-      {d.trialDaysLeft != null && d.trialDaysLeft >= 0 && (
-        <TrialCountdownBanner daysLeft={d.trialDaysLeft} />
-      )}
-
-      {/* Welcome cards — first-time user */}
-      {!d.hasAnyFoodLog && d.dashSummary.nutritionTarget && (
-        <div className="space-y-3">
-          <WelcomeNutritionCard
-            kcal={d.dashSummary.nutritionTarget.kcal}
-            proteinG={d.dashSummary.nutritionTarget.proteinG}
-            carbsG={d.dashSummary.nutritionTarget.carbsG}
-            fatG={d.dashSummary.nutritionTarget.fatG}
-          />
-          <FirstWorkoutCard />
-        </div>
-      )}
 
       {/* Pending check-in suggestions banner */}
       {d.pendingSuggestionsCount > 0 && (
@@ -206,7 +185,6 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             } : null}
             checkinPending={d.checkinPending}
             hasActivePlan={!!d.activePlanId}
-            hasAnyFoodLog={d.hasAnyFoodLog}
           />
 
           {/* Desktop: Info banner row */}
@@ -226,7 +204,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
           {/* Desktop: FREE upsell banner */}
           {d.dashboardMode === 'FREE' && (
-            <Link href="/find-coach" className="hidden sm:block">
+            <div className="hidden sm:block">
               <div className="flex bg-orange-50 rounded-2xl border border-orange-200/60 overflow-hidden">
                 <div className="w-1 bg-[#ea580c] shrink-0" />
                 <div className="flex-1 px-4 py-3 flex items-center justify-between gap-3">
@@ -240,16 +218,16 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-xs font-semibold text-[#1e3a5f] border border-gray-200 bg-white px-3 py-1.5 rounded-lg whitespace-nowrap">
+                    <Link href="/find-coach" className="text-xs font-semibold text-[#1e3a5f] border border-gray-200 bg-white px-3 py-1.5 rounded-lg whitespace-nowrap hover:bg-gray-50 transition-colors">
                       Buscar entrenador
-                    </span>
-                    <span className="text-xs font-semibold text-white bg-[#ea580c] px-3 py-1.5 rounded-lg whitespace-nowrap">
+                    </Link>
+                    <Link href="/upgrade" className="text-xs font-semibold text-white bg-[#ea580c] px-3 py-1.5 rounded-lg whitespace-nowrap hover:bg-[#c2410c] transition-colors">
                       Activar Pro →
-                    </span>
+                    </Link>
                   </div>
                 </div>
               </div>
-            </Link>
+            </div>
           )}
 
           {/* Desktop: Meal slots + Water widget (per Figma "Tu alimentacion hoy") */}

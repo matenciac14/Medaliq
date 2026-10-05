@@ -65,10 +65,11 @@ export async function POST(req: NextRequest) {
           }),
         },
       })
+      const billingEnabled = process.env.BILLING_ENABLED === 'true'
       await tx.userSubscription.create({
         data: {
           userId:   user.id,
-          tier:     'PRO',  // Beta: todos PRO. Post-beta: isCoach ? 'PRO' : 'FREE'
+          tier:     billingEnabled ? 'FREE' : 'PRO',
           ...(isCoach ? { coachTier: 'STARTER' } : {}),
         },
       })

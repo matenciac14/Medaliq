@@ -9,10 +9,11 @@
  *   5. Atleta Ana (ana@medaliq.com) — B2C Free sin onboarding (empty state, sin rutinas)
  *   6. Atleta Laura (pro@medaliq.com) — B2C Pro, gym-focused autónoma, data completa
  *   7. Atleta Diego (pending@medaliq.com) — B2B pendiente de activación
- *   8. Ejercicios globales
- *   9. Rutinas públicas del sistema
- *  10. Alimentos LatAm
- *  11. Template de nutrición del coach + asignación a atletas
+ *   8. Atleta Miguel Test (migueltest2@medaliq.com) — B2C FREE para billing test
+ *   9. Ejercicios globales
+ *  10. Rutinas públicas del sistema
+ *  11. Alimentos LatAm
+ *  12. Template de nutrición del coach + asignación a atletas
  *
  * Idempotente — usa upsert. Safe re-run.
  * Uso: pnpm prisma db seed   (o:  tsx prisma/seed.ts)
@@ -25,6 +26,7 @@
  *   ana@medaliq.com          / atleta123
  *   pro@medaliq.com          / atleta123
  *   pending@medaliq.com      / atleta123
+ *   migueltest2@medaliq.com  / 123456789
  */
 import 'dotenv/config'
 import {
@@ -64,7 +66,7 @@ async function main() {
   console.log('🌱 Seeding...')
 
   // ── 0. Cleanup data residual de seeds anteriores ─────────────────────────
-  const seedEmails = ['miguel@medaliq.com', 'ana@medaliq.com', 'pro@medaliq.com', 'pending@medaliq.com']
+  const seedEmails = ['miguel@medaliq.com', 'ana@medaliq.com', 'pro@medaliq.com', 'pending@medaliq.com', 'migueltest2@medaliq.com']
   const seedUsers = await prisma.user.findMany({ where: { email: { in: seedEmails } }, select: { id: true } })
   const seedIds = seedUsers.map(u => u.id)
 
@@ -315,20 +317,59 @@ async function main() {
   })
   console.log('✅ Atleta:        pending@medaliq.com (B2B pendiente)')
 
-  // ── 8. Ejercicios globales ────────────────────────────────────────────────
+  // ── 8. Atleta Billing Test (B2C FREE — para probar flujo de pago) ────────
+  const billingTestPassword = await bcrypt.hash('123456789', 10)
+  const billingTest = await prisma.user.upsert({
+    where: { email: 'migueltest2@medaliq.com' },
+    update: {
+      featurePlan: false, featureCheckin: false, featureNutrition: true,
+      featureProgress: false, featureLog: true, featureGym: true,
+      onboardingCompleted: true,
+    },
+    create: {
+      email: 'migueltest2@medaliq.com',
+      name: 'Miguel Test Billing',
+      password: billingTestPassword,
+      role: UserRole.ATHLETE,
+      featurePlan: false, featureCheckin: false, featureNutrition: true,
+      featureProgress: false, featureLog: true, featureGym: true,
+      onboardingCompleted: true,
+      profile: {
+        create: {
+          age: 28, heightCm: 175, weightKg: 75, weightGoalKg: 72,
+          hrResting: 55, hrMax: 190, altitudeMeters: 0,
+          gender: 'male', sport: 'RUNNING', sportGoal: 'GENERAL_FITNESS', experienceLevel: 'INTERMEDIATE',
+          injuries: [], conditions: [], medications: [],
+          sleepHoursAvg: 7, sleepScoreAvg: 80,
+        },
+      },
+    },
+  })
+
+  await prisma.userSubscription.upsert({
+    where: { userId: billingTest.id },
+    update: { tier: SubscriptionTier.FREE },
+    create: { userId: billingTest.id, tier: SubscriptionTier.FREE },
+  })
+
+  // Limpiar CoachAthlete si existía
+  await prisma.coachAthlete.deleteMany({ where: { athleteId: billingTest.id } })
+  console.log('✅ Atleta:        migueltest2@medaliq.com (B2C FREE — billing test)')
+
+  // ── 9. Ejercicios globales ────────────────────────────────────────────────
   await seedExercises()
 
-  // ── 9. Rutinas públicas del sistema ───────────────────────────────────────
+  // ── 10. Rutinas públicas del sistema ──────────────────────────────────────
   await seedPublicTemplates()
 
-  // ── 10. Alimentos LatAm ───────────────────────────────────────────────────
+  // ── 11. Alimentos LatAm ───────────────────────────────────────────────────
   await seedLatamFoods()
 
-  // ── 11. Data histórica de atletas ─────────────────────────────────────────
+  // ── 12. Data histórica de atletas ─────────────────────────────────────────
   await seedMiguelData(miguel.id, coach1.id)
   await seedLauraData(pro.id)
 
-  // ── 12. Template de nutrición del coach + asignación a Miguel ─────────────
+  // ── 13. Template de nutrición del coach + asignación a Miguel ─────────────
   await seedCoachNutritionTemplate(coach1.id, miguel.id)
 
   console.log('\n🎉 Seed completado.')

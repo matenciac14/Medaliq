@@ -63,39 +63,64 @@ export async function POST(req: NextRequest) {
     let needsRoleSelection = false
 
     if (!dbUser) {
-      dbUser = await prisma.user.create({
-        data: {
-          email: googleUser.email,
-          name: googleUser.name,
-          image: googleUser.picture ?? null,
-          role: 'ATHLETE',
-          needsRoleSelection: true,
-          onboardingCompleted: false,
-        },
-        select: { ...MOBILE_USER_SELECT, image: true },
+      const newUser = await prisma.$transaction(async (tx) => {
+        const u = await tx.user.create({
+          data: {
+            email: googleUser.email,
+            name: googleUser.name,
+            image: googleUser.picture ?? null,
+            role: 'ATHLETE',
+            needsRoleSelection: true,
+            onboardingCompleted: false,
+          },
+          select: { ...MOBILE_USER_SELECT, image: true },
+        })
+        const billingEnabled = process.env.BILLING_ENABLED === 'true'
+        await tx.userSubscription.create({
+          data: { userId: u.id, tier: billingEnabled ? 'FREE' : 'PRO' },
+        })
+        return u
       })
+      dbUser = newUser
       needsRoleSelection = true
     } else if (dbUser.needsRoleSelection) {
       needsRoleSelection = true
     }
 
-    const payload = needsRoleSelection
-      ? {
-          id: dbUser.id,
-          email: dbUser.email,
-          name: dbUser.name ?? '',
-          role: dbUser.role,
-          status: dbUser.status as 'ACTIVE',
-          onboardingCompleted: false,
-          activated: false,
-          isB2B: false,
-          userPlan: 'FREE' as const,
-          trialDaysLeft: null,
-          profileComplete: false,
-          needsRoleSelection: true,
-          features: DEFAULT_USER_CONFIG.features,
-        }
-      : buildMobileTokenPayload(dbUser, { isB2B: false })
+    let payload
+    if (needsRoleSelection) {
+      payload = {
+        id: dbUser.id,
+        email: dbUser.email,
+        name: dbUser.name ?? '',
+        role: dbUser.role,
+        status: dbUser.status as 'ACTIVE',
+        onboardingCompleted: false,
+        activated: false,
+        isB2B: false,
+        userPlan: 'FREE' as const,
+        trialDaysLeft: null,
+        profileComplete: false,
+        needsRoleSelection: true,
+        features: DEFAULT_USER_CONFIG.features,
+      }
+    } else {
+      const [coachRelation, subscription] = await Promise.all([
+        prisma.coachAthlete.findFirst({
+          where: { athleteId: dbUser.id, status: 'ACTIVE' },
+          select: { id: true },
+        }),
+        prisma.userSubscription.findUnique({
+          where: { userId: dbUser.id },
+          select: { tier: true, trialEndsAt: true },
+        }),
+      ])
+      payload = buildMobileTokenPayload(dbUser, {
+        isB2B: !!coachRelation,
+        subscriptionTier: subscription?.tier,
+        trialEndsAt: subscription?.trialEndsAt,
+      })
+    }
 
     const token = await signMobileToken(payload)
 

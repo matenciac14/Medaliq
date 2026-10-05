@@ -149,9 +149,6 @@ export type DashboardData = {
 
   // Trial countdown
   trialDaysLeft: number | null
-
-  // Welcome cards
-  hasAnyFoodLog: boolean
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -183,7 +180,7 @@ export async function getDashboardData(userId: string, rawWeekOffset: number, se
   const todayDow = todayDowInTz(userTz)
 
   // ── Shared + web-specific parallel fetch ─────────────────────────────────
-  const [core, activePlansRaw, initialCalendarWeek, userSubscription, firstFoodLog] = await Promise.all([
+  const [core, activePlansRaw, initialCalendarWeek, userSubscription] = await Promise.all([
     fetchCoreDashboardData(userId, userTz),
     prisma.trainingPlan.findMany({
       where: { userId, status: 'ACTIVE' },
@@ -204,10 +201,6 @@ export async function getDashboardData(userId: string, rawWeekOffset: number, se
     prisma.userSubscription.findUnique({
       where: { userId },
       select: { tier: true, trialEndsAt: true },
-    }),
-    prisma.foodLog.findFirst({
-      where: { userId },
-      select: { id: true },
     }),
   ])
 
@@ -573,7 +566,5 @@ export async function getDashboardData(userId: string, rawWeekOffset: number, se
     initialMealSlotLogs: computeMealSlotLogs(todayFoodLogs),
 
     trialDaysLeft,
-
-    hasAnyFoodLog: !!firstFoodLog,
   }
 }

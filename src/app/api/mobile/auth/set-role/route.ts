@@ -41,7 +41,22 @@ export async function POST(req: NextRequest) {
     select: MOBILE_USER_SELECT,
   })
 
-  const payload = buildMobileTokenPayload(updatedUser, { isB2B: false })
+  const [coachRelation, subscription] = await Promise.all([
+    prisma.coachAthlete.findFirst({
+      where: { athleteId: mobile.id, status: 'ACTIVE' },
+      select: { id: true },
+    }),
+    prisma.userSubscription.findUnique({
+      where: { userId: mobile.id },
+      select: { tier: true, trialEndsAt: true },
+    }),
+  ])
+
+  const payload = buildMobileTokenPayload(updatedUser, {
+    isB2B: !!coachRelation,
+    subscriptionTier: subscription?.tier,
+    trialEndsAt: subscription?.trialEndsAt,
+  })
   const token = await signMobileToken(payload)
 
   return NextResponse.json({

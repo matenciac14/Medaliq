@@ -5,10 +5,10 @@ import { Loader2 } from 'lucide-react'
 import type { WizardData, OnboardingGoal } from './_types'
 import { isStepValid } from './_types'
 
-const GOAL_OPTIONS: { value: OnboardingGoal; emoji: string; label: string; desc: string }[] = [
-  { value: 'LOSE_FAT', emoji: '🔥', label: 'Perder grasa', desc: 'Déficit calórico para bajar de peso' },
-  { value: 'GAIN_MUSCLE', emoji: '💪', label: 'Ganar músculo', desc: 'Superávit calórico' },
-  { value: 'STAY_HEALTHY', emoji: '⚡', label: 'Mantenerme saludable', desc: 'Comer bien' },
+const GOAL_OPTIONS: { value: OnboardingGoal; emoji: string; label: string; desc: string; mobileDesc: string }[] = [
+  { value: 'LOSE_FAT', emoji: '🔥', label: 'Perder grasa', desc: 'Déficit calórico para bajar de peso', mobileDesc: 'Déficit calórico' },
+  { value: 'GAIN_MUSCLE', emoji: '💪', label: 'Ganar músculo', desc: 'Superávit para ganar masa muscular', mobileDesc: 'Superávit calórico' },
+  { value: 'STAY_HEALTHY', emoji: '⚡', label: 'Mantenerme saludable', desc: 'Comer bien para rendir mejor', mobileDesc: 'Comer bien' },
 ]
 
 const GENDER_OPTIONS = [
@@ -123,24 +123,6 @@ export default function OnboardingPage() {
         </div>
       </div>
 
-      {/* Weight goal — conditional */}
-      {data.goal === 'LOSE_FAT' && (
-        <div>
-          <label className={LABEL_CLS}>Peso objetivo (opc.)</label>
-          <input
-            type="number"
-            inputMode="decimal"
-            step="0.1"
-            min="20"
-            max="299"
-            placeholder="65"
-            value={data.weightGoalKg ?? ''}
-            onChange={e => update({ weightGoalKg: e.target.value ? Number(e.target.value) : null })}
-            className={INPUT_CLS}
-          />
-        </div>
-      )}
-
       {/* Gender */}
       <div>
         <label className={LABEL_CLS}>Sexo</label>
@@ -150,10 +132,10 @@ export default function OnboardingPage() {
               key={opt.value}
               type="button"
               onClick={() => update({ gender: opt.value })}
-              className={`py-2.5 rounded-xl border-[1.5px] text-[13px] font-semibold transition-colors ${
+              className={`py-2.5 rounded-xl text-[13px] font-semibold transition-colors ${
                 data.gender === opt.value
-                  ? 'border-[#ea580c] bg-[#ea580c]/5 text-[#ea580c]'
-                  : 'border-[#d9d9de] text-[#6b7380] hover:border-gray-400'
+                  ? 'border-2 border-[#ea580c] bg-[#fff2ed] text-[#ea580c]'
+                  : 'border-[1.5px] border-[#d9d9de] text-[#1a2744] hover:border-gray-400'
               }`}
             >
               {opt.label}
@@ -172,29 +154,47 @@ export default function OnboardingPage() {
       </div>
 
       {/* Goal cards */}
-      <div className="space-y-2">
+      <div className="space-y-[6px]">
         {GOAL_OPTIONS.map(opt => (
           <button
             key={opt.value}
             type="button"
             onClick={() => update({
               goal: opt.value,
-              weightGoalKg: opt.value !== 'LOSE_FAT' ? null : data.weightGoalKg,
+              weightGoalKg: data.weightGoalKg ?? data.weightKg,
             })}
-            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border-[1.5px] text-left transition-colors ${
+            className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-[10px] text-left transition-colors ${
               data.goal === opt.value
-                ? 'border-[#ea580c] bg-[#ea580c] text-white'
-                : 'border-[#d9d9de] hover:border-gray-400'
+                ? 'bg-[#ea580c] text-white'
+                : 'border-[1.5px] border-[#d9d9de] hover:border-gray-400'
             }`}
           >
-            <span className="text-xl">{opt.emoji}</span>
+            <span className="text-lg">{opt.emoji}</span>
             <div>
               <p className={`text-sm font-semibold ${data.goal === opt.value ? 'text-white' : 'text-[#1a2744]'}`}>{opt.label}</p>
-              <p className={`text-xs ${data.goal === opt.value ? 'text-white/80' : 'text-[#8c8c94]'}`}>{opt.desc}</p>
+              <p className={`text-[11px] ${data.goal === opt.value ? 'text-white' : 'text-[#8c8c94]'}`}>{opt.desc}</p>
             </div>
           </button>
         ))}
       </div>
+
+      {/* Weight goal — appears when any goal is selected */}
+      {data.goal && (
+        <div>
+          <label className={LABEL_CLS} style={{ color: '#8c8c94' }}>Peso objetivo (kg) — opcional</label>
+          <input
+            type="number"
+            inputMode="decimal"
+            step="0.1"
+            min="20"
+            max="299"
+            placeholder={String(data.weightKg ?? 65)}
+            value={data.weightGoalKg ?? ''}
+            onChange={e => update({ weightGoalKg: e.target.value ? Number(e.target.value) : null })}
+            className={INPUT_CLS}
+          />
+        </div>
+      )}
 
       {/* Days per week */}
       <div>
@@ -205,10 +205,10 @@ export default function OnboardingPage() {
               key={d}
               type="button"
               onClick={() => update({ daysPerWeek: d })}
-              className={`flex-1 py-2.5 rounded-xl border-[1.5px] text-sm font-bold transition-colors ${
+              className={`flex-1 py-2.5 rounded-[10px] text-sm font-bold transition-colors ${
                 data.daysPerWeek === d
-                  ? 'border-[#1a2744] bg-[#1a2744] text-white'
-                  : 'border-[#d9d9de] text-[#6b7380] hover:border-gray-400'
+                  ? 'bg-[#ea580c] text-white'
+                  : 'border-[1.5px] border-[#d9d9de] text-[#1a2744] hover:border-gray-400'
               }`}
             >
               {d}
@@ -221,37 +221,46 @@ export default function OnboardingPage() {
 
   return (
     <div className="min-h-screen bg-[#f7f7f9] flex flex-col">
-      {/* ── Navy header bar ─────────────────────────────────────────────── */}
-      <header className="bg-[#1a2744] px-4 sm:px-8 py-3 flex items-center justify-between shrink-0">
-        <span className="text-white text-lg font-bold tracking-tight">Medaliq</span>
-        <span className="bg-white/15 text-white text-[13px] font-medium px-3 py-1 rounded-full hidden sm:inline">
-          Paso único — Tu perfil
-        </span>
-        <span className="bg-white/15 text-white text-[13px] font-medium px-3 py-1 rounded-full sm:hidden">
-          Paso único
-        </span>
-        <a href="/api/auth/signout" className="text-white/70 text-sm hover:text-white transition-colors hidden sm:inline">
+      {/* ── Desktop header (white bg, hidden on mobile) ────────────────── */}
+      <header className="hidden sm:flex bg-white px-10 py-4 items-center gap-4 shrink-0">
+        <span className="text-lg font-bold text-[#1a2744] tracking-tight">Medaliq</span>
+        <div className="flex-1 h-px bg-gray-200" />
+        <span className="text-sm text-[#8c8c94]">Paso único — Tu perfil</span>
+        <div className="flex-1 h-px bg-gray-200" />
+        <a href="/api/auth/signout" className="text-sm text-[#8c8c94] hover:text-[#1a2744] transition-colors">
           Salir
         </a>
       </header>
 
-      {/* ── Orange progress bar (full) ──────────────────────────────────── */}
-      <div className="h-1 bg-[#ea580c] shrink-0" />
+      {/* ── Mobile header (navy gradient, hidden on desktop) ──────────── */}
+      <header className="sm:hidden bg-gradient-to-b from-[#1a2744] to-[#1e3050] px-5 pt-6 pb-0 shrink-0">
+        <div className="flex items-center justify-between mb-4">
+          <div className="w-10 h-10 rounded-xl bg-[#ea580c] flex items-center justify-center">
+            <span className="text-white font-bold text-lg">M</span>
+          </div>
+          <span className="text-xs font-medium text-white bg-white/15 px-3 py-1.5 rounded-full">Paso único</span>
+        </div>
+        <h1 className="text-[22px] font-bold text-white mb-4">Cuéntanos sobre ti</h1>
+        <div className="h-1 rounded-full bg-[#ea580c]" />
+      </header>
+
+      {/* ── Desktop progress bar ───────────────────────────────────────── */}
+      <div className="hidden sm:block h-1 bg-[#ea580c] shrink-0" />
 
       {/* ── Content ─────────────────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col items-center px-4 sm:px-8 py-6 sm:py-10 overflow-y-auto">
-        {/* Title */}
-        <div className="w-full max-w-3xl mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-[28px] font-bold text-[#1a2744]">Cuéntanos sobre ti</h1>
-          <p className="text-sm text-[#8c8c94] mt-1">Con esto calculamos tus calorías, macros y personalizamos tu experiencia.</p>
+        {/* Desktop title */}
+        <div className="hidden sm:block w-full max-w-3xl mb-8">
+          <h1 className="text-[28px] font-bold text-[#1a2744]">Cuéntanos sobre ti</h1>
+          <p className="text-sm text-[#8c8c94] mt-2">Con esto calculamos tus calorías, macros y personalizamos tu experiencia.</p>
         </div>
 
         {/* ── Desktop: 2-column layout ─────────────────────────────────── */}
         <div className="hidden sm:grid sm:grid-cols-2 gap-6 w-full max-w-3xl">
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          <div className="bg-white rounded-2xl border border-[#f2f2f5] p-6">
             {physicalDataSection}
           </div>
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          <div className="bg-white rounded-2xl border border-[#f2f2f5] p-6">
             {goalSection}
           </div>
         </div>
@@ -288,10 +297,10 @@ export default function OnboardingPage() {
                     key={opt.value}
                     type="button"
                     onClick={() => update({ gender: opt.value })}
-                    className={`py-2.5 rounded-xl border-[1.5px] text-[13px] font-semibold transition-colors ${
+                    className={`py-2.5 rounded-xl text-[13px] font-semibold transition-colors ${
                       data.gender === opt.value
-                        ? 'border-[#1a2744] bg-[#1a2744]/5 text-[#1a2744]'
-                        : 'border-[#d9d9de] text-[#6b7380] hover:border-gray-400'
+                        ? 'bg-[#1a2744] text-white border-[1.5px] border-[#1a2744]'
+                        : 'border-[1.5px] border-[#d9d9de] text-[#1a2744] hover:border-gray-400'
                     }`}
                   >
                     {opt.label}
@@ -337,23 +346,41 @@ export default function OnboardingPage() {
                     type="button"
                     onClick={() => update({
                       goal: opt.value,
-                      weightGoalKg: opt.value !== 'LOSE_FAT' ? null : data.weightGoalKg,
+                      weightGoalKg: data.weightGoalKg ?? data.weightKg,
                     })}
-                    className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border-[1.5px] text-left transition-colors ${
+                    className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-[10px] text-left transition-colors ${
                       data.goal === opt.value
-                        ? 'border-[#ea580c] bg-[#ea580c] text-white'
-                        : 'border-[#d9d9de] hover:border-gray-400'
+                        ? 'bg-[#ea580c] text-white'
+                        : 'border-[1.5px] border-[#d9d9de] hover:border-gray-400'
                     }`}
                   >
-                    <span className="text-xl">{opt.emoji}</span>
+                    <span className="text-lg">{opt.emoji}</span>
                     <div>
                       <p className={`text-sm font-semibold ${data.goal === opt.value ? 'text-white' : 'text-[#1a2744]'}`}>{opt.label}</p>
-                      <p className={`text-xs ${data.goal === opt.value ? 'text-white/80' : 'text-[#8c8c94]'}`}>{opt.desc}</p>
+                      <p className={`text-[11px] ${data.goal === opt.value ? 'text-white' : 'text-[#8c8c94]'}`}>{opt.mobileDesc}</p>
                     </div>
                   </button>
                 ))}
               </div>
             </div>
+
+            {/* Weight goal — appears when any goal is selected */}
+            {data.goal && (
+              <div>
+                <label className={LABEL_CLS} style={{ color: '#8c8c94' }}>Peso objetivo (kg) — opcional</label>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  step="0.1"
+                  min="20"
+                  max="299"
+                  placeholder={String(data.weightKg ?? 65)}
+                  value={data.weightGoalKg ?? ''}
+                  onChange={e => update({ weightGoalKg: e.target.value ? Number(e.target.value) : null })}
+                  className={INPUT_CLS}
+                />
+              </div>
+            )}
 
             {/* Days per week */}
             <div>
@@ -364,10 +391,10 @@ export default function OnboardingPage() {
                     key={d}
                     type="button"
                     onClick={() => update({ daysPerWeek: d })}
-                    className={`flex-1 py-2.5 rounded-xl border-[1.5px] text-sm font-bold transition-colors ${
+                    className={`flex-1 py-2.5 rounded-[10px] text-sm font-bold transition-colors ${
                       data.daysPerWeek === d
-                        ? 'border-[#1a2744] bg-[#1a2744] text-white'
-                        : 'border-[#d9d9de] text-[#6b7380] hover:border-gray-400'
+                        ? 'bg-[#ea580c] text-white'
+                        : 'border-[1.5px] border-[#d9d9de] text-[#1a2744] hover:border-gray-400'
                     }`}
                   >
                     {d}
@@ -385,19 +412,20 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* ── CTA button ───────────────────────────────────────────────── */}
-        <div className="w-full max-w-3xl sm:max-w-md mt-8">
-          <button
-            onClick={handleSubmit}
-            disabled={!valid || submitting}
-            className="w-full py-3.5 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90"
-            style={{ backgroundColor: '#ea580c' }}
-          >
-            <span className="hidden sm:inline">Guardar y entrar →</span>
-            <span className="sm:hidden">Empezar →</span>
-          </button>
-        </div>
       </div>
+
+      {/* ── Footer with CTA (Figma: white bg, centered button) ─────────── */}
+      <footer className="bg-white px-4 py-4 flex justify-center shrink-0">
+        <button
+          onClick={handleSubmit}
+          disabled={!valid || submitting}
+          className="sm:w-[220px] w-full py-3.5 rounded-xl text-[15px] font-semibold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90"
+          style={{ backgroundColor: '#ea580c' }}
+        >
+          <span className="hidden sm:inline">Guardar y entrar →</span>
+          <span className="sm:hidden">Empezar →</span>
+        </button>
+      </footer>
     </div>
   )
 }

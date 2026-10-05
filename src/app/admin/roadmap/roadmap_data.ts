@@ -200,6 +200,7 @@ export const GROUPS: RoadmapGroup[] = [
       // ── DEUDA TÉCNICA — mejoras graduales sin urgencia ─────────────────────────
       { title: 'DEBT-01 — Reemplazar .catch(() => {}) fire-and-forget con logging (38 instancias)', done: true, priority: 'P2', note: 'DONE (2026-10-02). 28 instancias tipo A (push/email/notification fire-and-forget) reemplazadas con .catch((err) => console.error("[modulo] operación failed:", err)). 4 tipo B reportadas sin cambiar: auth.ts:155 (P2002 silenciado en userSubscription.create concurrent), generate_plan.use_case.ts:286 (hrMax update silenciado), y 6 instancias en roadmap_data.ts que son strings en comentarios/notas, no código ejecutable.' },
       { title: 'DEBT-02 — Rate limiting en 4 endpoints coach sin protección', done: false, priority: 'P1', note: 'Endpoints sin rate limit: POST /coach/clients/create, GET /admin/search, GET|POST /coach/posts, GET|POST /coach/gym/exercises. Agregar rateLimitAsync() con límites apropiados (50-100 req/min).' },
+      { title: 'DEBT-03 — Timezone: eliminar hardcodes America/Bogota y usar user.timezone', done: false, priority: 'P1', note: 'HIGH: /api/athlete/nutrition/planned-summary/route.ts:21 hardcodea tz = "America/Bogota" — debe leer user.timezone. MEDIUM: /api/cron/checkin-reminder/route.ts:16,21 usa offset COT fijo — debe usar date_utils con tz del usuario. LOW: 4 archivos con ?? "America/Bogota" fallback (correcto pero revisar). Schema documenta null = America/Bogota. Mobile envía X-Timezone en GETs.' },
 
       // ── STANDBY — activar con primeros usuarios reales ───────────────────────
       { title: 'Google OAuth: activar con dominio real en producción', done: false, note: '[STANDBY] Google Cloud Console → Client ID + Secret → GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET en Vercel. Código implementado.' },
@@ -268,6 +269,8 @@ export const GROUPS: RoadmapGroup[] = [
           { title: 'UX-11 (Mobile) — Nav tabs adaptativos por deporte del atleta', done: true, priority: 'P2', note: 'DONE (2026-07-17). Implementado: sport derivado de healthProfile.sportGoal en /api/mobile/auth/login (STRENGTH_TRAINING→STRENGTH, BODY_RECOMPOSITION→BOTH, resto→RUNNING). Incluido en JWT (MobileTokenPayload.sport) y en SessionUser. _layout.tsx: useAuthStore para leer sport, tab Plan oculto (href:null) cuando sport===STRENGTH.' },
           { title: 'UX-ONBOARD-01 — Post-onboarding B2C sin coach: pantalla de orientación "¿por dónde empezar?"', done: true, priority: 'P2', note: 'DONE (2026-07-17). hasEverLogged añadido a /api/mobile/dashboard + DashboardData. dashboard.tsx mobile: card de orientación con 3 CTAs (Plan, Gym, Nutrición) cuando !hasEverLogged && user.onboardingCompleted. Desaparece tras primer log.' },
           { title: 'Welcome cards — WelcomeNutritionCard + FirstWorkoutCard en dashboard post-onboarding', done: true, priority: 'P2', note: 'REMOVIDO — cards eliminadas por redundantes. El dashboard vacío con NutritionProgressCard en 0, HydrationWidget, MealSlotsWidget y CTAs es suficiente orientación. hasAnyFoodLog query eliminada de getDashboardData.' },
+          { title: 'BUG — Mobile FREE: dos cards "Sin sesión" duplicadas en dashboard', done: true, priority: 'P1', note: 'FreeTodayCard se renderizaba siempre en FREE mode + SelectedDayCard también al seleccionar día. Fix: eliminado FreeTodayCard, agregado useEffect auto-select today (como web). Eliminado dead code: todayDow local, modeLabel, TodaySessionMobile.tsx (web).' },
+          { title: 'Mobile dashboard: deduplicar 6 widgets compartidos entre FREE y NON-FREE', done: true, priority: 'P2', note: 'NutritionProgressCard, HydrationWidget, MealSlotsWidget, TodayLogCard, RecentActivityCard, SundayShareBanner movidos fuera de ambas ramas. TodaySessionCard extraído a componente. Metrics unificado con ternario FREE/PRO. -105 líneas, elimina riesgo de divergencia.' },
           { title: 'Auditoría UX atleta B2C sin coach — Sprint 1-3 implementado', done: true, priority: 'P1', note: 'DONE (2026-07-10). Sprint 1: UX-07 weekLabel default "Registra tu semana" (vs "5 min para ajustar tu plan" cuando no hay plan). UX-NEW-02 RPE label genérico (quitado "(running)"). Sprint 2: UX-04 CTA "Crear mi rutina →" en /plan vacío. UX-05 Hero cards mostradas para FREE users (ya tenían datos: peso actual 100kg, meta 85kg, form status). Sprint 3: UX-06 separador "Guía de alimentos" en /nutrition. UX-08 Notificaciones movidas a icono bell en sidebar header (desktop) y top bar (mobile). UX-03 /progress estado vacío mejorado con 6 preview cards de métricas futuras. Sprint 4: UX-NEW-03 tag "Strength" → "Fuerza" en perfil. UX-10 fecha literal eliminada del header dashboard.' },
           { title: 'DASH-FIGMA-01 — Alineación completa dashboard web + mobile web con Figma (5 frames desktop + 5 mobile)', done: true, priority: 'P1', note: 'DONE (2026-08-25). 13 fixes: (1) /routine/edit→/gym link roto, (2) pill "Entreno"→"Gym", (3) badge "PRO"→"✓ datos de tu log", (4) card derecha "Carga Semanal"→"Sesiones Semana"+delta, (5) dedup TRAINING session detail (DailySessionCard vs SelectedDayDetail), (6) COACH badge en SelectedDayDetail, (7) isB2B prop chain, (8) nutrición no-data format, (9) nutrición "de X objetivo", (10) weight card mode-aware FREE vs Pro/B2B, (11) mobile QuickSessionFeedback FREE, (12) mobile "INSIGHTS PRO" upsell, (13) mobile Pro/B2B split "Cómo llegas hoy" + "ÚLTIMO CHECK-IN". Frames: 2779:46, 2671:46, 2796:46, 2796:217, 2854:217 (desktop) + 2946:46, 3404:46, 3042:46, 2950:424, 2950:698 (mobile).' },
           { title: 'DASH-FIGMA-02 — Conectar flujos interactivos del dashboard: feedback post-sesión, Ver resumen, gym done', done: true, priority: 'P1', note: 'DONE (2026-08-25). (1) QuickSessionFeedback.tsx client component con 3 botones (Cansado→EXHAUSTED, Regular→NORMAL, Fuerte→ENERGIZED) → PATCH /api/log/session/[logId] o /api/gym/session/[id]. energyState agregado a PATCH de SessionLog. PATCH nuevo en /api/gym/session/[id]. (2) "Ver resumen →" CTA en HOY card mobile: running→/progress, gym→/gym/history. Gym done: botón "Empezar" reemplazado por "Ver resumen →" → /gym/history. (3) TodayLogCard ya existía implementado — verificado en ambas secciones mobile (FREE + Pro/B2B).' },
@@ -3705,6 +3708,83 @@ export const GROUPS: RoadmapGroup[] = [
         done: true,
         priority: 'P1',
         note: 'DONE (2026-09-22). Escala estándar: text-[10px] (único custom permitido), text-xs (12px), text-sm (14px), text-base (16px), text-lg (18px), text-xl (20px), text-2xl (24px), text-3xl (30px), text-4xl (36px). Migrados ~60 archivos en todas las zonas: (athlete), coach, admin, auth (login/register/forgot-password/set-password), landing, components compartidos. Tamaños prohibidos eliminados: 7/8/9/11/12/13/14/15/16/18/20/22/24/28/32px custom → Tailwind estándar. 0 archivos con tamaños prohibidos. Compilación limpia.',
+      },
+    ],
+  },
+
+  // ─── MARKETING & DISTRIBUCION ──────────────────────────────────────────────
+
+  {
+    id: 'marketing',
+    label: 'Marketing & Distribución',
+    color: '#8b5cf6',
+    bgColor: '#f5f3ff',
+    borderColor: '#c4b5fd',
+    phases: [
+      {
+        id: 'mkt-fase0',
+        label: 'Fase 0 — Pre-lanzamiento',
+        period: 'Semanas 1-2',
+        items: [
+          { title: 'ASO básico: keywords español, screenshots profesionales, descripción optimizada App Store + Play Store', done: false, priority: 'P0', note: 'Keywords: "app entrenamiento personalizado", "coach fitness", "plan running", "seguimiento gym"' },
+          { title: 'Landing page optimizada: CTA coach ("2 atletas gratis") + CTA atleta + video demo Loom 2min', done: false, priority: 'P0', note: 'ROI calculator ya existe. Agregar video demo corto.' },
+          { title: 'Perfil Instagram @medaliq: bio + 9 posts iniciales (3 producto, 3 dolor coach, 3 valor)', done: false, priority: 'P0', note: 'Reels cortos mostrando la app.' },
+          { title: 'LinkedIn Miguel: posicionar como founder building in public (2-3 posts/semana)', done: false, priority: 'P1', note: 'Posts sobre coaching deportivo + producto.' },
+          { title: 'Deck de ventas 1-pager PDF: problema → solución → pricing → 0% comisión', done: false, priority: 'P0', note: 'Para enviar por WhatsApp a coaches.' },
+          { title: 'WhatsApp Business: número dedicado soporte coaches + mensaje bienvenida automático', done: false, priority: 'P0', note: '' },
+          { title: 'Lista de 50 coaches target: Medellín/Bogotá/Cali, Instagram 1K-50K, running/gym/nutrición', done: false, priority: 'P0', note: '' },
+        ],
+      },
+      {
+        id: 'mkt-fase1',
+        label: 'Fase 1 — Beta Cerrada Colombia',
+        period: 'Semanas 3-10',
+        items: [
+          { title: 'Outreach directo WhatsApp a primeros 10 coaches + demos 15min', done: false, priority: 'P0', note: 'Target: Medellín 8, Bogotá 7, Cali 3, otras 2. Script de contacto en domains/marketing.md' },
+          { title: 'Onboarding asistido: ayudar a cada coach a subir primera rutina y vincular 2-3 atletas', done: false, priority: 'P0', note: 'Check-in semanal por WhatsApp las primeras 4 semanas.' },
+          { title: '20 coaches activos en beta con NPS >60', done: false, priority: 'P0', note: 'Exit criteria: 15+ coaches que digan "pagaría por esto hoy", NPS >60, retención atleta sem-4 >70%' },
+          { title: 'Contactar grupos running Colombia (Correcaminos, Nike Run Club Bogotá, Medellín Runners)', done: false, priority: 'P1', note: 'Asistir a entrenamientos grupales, hablar con coaches organizadores.' },
+          { title: 'Contactar academias CrossFit (400+ en Colombia, 3-10 coaches por box)', done: false, priority: 'P1', note: 'Head coaches de boxes medianos.' },
+          { title: 'Share cards: verificar branding Medaliq visible + deep link/QR en cada variante', done: false, priority: 'P1', note: '8 variantes ya implementadas. Asegurar que cada PR/racha compartida incluya branding.' },
+          { title: 'Pedir NPS + feedback estructurado a coaches beta (semana 7-8)', done: false, priority: 'P0', note: '3 preguntas abiertas + NPS score.' },
+        ],
+      },
+      {
+        id: 'mkt-fase2',
+        label: 'Fase 2 — Billing + Escalar Colombia',
+        period: 'Meses 3-6',
+        items: [
+          { title: 'Activar Wompi en producción + enforcement de tiers (feature gates)', done: false, priority: 'P0', note: 'Implementación ya lista. Comunicar a coaches beta.' },
+          { title: 'Founding member: 50% off 6 meses (Growth $29.50, Pro $69.50)', done: false, priority: 'P0', note: 'Primeros 20 coaches de beta.' },
+          { title: 'Programa referidos: coach refiere coach → ambos 1 mes gratis', done: false, priority: 'P1', note: 'Tracking via código único (/join/[code]). Email automático al referido.' },
+          { title: 'Content marketing: blog 2/sem + Instagram 3-5/sem + YouTube 1/sem', done: false, priority: 'P1', note: 'Temas: dejar Excel/WhatsApp, señales abandono atleta, cuánto cobrar como coach, negocio coaching online.' },
+          { title: 'Partnerships: FCA, Liga Atletismo Antioquia, universidades deportivas', done: false, priority: 'P2', note: 'Iniciar conversaciones. Piloto con coaches de la liga.' },
+          { title: 'Meta: 50 coaches pagos, $5K MRR, churn <5%', done: false, priority: 'P0', note: '' },
+        ],
+      },
+      {
+        id: 'mkt-fase3',
+        label: 'Fase 3 — Escalar + México',
+        period: 'Meses 7-12',
+        items: [
+          { title: 'Expansión México: pasarela MXN (Stripe/MercadoPago) + pricing local', done: false, priority: 'P0', note: 'Outreach coaches mexicanos via Instagram + LinkedIn.' },
+          { title: 'Paid ads controlado: Meta $500-1K + TikTok $300-500 + Google $300-500/mes', done: false, priority: 'P1', note: 'Solo activar con unit economics validados (CAC:LTV >5:1). Short-form video 68% impresiones.' },
+          { title: 'Activar sync Strava (backend listo)', done: false, priority: 'P1', note: 'Reducir fricción atletas B2C runners.' },
+          { title: 'Marketplace coaches: directorio público /coaches con SEO por perfil', done: false, priority: 'P2', note: 'Activar con 20+ coaches activos. SEO: "coach running Medellín", "entrenador gym Bogotá".' },
+          { title: 'Meta: 200 coaches CO+MX, $15K MRR, CAC:LTV >5:1', done: false, priority: 'P0', note: '' },
+        ],
+      },
+      {
+        id: 'mkt-fase4',
+        label: 'Fase 4 — Brasil + Employer Wellness',
+        period: 'Meses 13-24',
+        items: [
+          { title: 'Localización portugués completa (i18n parcialmente implementado)', done: false, priority: 'P1', note: 'Outreach coaches brasileños via Instagram.' },
+          { title: 'Pasarela Brasil: PIX via MercadoPago o Stripe', done: false, priority: 'P1', note: '' },
+          { title: 'B2B Employer Wellness: empresas pagan Pro de empleados ($10-15/empleado/mes)', done: false, priority: 'P2', note: 'LinkedIn outbound a directores RRHH. Piloto empresas medianas Medellín/Bogotá.' },
+          { title: 'Preparar seed round: deck inversión, network fondos LatAm (Platanus, Magma, ALLVP)', done: false, priority: 'P2', note: 'Target: $200K-400K ARR como base. Solo si números lo justifican.' },
+          { title: 'Meta: 500 coaches, $62K MRR, $744K ARR', done: false, priority: 'P0', note: '' },
+        ],
       },
     ],
   },

@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import { PrismaUserRepository } from '@/infrastructure/db/user.repository'
-import { configToAthleteFeatures } from '@/domain/subscription/tier_features'
+import { configToAthleteFeatures, getCoachLimits } from '@/domain/subscription/tier_features'
+import type { CoachTier } from '@/domain/subscription/tier_features'
+import { COACH_TIER_PRICES_USD } from '@/domain/billing/billing.types'
 import { getTierFeatureConfig } from '@/infrastructure/db/tier_feature_config.repository'
 import { sendPushNotification } from '@/lib/push/expo_push'
 import { rateLimitAsync } from '@/lib/rate_limit'
@@ -35,6 +37,37 @@ export async function PATCH(
   })
   if (!relation) {
     return NextResponse.json({ error: 'Atleta no encontrado' }, { status: 404 })
+  }
+
+  // Enforce athlete limit per coach tier
+  if (status === 'ACTIVE') {
+    const [subscription, activeCount] = await Promise.all([
+      prisma.userSubscription.findUnique({
+        where: { userId: session.user.id },
+        select: { coachTier: true },
+      }),
+      prisma.coachAthlete.count({
+        where: { coachId: session.user.id, status: 'ACTIVE' },
+      }),
+    ])
+    const coachTier = (subscription?.coachTier ?? 'STARTER') as CoachTier
+    const { maxAthletes } = getCoachLimits(coachTier)
+    if (activeCount >= maxAthletes) {
+      const tierOrder: CoachTier[] = ['STARTER', 'GROWTH', 'PRO', 'SCALE']
+      const currentIdx = tierOrder.indexOf(coachTier)
+      const nextTier = currentIdx < tierOrder.length - 1 ? tierOrder[currentIdx + 1] : null
+      const nextLimit = nextTier ? getCoachLimits(nextTier).maxAthletes : null
+      const nextPrice = nextTier ? COACH_TIER_PRICES_USD[nextTier] : null
+      return NextResponse.json({
+        error: `Has alcanzado el límite de ${maxAthletes} atletas activos para tu plan ${coachTier}. Mejora tu plan para agregar más.`,
+        limit: maxAthletes,
+        current: activeCount,
+        tier: coachTier,
+        nextTier,
+        nextPrice,
+        nextLimit,
+      }, { status: 402 })
+    }
   }
 
   // Aplicar features según config del admin (TierFeatureConfig)

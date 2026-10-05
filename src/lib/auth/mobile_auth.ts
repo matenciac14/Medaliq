@@ -1,6 +1,7 @@
 import { SignJWT, jwtVerify } from 'jose'
 import { NextRequest } from 'next/server'
 import type { UserConfig } from '@/lib/config/user_config'
+import { getUserPlan } from '@/lib/config/user_config'
 
 export type MobileTokenPayload = {
   id: string
@@ -50,8 +51,27 @@ type MobileDbUser = {
 /** Construye un MobileTokenPayload desde un user de DB + contexto */
 export function buildMobileTokenPayload(
   user: MobileDbUser,
-  opts: { isB2B: boolean; sport?: string },
+  opts: {
+    isB2B: boolean
+    sport?: string
+    subscriptionTier?: string | null
+    trialEndsAt?: Date | null
+  },
 ): MobileTokenPayload {
+  const features: UserConfig['features'] = {
+    plan:      user.featurePlan,
+    checkin:   user.featureCheckin,
+    nutrition: user.featureNutrition,
+    progress:  user.featureProgress,
+    log:       user.featureLog,
+    coach:     user.featureCoach,
+    gym:       user.featureGym,
+  }
+
+  const trialDaysLeft = opts.subscriptionTier === 'TRIAL' && opts.trialEndsAt
+    ? Math.max(0, Math.ceil((opts.trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    : null
+
   return {
     id: user.id,
     email: user.email,
@@ -61,19 +81,11 @@ export function buildMobileTokenPayload(
     onboardingCompleted: user.onboardingCompleted,
     activated: user.featurePlan,
     isB2B: opts.isB2B,
-    userPlan: 'PRO',
-    trialDaysLeft: null,
+    userPlan: getUserPlan(features, opts.subscriptionTier, opts.isB2B, opts.trialEndsAt),
+    trialDaysLeft,
     profileComplete: !!(user.identification && user.phoneWa),
     needsRoleSelection: user.needsRoleSelection,
-    features: {
-      plan:      user.featurePlan,
-      checkin:   user.featureCheckin,
-      nutrition: user.featureNutrition,
-      progress:  user.featureProgress,
-      log:       user.featureLog,
-      coach:     user.featureCoach,
-      gym:       user.featureGym,
-    },
+    features,
     ...(opts.sport ? { sport: opts.sport } : {}),
   }
 }

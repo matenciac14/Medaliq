@@ -42,21 +42,31 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: message }, { status: 403 })
     }
 
-    const coachRelation = await prisma.coachAthlete.findFirst({
-      where: { athleteId: user.id, status: 'ACTIVE' },
-      select: { id: true },
-    })
+    const [coachRelation, healthProfile, subscription] = await Promise.all([
+      prisma.coachAthlete.findFirst({
+        where: { athleteId: user.id, status: 'ACTIVE' },
+        select: { id: true },
+      }),
+      prisma.healthProfile.findUnique({
+        where: { userId: user.id },
+        select: { sportGoal: true },
+      }),
+      prisma.userSubscription.findUnique({
+        where: { userId: user.id },
+        select: { tier: true, trialEndsAt: true },
+      }),
+    ])
 
-    // Derivar deporte del perfil para adaptar tabs en mobile
-    const healthProfile = await prisma.healthProfile.findUnique({
-      where: { userId: user.id },
-      select: { sportGoal: true },
-    })
     const sport = healthProfile?.sportGoal === 'STRENGTH_TRAINING' ? 'STRENGTH'
       : healthProfile?.sportGoal === 'BODY_RECOMPOSITION' ? 'BOTH'
       : 'RUNNING'
 
-    const payload = buildMobileTokenPayload(user, { isB2B: !!coachRelation, sport })
+    const payload = buildMobileTokenPayload(user, {
+      isB2B: !!coachRelation,
+      sport,
+      subscriptionTier: subscription?.tier,
+      trialEndsAt: subscription?.trialEndsAt,
+    })
     const token = await signMobileToken(payload)
 
     return NextResponse.json({

@@ -13,6 +13,9 @@ export async function GET(
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
 
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:coach-routine-detail`, { limit: 300, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
+
   const { id } = await params
 
   const template = await prisma.workoutTemplate.findFirst({
