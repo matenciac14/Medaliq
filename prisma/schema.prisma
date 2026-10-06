@@ -60,7 +60,6 @@ model User {
   sessionLogs          SessionLog[]
   checkIns             WeeklyCheckIn[]
   nutritionPlan        NutritionPlan?
-  nutritionAdjustments PendingNutritionAdjustment[]
   coachOf           CoachAthlete[]    @relation("CoachRelation")
   coachedBy         CoachAthlete[]    @relation("AthleteRelation")
 
@@ -454,7 +453,6 @@ model SessionLog {
 
   user                     User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
   plannedSession           PlannedSession?            @relation(fields: [plannedSessionId], references: [id], onDelete: SetNull)
-  nutritionAdjustment      PendingNutritionAdjustment?
 
   @@index([userId])
   @@index([completedAt])
@@ -544,6 +542,7 @@ model WeeklyCheckIn {
 model Exercise {
   id                String    @id @default(cuid())
   coachId           String?   // null = librería global (WorkoutX), string = ejercicio personalizado del coach
+  discipline        String?   // GYM | RUNNING | CALISTHENICS | MOBILITY | YOGA | SWIMMING | CYCLING | OTHER — null = sin clasificar (legacy)
 
   name              String
   bodyPart          String
@@ -1079,40 +1078,6 @@ model Message {
   @@index([toId, readAt])
 }
 
-// ─── AJUSTE NUTRICIONAL POR INTENSIDAD REAL ──────────────────────────────────
-
-model PendingNutritionAdjustment {
-  id               String           @id @default(cuid())
-  userId           String
-  date             DateTime         @db.Date       // día al que aplica el ajuste
-  sessionLogId     String?          @unique         // SessionLog que disparó el ajuste
-  plannedIntensity SessionIntensity
-  actualIntensity  SessionIntensity
-  deltaKcal        Int                              // adjustedKcal − plannedKcal (puede ser negativo)
-  deltaCarbsG      Int                              // adjustedCarbsG − plannedCarbsG
-  plannedKcal      Int
-  plannedCarbsG    Int
-  adjustedKcal     Int
-  adjustedCarbsG   Int
-  status           AdjustmentStatus @default(PENDING)
-  acceptedAt       DateTime?
-  rejectedAt       DateTime?
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-
-  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sessionLog SessionLog? @relation(fields: [sessionLogId], references: [id], onDelete: SetNull)
-
-  @@unique([userId, date])    // un ajuste por atleta por día
-  @@index([userId, status])
-  @@index([userId, date])
-}
-
-enum AdjustmentStatus {
-  PENDING
-  ACCEPTED
-  REJECTED
-}
 
 enum MealType {
   BREAKFAST

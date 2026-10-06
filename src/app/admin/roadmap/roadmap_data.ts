@@ -3788,4 +3788,29 @@ export const GROUPS: RoadmapGroup[] = [
       },
     ],
   },
+
+  // ─── REFACTOR — Decisiones de producto confirmadas ──────────────────────────
+  // Items derivados de revisión de producto 2026-10-05.
+  // Eliminar auto-modificaciones del check-in, limpiar PendingNutritionAdjustment,
+  // feature gates Free, y preparar modelo multi-disciplina.
+
+  {
+    id: 'refactor-producto',
+    label: 'Refactor — Decisiones de Producto',
+    period: 'P1-P3 según prioridad',
+    color: '#7c3aed',
+    bgColor: '#faf5ff',
+    borderColor: '#c4b5fd',
+    items: [
+      { title: 'R1 — Feature gate: historial limitado a 30 días para Free', done: true, priority: 'P1', note: 'Filtro historyDateFilter aplicado en GET /api/mobile/log/history y GET /api/mobile/gym/history. Filtra por date/completedAt >= now-30d cuando userPlan === FREE. 1518 tests passing.' },
+      { title: 'R2 — Feature gate: calendario Free sin planificación futura', done: true, priority: 'P1', note: 'No-op: no existen POST endpoints de atleta para crear PlannedSession. Solo el coach crea sesiones planificadas. La protección es por diseño.' },
+      { title: 'R3 — Eliminar syncWeight → recálculo NutritionPlan', done: true, priority: 'P1', note: 'syncWeight() simplificado: solo guarda peso en HealthProfile.weightKg. Eliminados imports de calculateTDEE/calculateMacros/calcAge y toda la rama de recálculo de NutritionPlan. 1518 tests passing.' },
+      { title: 'R4 — Eliminar applySessionAdjustments del check-in', done: true, priority: 'P1', note: 'Eliminado step 2b (warmupNotes [AUTO] auto-modification) del processCheckIn. Query de assignedWorkout simplificada. applySessionAdjustments() se mantiene como export para accept-suggestion endpoints. 1518 tests passing.' },
+      { title: 'R5 — Eliminar intensityToDayType auto-switch nutricional', done: true, priority: 'P1', note: 'Consumers de intensityToDayType ahora usan MODERATE fijo: get_nutrition_today.use_case.ts, mobile/nutrition/route.ts, buildWeeklySummary. Target diario siempre es easy (MODERATE). Función intensityToDayType preservada para template-apply routes (uso legítimo). 1518 tests passing.' },
+      { title: 'R6 — Eliminar PendingNutritionAdjustment + endpoints legacy', done: true, priority: 'P2', note: '4 endpoints eliminados (accept/reject web+mobile). Modelo eliminado de schema.prisma + relaciones en User y SessionLog. Enum AdjustmentStatus eliminado. Migración DB pendiente (npx prisma migrate dev — drop table PendingNutritionAdjustment).' },
+      { title: 'R7 — Campo discipline en Exercise model', done: true, priority: 'P2', note: 'Campo discipline String? agregado al modelo Exercise en schema.prisma. Migración DB pendiente (npx prisma migrate dev). Backfill pendiente: ejercicios de AscendAPI → GYM, ejercicios custom del coach → según bodyPart/target.' },
+      { title: 'R8 — Selector de disciplina en registro de sesión', done: false, priority: 'P2', note: 'Bloqueado por R7 (migración pendiente). Requiere cambios en mobile (otro proyecto).' },
+      { title: 'R9 — Filtros en endpoints de historial', done: false, priority: 'P3', note: 'GET /api/mobile/log/history y GET /api/mobile/gym/history no tienen filtros. Agregar query params: ?type= (discipline filter), ?from=&to= (date range), ?limit= (paginación). Aplicar en web y mobile. Permite al atleta ver solo sesiones de running, solo gym, etc.' },
+    ],
+  },
 ]

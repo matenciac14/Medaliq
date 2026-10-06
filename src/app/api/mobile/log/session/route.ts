@@ -121,7 +121,7 @@ export async function POST(req: NextRequest) {
   })
 
   // ── Sugerencia nutricional informativa por intensidad real ────────────────
-  // DEPRECATED: PendingNutritionAdjustment ya no se genera.
+  // R6: PendingNutritionAdjustment eliminado del sistema.
   // Solo notificación informativa si source=SYSTEM (plan de onboarding, no editado).
   if (actualIntensity && planned.intensity && actualIntensity !== planned.intensity) {
     try {

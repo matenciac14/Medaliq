@@ -12,9 +12,14 @@ export async function GET(req: NextRequest) {
 
   const userId = mobile.id
 
+  // R1: Free users only see last 30 days of history
+  const historyDateFilter = mobile.userPlan === 'FREE'
+    ? { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }
+    : undefined
+
   const [runLogs, gymSessions] = await Promise.all([
     prisma.sessionLog.findMany({
-      where: { userId },
+      where: { userId, ...(historyDateFilter ? { completedAt: historyDateFilter } : {}) },
       orderBy: { completedAt: 'desc' },
       take: 30,
       select: {
@@ -29,7 +34,7 @@ export async function GET(req: NextRequest) {
       },
     }),
     prisma.gymSession.findMany({
-      where: { athleteId: userId, completed: true },
+      where: { athleteId: userId, completed: true, ...(historyDateFilter ? { date: historyDateFilter } : {}) },
       orderBy: { date: 'desc' },
       take: 30,
       select: {

@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
 
   const todayStart = todayInTz(tz)
 
-  const [nutritionPlanRaw, mealPlan, todaySession, , gymToday, healthProfile, gymSessionToday, currentPlanWeek] = await Promise.all([
+  const [nutritionPlanRaw, mealPlan, todaySession, gymToday, healthProfile, gymSessionToday, currentPlanWeek] = await Promise.all([
     prisma.nutritionPlan.findUnique({ where: { userId } }),
     prisma.mealPlan.findUnique({ where: { userId } }),
     activePlan && currentWeek
@@ -43,8 +43,6 @@ export async function GET(req: NextRequest) {
           select: { type: true, intensity: true },
         })
       : Promise.resolve(null),
-    // DEPRECATED: PendingNutritionAdjustment ya no se genera (NUT-15). Mantenemos null para backward compat mobile.
-    Promise.resolve(null),
     prisma.assignedWorkout.findFirst({
       where: { athleteId: userId, isActive: true },
       select: {
@@ -82,9 +80,9 @@ export async function GET(req: NextRequest) {
   // nutricional ocurre en POST /api/onboarding/generate o POST /api/athlete/nutrition/generate.
   const nutritionPlan = nutritionPlanRaw
 
-  const hasGymToday = !!(gymToday?.template.days[0] && !gymToday.template.days[0].isRestDay)
-  const sessionIntensity = todaySession?.intensity ?? (hasGymToday ? 'HIGH' : null)
-  const dayType = intensityToDayType(sessionIntensity)
+  // R5: fixed daily target — no intensity-based auto-switch
+  const sessionIntensity = 'MODERATE' as const
+  const dayType = 'easy' as const
 
   // MOB-NUT-01: computar contexto de fase del plan
   const planPhaseContext = currentPlanWeek?.isRecoveryWeek

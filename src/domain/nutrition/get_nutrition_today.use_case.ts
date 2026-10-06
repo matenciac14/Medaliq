@@ -148,10 +148,10 @@ export async function getNutritionToday(
       : Promise.resolve([]),
   ])
 
-  // Resolve today's intensity
-  const hasGymToday = !!(gymToday?.template.days[0] && !gymToday.template.days[0].isRestDay)
-  const sessionIntensity = todaySession?.intensity ?? (hasGymToday ? 'MODERATE' : null)
-  const intensity = intensityToDayType(sessionIntensity)
+  // R5: fixed daily target — no intensity-based auto-switch.
+  // Target is always 'easy' (MODERATE). Coach adjusts targets manually.
+  const sessionIntensity = 'MODERATE' as const
+  const intensity = 'easy' as const
 
   const targets = nutritionPlan ? getDailyNutritionTarget(sessionIntensity, nutritionPlan) : null
   const dayTargets = nutritionPlan ? {
@@ -174,7 +174,8 @@ export async function getNutritionToday(
   const adherencePct = effectiveKcalTarget > 0 ? Math.round((kcalLogged / effectiveKcalTarget) * 100) : 0
 
   const todayDateStr = todayStart.toISOString().split('T')[0]
-  const foodLogResponse = buildFoodLogResponse(foodLogs, nutritionPlan, sessionIntensity, todayDateStr)
+  // R5: pass fixed MODERATE intensity to food log response
+  const foodLogResponse = buildFoodLogResponse(foodLogs, nutritionPlan, 'MODERATE', todayDateStr)
 
   // Plan phase context
   const planPhaseContext = currentPlanWeek?.isRecoveryWeek
@@ -282,17 +283,13 @@ function buildWeeklySummary(
   const totalKcal = [...kcalByDay.values()].reduce((a, b) => a + b, 0)
   const avgKcal = daysWithLog > 0 ? Math.round(totalKcal / daysWithLog) : 0
 
+  // R5: fixed target for weekly adherence — no per-day intensity switching
   let weeklyAdherencePct: number | null = null
   if (nutritionPlan && daysWithLog > 0) {
-    const intensityByDate = new Map<string, string>()
-    for (const s of weekPlannedSessions) {
-      intensityByDate.set(s.date.toISOString().split('T')[0], s.intensity)
-    }
+    const fixedTarget = getDailyNutritionTarget('MODERATE', nutritionPlan)
     let totalAdherence = 0
-    for (const [dateKey, consumed] of kcalByDay) {
-      const dayIntensity = intensityByDate.get(dateKey) ?? null
-      const target = getDailyNutritionTarget(dayIntensity, nutritionPlan)
-      if (target.kcal > 0) totalAdherence += (consumed / target.kcal) * 100
+    for (const [, consumed] of kcalByDay) {
+      if (fixedTarget.kcal > 0) totalAdherence += (consumed / fixedTarget.kcal) * 100
     }
     weeklyAdherencePct = Math.round(totalAdherence / daysWithLog)
   }
