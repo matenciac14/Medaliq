@@ -160,8 +160,8 @@ export async function getNutritionToday(
     rest: getDailyNutritionTarget('REST', nutritionPlan),
   } : null
 
-  // Template meals for today's dayType
-  const dbDayType = sessionIntensity === 'HIGH' ? 'HARD' : sessionIntensity === 'REST' || !sessionIntensity ? 'REST' : 'EASY'
+  // R5: fixed dayType — always EASY (no intensity-based switching)
+  const dbDayType = 'EASY' as const
   const templateDay = assignedNutritionPlan?.template.days.find(d => d.dayType === dbDayType) ?? null
   const templateMeals = templateDay ? templateDay.meals : null
 
