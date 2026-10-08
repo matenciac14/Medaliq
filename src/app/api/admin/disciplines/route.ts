@@ -35,7 +35,7 @@ const CreateSchema = z.object({
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/).default('#6b7280'),
   sortOrder: z.number().int().min(0).max(999).default(50),
   hasExerciseLibrary: z.boolean().default(false),
-  trackingFields: z.record(z.boolean()).default({}),
+  trackingFields: z.record(z.string(), z.boolean()).default({}),
   sessionTypes: z.array(z.string().max(50)).default([]),
   isActive: z.boolean().default(true),
 })

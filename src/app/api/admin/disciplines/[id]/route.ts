@@ -18,7 +18,7 @@ const UpdateSchema = z.object({
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
   sortOrder: z.number().int().min(0).max(999).optional(),
   hasExerciseLibrary: z.boolean().optional(),
-  trackingFields: z.record(z.boolean()).optional(),
+  trackingFields: z.record(z.string(), z.boolean()).optional(),
   sessionTypes: z.array(z.string().max(50)).optional(),
   isActive: z.boolean().optional(),
 })

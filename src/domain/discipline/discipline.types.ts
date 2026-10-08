@@ -5,7 +5,8 @@
  * y que tipos de sesion tiene disponibles.
  */
 
-export interface DisciplineTrackingFields {
+export type DisciplineTrackingFields = {
+  [key: string]: boolean | undefined
   /** Gym/Fuerza */
   sets?: boolean
   reps?: boolean
