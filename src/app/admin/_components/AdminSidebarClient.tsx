@@ -25,7 +25,7 @@ export function AdminSidebarClient() {
     { href: '/admin/audit',         label: 'Actividad',      icon: ClipboardList   },
     { href: '/admin/invite-codes',  label: 'Invite Codes',   icon: Link2           },
     { href: '/admin/crons',         label: 'Crons',          icon: Timer           },
-    { href: '/admin/exercises',     label: 'Ejercicios',     icon: Dumbbell        },
+    { href: '/admin/exercises',     label: 'Entrenamiento',  icon: Dumbbell        },
     { href: '/admin/nutrition/proposals', label: 'Propuestas alim.', icon: Apple },
     { href: '/admin/features',      label: 'Features',       icon: ToggleLeft      },
     { href: '/admin/roadmap',       label: s.roadmap,        icon: Map             },

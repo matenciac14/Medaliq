@@ -1537,7 +1537,7 @@ function SessionModal({
                 Rutina de gym
               </p>
               {allGymDays.length === 0 ? (
-                <p className="text-xs text-gray-400 italic">No hay rutinas creadas todavía. Crea una en Ejercicios → Rutinas.</p>
+                <p className="text-xs text-gray-400 italic">No hay rutinas creadas todavía. Crea una en Entrenamiento → Rutinas.</p>
               ) : (
                 <div className="space-y-1 max-h-44 overflow-y-auto pr-1">
                   <button

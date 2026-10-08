@@ -123,7 +123,7 @@ export default function LogModal({ session, onClose, onSuccess }: {
                   <span className="text-xl">💪</span>
                   <div>
                     <p className="text-xs font-semibold text-purple-800">¿Quieres registrar series y reps?</p>
-                    <a href="/gym" className="text-xs text-purple-600 underline hover:text-purple-800">Ir al módulo de Ejercicios →</a>
+                    <a href="/gym" className="text-xs text-purple-600 underline hover:text-purple-800">Ir al módulo de Entrenamiento →</a>
                   </div>
                 </div>
               )}

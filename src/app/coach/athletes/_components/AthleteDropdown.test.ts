@@ -15,7 +15,7 @@ const NAV_ITEMS = [
 
 const TAB_PARAM_MAP: Record<string, string> = {
   resumen: 'Resumen', plan: 'Plan', progreso: 'Progreso',
-  nutricion: 'Nutricion', ejercicios: 'Ejercicios', sesiones: 'Sesiones',
+  nutricion: 'Nutricion', ejercicios: 'Entrenamiento', sesiones: 'Sesiones',
   adherencia: 'Adherencia', benchmarks: 'Benchmarks', mensajes: 'Mensajes',
 }
 

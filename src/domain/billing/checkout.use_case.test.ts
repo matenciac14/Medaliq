@@ -102,9 +102,10 @@ describe('createCoachCheckout', () => {
 // ── createAthleteCheckout ─────────────────────────────────────────────────────
 
 describe('createAthleteCheckout', () => {
-  it('llama al gateway y retorna el checkout output', async () => {
+  it('llama al gateway con ciclo mensual y retorna el checkout output', async () => {
     const input: AthleteCheckoutInput = {
       userId: 'u2',
+      billingCycle: 'monthly',
       successUrl: 'https://app/dashboard?billing=success',
       cancelUrl: 'https://app/dashboard?billing=cancelled',
     }
@@ -114,5 +115,17 @@ describe('createAthleteCheckout', () => {
     expect(mockAthleteCheckout).toHaveBeenCalledWith(input)
     expect(result.checkoutUrl).toBe('https://pay.dev/athlete')
     expect(result.sessionId).toBe('sess_athlete_456')
+  })
+
+  it('llama al gateway con ciclo anual', async () => {
+    const input: AthleteCheckoutInput = {
+      userId: 'u3',
+      billingCycle: 'annual',
+      successUrl: 'https://app/dashboard?billing=success',
+      cancelUrl: 'https://app/dashboard?billing=cancelled',
+    }
+    await createAthleteCheckout(input, mockGateway)
+
+    expect(mockAthleteCheckout).toHaveBeenCalledWith(input)
   })
 })

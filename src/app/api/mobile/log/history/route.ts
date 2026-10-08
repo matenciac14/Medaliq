@@ -31,6 +31,7 @@ export async function GET(req: NextRequest) {
         rpe: true,
         hrAvg: true,
         notes: true,
+        disciplineRef: { select: { slug: true, nameEs: true, icon: true, color: true } },
       },
     }),
     prisma.gymSession.findMany({
@@ -56,7 +57,7 @@ export async function GET(req: NextRequest) {
   ])
 
   type FeedEntry =
-    | { kind: 'run'; id: string; date: string; sessionType: string; durationMin: number | null; distanceKm: number | null; rpe: number | null; hrAvg: number | null; notes: string | null }
+    | { kind: 'run'; id: string; date: string; sessionType: string; disciplineInfo: { slug: string; nameEs: string; icon: string; color: string } | null; durationMin: number | null; distanceKm: number | null; rpe: number | null; hrAvg: number | null; notes: string | null }
     | { kind: 'gym'; id: string; date: string; templateName: string | null; exercises: string[]; durationMin: number | null; rpe: number | null; notes: string | null }
 
   const feed: FeedEntry[] = [
@@ -65,6 +66,7 @@ export async function GET(req: NextRequest) {
       id: l.id,
       date: (l.completedAt ?? new Date()).toISOString(),
       sessionType: l.freeSessionType ?? 'OTRO',
+      disciplineInfo: l.disciplineRef ?? null,
       durationMin: l.durationMin,
       distanceKm: l.distanceKm ? Number(l.distanceKm) : null,
       rpe: l.rpe,

@@ -12,8 +12,16 @@ export const GOAL_LABEL: Record<string, string> = {
 export const SPORT_LABEL: Record<string, string> = {
   RUNNING:  'Running',
   STRENGTH: 'Fuerza',
+  GYM:      'Fuerza',
   CYCLING:  'Ciclismo',
-  SWIMMING: 'Natación',
+  SWIMMING: 'Natacion',
+  OTHER:    'Otro',
+  // slugs (lowercase) for Discipline model compatibility
+  running:  'Running',
+  strength: 'Fuerza',
+  cycling:  'Ciclismo',
+  swimming: 'Natacion',
+  other:    'Otro',
 }
 
 export const ROLE_LABEL: Record<string, string> = {

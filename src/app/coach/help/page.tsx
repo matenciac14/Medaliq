@@ -10,7 +10,7 @@ const SECTIONS = [
     items: [
       { q: '¿Qué información veo en el panel de atletas?', a: 'Atletas activos, check-ins pendientes de revisar y alertas activas (sobrecarga, dolor reportado, baja adherencia). Puedes filtrar por "Con alertas" o "Sin check-in reciente".' },
       { q: '¿Qué son las alertas de atleta?', a: 'Notificaciones automáticas cuando un atleta reporta dolor, baja energía, adherencia < 60% o variaciones importantes en FC reposo. Requieren tu atención.' },
-      { q: '¿Qué veo en el detalle de un atleta?', a: '5 tabs: Resumen (métricas clave), Plan (sesiones semanales), Progreso (gráficas), Nutrición (macros) y Ejercicios (progresión de cargas por ejercicio).' },
+      { q: '¿Qué veo en el detalle de un atleta?', a: '5 tabs: Resumen (métricas clave), Plan (sesiones semanales), Progreso (gráficas), Nutrición (macros) y Entrenamiento (progresión de cargas por ejercicio).' },
       { q: '¿Puedo editar el plan de un atleta?', a: 'Puedes revisar y aprobar el plan de un atleta. Para modificaciones profundas de sesiones individuales, la función completa de edición está en desarrollo.' },
     ],
   },
@@ -27,14 +27,14 @@ const SECTIONS = [
   },
   {
     icon: Dumbbell,
-    title: 'Ejercicios — Rutinas',
+    title: 'Entrenamiento — Rutinas',
     href: '/coach/gym',
     color: '#7c3aed',
     items: [
-      { q: '¿Cómo creo una rutina de ejercicios?', a: 'Ve a Ejercicios → "Nueva rutina". El wizard tiene 4 pasos: información general, días de entrenamiento, ejercicios por día (con sets, reps y esquema) y revisión final.' },
+      { q: '¿Cómo creo una rutina de ejercicios?', a: 'Ve a Entrenamiento → "Nueva rutina". El wizard tiene 4 pasos: información general, días de entrenamiento, ejercicios por día (con sets, reps y esquema) y revisión final.' },
       { q: '¿Puedo reutilizar ejercicios entre rutinas?', a: 'Sí. La biblioteca tiene 39 ejercicios globales (creados por Medaliq) y puedes crear ejercicios personalizados que quedan asociados a tu cuenta.' },
-      { q: '¿Cómo asigno una rutina a un atleta?', a: 'En Ejercicios → selecciona la rutina → "Asignar atleta". Elige el atleta, la fecha de inicio y si reemplaza la rutina actual. El atleta puede empezar a registrar sesiones de inmediato.' },
-      { q: '¿Cómo veo el progreso de ejercicios del atleta?', a: 'En el detalle del atleta → tab "Ejercicios". Verás una mini gráfica de progresión de peso por ejercicio y el detalle de la última sesión (series, pesos, reps completadas).' },
+      { q: '¿Cómo asigno una rutina a un atleta?', a: 'En Entrenamiento → selecciona la rutina → "Asignar atleta". Elige el atleta, la fecha de inicio y si reemplaza la rutina actual. El atleta puede empezar a registrar sesiones de inmediato.' },
+      { q: '¿Cómo veo el progreso de ejercicios del atleta?', a: 'En el detalle del atleta → tab "Entrenamiento". Verás una mini gráfica de progresión de peso por ejercicio y el detalle de la última sesión (series, pesos, reps completadas).' },
     ],
   },
   {

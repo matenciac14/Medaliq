@@ -4,6 +4,7 @@ import { PrismaExerciseRepository } from '@/infrastructure/db/exercise.repositor
 import { validateExercise } from '@/domain/admin/exercise'
 import { prisma } from '@/lib/db/prisma'
 import { rateLimitAsync } from '@/lib/rate_limit'
+import { resolveDisciplineId } from '@/domain/discipline/discipline_resolver'
 
 const repo = new PrismaExerciseRepository()
 
@@ -53,6 +54,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ errors }, { status: 400 })
   }
 
+  const disciplineId = await resolveDisciplineId('GYM')
   const exercise = await prisma.exercise.create({
     data: {
       coachId,
@@ -63,6 +65,7 @@ export async function POST(req: NextRequest) {
       description: description?.trim() || null,
       gifUrl:      gifUrl?.trim() || null,
       source:      'custom',
+      disciplineId,
     },
   })
 

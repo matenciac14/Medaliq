@@ -5,6 +5,7 @@ import type { IExerciseRepository } from '@/domain/exercise/ports/exercise.repos
 import type { Exercise, ExerciseFilters, UpsertExerciseData } from '@/domain/exercise/exercise.types'
 import { prisma } from '@/lib/db/prisma'
 import { resolveExerciseGifUrl } from '@/lib/gym/gif_url'
+import { resolveDisciplineId } from '@/domain/discipline/discipline_resolver'
 
 const PAGE_SIZE_DEFAULT = 20
 const PAGE_SIZE_MAX = 100
@@ -76,6 +77,7 @@ export class PrismaExerciseRepository implements IExerciseRepository {
   async upsertMany(exercises: UpsertExerciseData[]): Promise<{ synced: number }> {
     const BATCH_SIZE = 50
     let synced = 0
+    const strengthDisciplineId = await resolveDisciplineId('STRENGTH')
 
     for (let i = 0; i < exercises.length; i += BATCH_SIZE) {
       const batch = exercises.slice(i, i + BATCH_SIZE)
@@ -105,6 +107,7 @@ export class PrismaExerciseRepository implements IExerciseRepository {
               gifStoredUrl: ex.gifStoredUrl ?? null,
               source: ex.source,
               syncedAt: ex.syncedAt,
+              disciplineId: strengthDisciplineId,
             }
             await tx.exercise.upsert({ where: { id: ex.id }, create: { id: ex.id, ...data }, update: data })
           }

@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
-import { ATHLETE_PRO_PRICE_USD, usdToCopDisplay } from '@/domain/billing/billing.types'
+import { ATHLETE_PRO_PRICE_USD, ATHLETE_PRO_ANNUAL_PRICE_USD, usdToCopDisplay } from '@/domain/billing/billing.types'
 import { getTrmWithMeta } from '@/infrastructure/billing/trm'
 import { loadAthleteData } from '@/infrastructure/db/athlete_loader'
 import UpgradeClient from './_components/UpgradeClient'
@@ -36,11 +36,14 @@ export default async function UpgradePage({
   if (coachRelation) redirect('/dashboard')
 
   const priceCOP = usdToCopDisplay(ATHLETE_PRO_PRICE_USD, trmMeta.value)
+  const annualPriceCOP = usdToCopDisplay(ATHLETE_PRO_ANNUAL_PRICE_USD, trmMeta.value)
 
   return (
     <UpgradeClient
       priceCOP={priceCOP}
       priceUSD={ATHLETE_PRO_PRICE_USD}
+      annualPriceCOP={annualPriceCOP}
+      annualPriceUSD={ATHLETE_PRO_ANNUAL_PRICE_USD}
       trmDate={trmMeta.date}
       billingStatus={billingStatus}
     />

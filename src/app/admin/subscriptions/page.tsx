@@ -7,7 +7,7 @@ const FEATURE_LABEL: Record<string, string> = {
   progress:   'Progreso',
   log:        'Log',
   coach:      'Coach',
-  gym:        'Ejercicios',
+  gym:        'Entrenamiento',
 }
 
 function tier(role: string, featureCoach: boolean, featurePlan: boolean, featureLog: boolean): { label: string; color: string } {

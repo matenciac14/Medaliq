@@ -46,7 +46,7 @@ const ACTIVITY_STYLES: Record<Activity, string> = {
 
 const ACTIVITY_LABELS: Record<Activity, string> = {
   REST: 'Descanso',
-  GYM:  '💪 Ejercicios',
+  GYM:  '💪 Entrenamiento',
   RUN:  '🏃 Correr',
 }
 

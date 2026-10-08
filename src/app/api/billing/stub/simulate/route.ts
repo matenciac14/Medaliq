@@ -18,10 +18,11 @@ export async function GET(req: NextRequest) {
   }
 
   const { searchParams } = req.nextUrl
-  const type       = searchParams.get('type')       // 'coach' | 'athlete'
-  const userId     = searchParams.get('userId')
-  const tier       = searchParams.get('tier')
-  const successUrl = searchParams.get('successUrl') ?? '/'
+  const type         = searchParams.get('type')       // 'coach' | 'athlete'
+  const userId       = searchParams.get('userId')
+  const tier         = searchParams.get('tier')
+  const billingCycle = searchParams.get('billingCycle') ?? 'monthly'
+  const successUrl   = searchParams.get('successUrl') ?? '/'
 
   if (!userId || !type) {
     return NextResponse.json({ error: 'Faltan parámetros.' }, { status: 400 })
@@ -29,7 +30,8 @@ export async function GET(req: NextRequest) {
 
   // Construir el evento y disparar el webhook interno
   const newPeriodEnd = new Date()
-  newPeriodEnd.setMonth(newPeriodEnd.getMonth() + 1)
+  const days = billingCycle === 'annual' ? 365 : 30
+  newPeriodEnd.setDate(newPeriodEnd.getDate() + days)
 
   const event = {
     eventId: `stub_evt_${Date.now()}`,

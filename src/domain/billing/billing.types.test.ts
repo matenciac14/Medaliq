@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { usdToCopCents, usdToCopDisplay } from './billing.types'
+import {
+  usdToCopCents,
+  usdToCopDisplay,
+  ATHLETE_PRO_PRICE_USD,
+  ATHLETE_PRO_ANNUAL_PRICE_USD,
+  BILLING_CYCLE_DAYS,
+} from './billing.types'
 
 describe('usdToCopDisplay', () => {
   it('redondea al múltiplo de 100 más cercano', () => {
@@ -38,5 +44,32 @@ describe('usdToCopCents', () => {
 
   it('precio 0 devuelve 0 centavos', () => {
     expect(usdToCopCents(0, 3128.65)).toBe(0)
+  })
+})
+
+describe('constantes de pricing atleta', () => {
+  it('precio mensual es $9.99', () => {
+    expect(ATHLETE_PRO_PRICE_USD).toBe(9.99)
+  })
+
+  it('precio anual es $59.99', () => {
+    expect(ATHLETE_PRO_ANNUAL_PRICE_USD).toBe(59.99)
+  })
+
+  it('descuento anual es ~50% vs mensual x12', () => {
+    const monthlyAnnual = ATHLETE_PRO_PRICE_USD * 12
+    const discount = 1 - ATHLETE_PRO_ANNUAL_PRICE_USD / monthlyAnnual
+    expect(discount).toBeGreaterThanOrEqual(0.49)
+    expect(discount).toBeLessThanOrEqual(0.51)
+  })
+})
+
+describe('BILLING_CYCLE_DAYS', () => {
+  it('monthly = 30 dias', () => {
+    expect(BILLING_CYCLE_DAYS.monthly).toBe(30)
+  })
+
+  it('annual = 365 dias', () => {
+    expect(BILLING_CYCLE_DAYS.annual).toBe(365)
   })
 })

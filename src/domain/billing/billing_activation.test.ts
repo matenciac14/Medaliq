@@ -67,6 +67,7 @@ describe('createAthleteCheckout — successUrl dinámico', () => {
     const baseUrl = 'https://medaliq.com'
     const input: AthleteCheckoutInput = {
       userId: 'u1',
+      billingCycle: 'monthly',
       successUrl: `${baseUrl}${returnTo}?billing=success`,
       cancelUrl: `${baseUrl}${returnTo}?billing=cancelled`,
     }
@@ -85,6 +86,7 @@ describe('createAthleteCheckout — successUrl dinámico', () => {
     const baseUrl = 'https://medaliq.com'
     const input: AthleteCheckoutInput = {
       userId: 'u1',
+      billingCycle: 'monthly',
       successUrl: `${baseUrl}${returnTo}?billing=success`,
       cancelUrl: `${baseUrl}${returnTo}?billing=cancelled`,
     }
@@ -107,13 +109,25 @@ describe('StubPaymentGateway', () => {
   it('createAthleteCheckout devuelve URL con successUrl en params', async () => {
     const result = await stub.createAthleteCheckout({
       userId: 'u1',
+      billingCycle: 'monthly',
       successUrl: 'https://medaliq.com/upgrade?billing=success',
       cancelUrl: 'https://medaliq.com/upgrade?billing=cancelled',
     })
     expect(result.checkoutUrl).toContain('/api/billing/stub/simulate')
     expect(result.checkoutUrl).toContain('type=athlete')
     expect(result.checkoutUrl).toContain('userId=u1')
+    expect(result.checkoutUrl).toContain('billingCycle=monthly')
     expect(result.sessionId).toMatch(/^stub_athlete_u1_/)
+  })
+
+  it('createAthleteCheckout pasa billingCycle=annual en URL', async () => {
+    const result = await stub.createAthleteCheckout({
+      userId: 'u1',
+      billingCycle: 'annual',
+      successUrl: 'https://medaliq.com/upgrade?billing=success',
+      cancelUrl: 'https://medaliq.com/upgrade?billing=cancelled',
+    })
+    expect(result.checkoutUrl).toContain('billingCycle=annual')
   })
 
   it('createCoachCheckout devuelve URL con tier en params', async () => {

@@ -425,6 +425,27 @@ enum SessionDiscipline {
   OTHER
 }
 
+// ─── DISCIPLINAS DEPORTIVAS ─────────────────────────────────────────────────
+
+model Discipline {
+  id                 String   @id @default(cuid())
+  slug               String   @unique   // "strength", "running", "crossfit"
+  name               String              // "Strength"
+  nameEs             String              // "Fuerza"
+  icon               String   @default("")  // emoji o URL de icono
+  color              String   @default("#6b7280") // hex color para UI
+  isActive           Boolean  @default(true)
+  sortOrder          Int      @default(0)
+  hasExerciseLibrary Boolean  @default(false) // true = tiene biblioteca de ejercicios (gym)
+  trackingFields     Json     @default("{}") // { sets, reps, weight, distance, pace, zones, duration, rounds... }
+  sessionTypes       Json     @default("[]") // tipos de sesion disponibles: ["RODAJE_Z2","FARTLEK"] para running
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  sessionLogs SessionLog[] @relation("SessionLogDiscipline")
+  exercises   Exercise[]   @relation("ExerciseDiscipline")
+}
+
 // ─── REGISTRO DE SESIÓN ─────────────────────────────────────────────────────
 
 model SessionLog {
@@ -444,7 +465,8 @@ model SessionLog {
   garminActivityId String?
   freeSessionType  SessionType?      // solo para logs libres (plannedSessionId = null)
   actualIntensity  SessionIntensity? // intensidad real registrada por el atleta
-  discipline       SessionDiscipline? // discriminador de deporte — RUNNING|STRENGTH|CYCLING|SWIMMING|OTHER
+  discipline       SessionDiscipline? // discriminador de deporte — RUNNING|STRENGTH|CYCLING|SWIMMING|OTHER (legacy enum, migrar a disciplineId)
+  disciplineId     String?            // FK a Discipline — fuente canonica post ARCH-12
   // Wearables — INT-05
   caloriesBurned   Int?    // kcal totales quemadas (fuente: wearable)
   avgPaceSecPerKm  Int?    // ritmo promedio en segundos/km (running)
@@ -453,10 +475,12 @@ model SessionLog {
 
   user                     User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
   plannedSession           PlannedSession?            @relation(fields: [plannedSessionId], references: [id], onDelete: SetNull)
+  disciplineRef            Discipline?                @relation("SessionLogDiscipline", fields: [disciplineId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([completedAt])
   @@index([userId, completedAt(sort: Desc)])
+  @@index([disciplineId])
 }
 
 // ─── RUTINA SEMANAL SELF-DIRECTED ───────────────────────────────────────────
@@ -542,7 +566,8 @@ model WeeklyCheckIn {
 model Exercise {
   id                String    @id @default(cuid())
   coachId           String?   // null = librería global (WorkoutX), string = ejercicio personalizado del coach
-  discipline        String?   // GYM | RUNNING | CALISTHENICS | MOBILITY | YOGA | SWIMMING | CYCLING | OTHER — null = sin clasificar (legacy)
+  discipline        String?   // GYM | RUNNING | CALISTHENICS | MOBILITY | YOGA | SWIMMING | CYCLING | OTHER — null = sin clasificar (legacy enum string, migrar a disciplineId)
+  disciplineId      String?   // FK a Discipline — fuente canonica post ARCH-12
 
   name              String
   bodyPart          String
@@ -573,11 +598,13 @@ model Exercise {
   updatedAt         DateTime  @updatedAt
 
   coach            User?             @relation("CoachExercises", fields: [coachId], references: [id])
+  disciplineRef    Discipline?       @relation("ExerciseDiscipline", fields: [disciplineId], references: [id], onDelete: SetNull)
   workoutExercises WorkoutExercise[]
 
   @@index([bodyPart])
   @@index([target])
   @@index([equipment])
+  @@index([disciplineId])
 }
 
 model WorkoutTemplate {

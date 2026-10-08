@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { calcNutritionAdjustment } from '@/domain/nutrition/calculate_nutrition_adjustment'
 import { rateLimitAsync } from '@/lib/rate_limit'
 import { createNotification } from '@/infrastructure/db/notification'
+import { resolveDisciplineId } from '@/domain/discipline/discipline_resolver'
 
 const INTENSITIES = ['HIGH', 'MODERATE', 'LOW', 'REST'] as const
 
@@ -39,6 +40,7 @@ export async function POST(req: NextRequest) {
   const body = parsed.data
   const sessionDate = body.sessionDate ? new Date(`${body.sessionDate}T00:00:00.000Z`) : null
   const discipline = body.discipline ?? null
+  const disciplineId = await resolveDisciplineId(discipline)
 
   // Si completed === false, no registrar (la sesión queda pendiente)
   if (body.completed === false) {
@@ -82,6 +84,7 @@ export async function POST(req: NextRequest) {
         notes: body.notes,
         actualIntensity: body.actualIntensity ?? null,
         discipline,
+        disciplineId,
       },
     })
   } catch (err) {

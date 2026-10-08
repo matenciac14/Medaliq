@@ -36,6 +36,7 @@ import {
 } from '../src/generated/prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import bcrypt from 'bcryptjs'
+import { DISCIPLINE_SEEDS } from '../src/domain/discipline/discipline.types'
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
 const prisma = new PrismaClient({ adapter } as any)
@@ -64,6 +65,9 @@ function mondayOf(d: Date): Date {
 
 async function main() {
   console.log('🌱 Seeding...')
+
+  // ── 0a. Seed de disciplinas (idempotente) ────────────────────────────────
+  await seedDisciplines()
 
   // ── 0. Cleanup data residual de seeds anteriores ─────────────────────────
   const seedEmails = ['miguel@medaliq.com', 'ana@medaliq.com', 'pro@medaliq.com', 'pending@medaliq.com', 'migueltest2@medaliq.com']
@@ -1078,6 +1082,36 @@ async function seedLatamFoods() {
 
   await prisma.food.createMany({ data: toCreate })
   console.log(`✅ Alimentos:     ${toCreate.length} LatAm insertados (${existingNames.size} ya existían)`)
+}
+
+async function seedDisciplines() {
+  for (const d of DISCIPLINE_SEEDS) {
+    await prisma.discipline.upsert({
+      where: { slug: d.slug },
+      update: {
+        name: d.name,
+        nameEs: d.nameEs,
+        icon: d.icon,
+        color: d.color,
+        sortOrder: d.sortOrder,
+        hasExerciseLibrary: d.hasExerciseLibrary,
+        trackingFields: d.trackingFields,
+        sessionTypes: d.sessionTypes,
+      },
+      create: {
+        slug: d.slug,
+        name: d.name,
+        nameEs: d.nameEs,
+        icon: d.icon,
+        color: d.color,
+        sortOrder: d.sortOrder,
+        hasExerciseLibrary: d.hasExerciseLibrary,
+        trackingFields: d.trackingFields,
+        sessionTypes: d.sessionTypes,
+      },
+    })
+  }
+  console.log(`✅ Disciplinas:   ${DISCIPLINE_SEEDS.length} upserted`)
 }
 
 main()

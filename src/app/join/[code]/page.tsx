@@ -19,7 +19,7 @@ type InviteInfo = {
 
 const SPECIALTY_LABELS: Record<string, string> = {
   RUNNING: 'Running',
-  GYM: 'Ejercicios',
+  GYM: 'Entrenamiento',
   STRENGTH: 'Fuerza',
   CYCLING: 'Ciclismo',
   TRIATHLON: 'Triatlón',

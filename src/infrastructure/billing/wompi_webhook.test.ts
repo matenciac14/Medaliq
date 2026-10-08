@@ -8,6 +8,7 @@ function buildWompiPayload(overrides: {
   userId?: string
   userRole?: string
   targetTier?: string
+  billingCycle?: string
   reference?: string
   amountInCents?: number
   currency?: string
@@ -33,6 +34,7 @@ function buildWompiPayload(overrides: {
           userId: overrides.userId ?? 'u1',
           userRole: overrides.userRole ?? 'ATHLETE',
           ...(overrides.targetTier ? { targetTier: overrides.targetTier } : {}),
+          ...(overrides.billingCycle ? { billingCycle: overrides.billingCycle } : {}),
         },
         signature: {
           checksum,
@@ -80,6 +82,36 @@ describe('WompiPaymentGateway.parseWebhookEvent', () => {
     expect(event.eventType).toBe('charge.success')
     expect(event.userRole).toBe('COACH')
     expect(event.coachTargetTier).toBe('GROWTH')
+  })
+
+  it('APPROVED atleta annual → charge.success con newPeriodEnd +365 días', async () => {
+    vi.stubEnv('WOMPI_INTEGRITY_SECRET', 'test_integrity_secret')
+    const payload = buildWompiPayload({
+      status: 'APPROVED',
+      userId: 'u2',
+      userRole: 'ATHLETE',
+      billingCycle: 'annual',
+    })
+
+    const event = await gateway.parseWebhookEvent(JSON.stringify(payload), '')
+
+    expect(event.eventType).toBe('charge.success')
+    expect(event.newPeriodEnd).toBeInstanceOf(Date)
+
+    const diffDays = Math.round((event.newPeriodEnd!.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    expect(diffDays).toBeGreaterThanOrEqual(364)
+    expect(diffDays).toBeLessThanOrEqual(366)
+  })
+
+  it('APPROVED sin billingCycle → default monthly (+30 días)', async () => {
+    vi.stubEnv('WOMPI_INTEGRITY_SECRET', 'test_integrity_secret')
+    const payload = buildWompiPayload({ status: 'APPROVED', userId: 'u3', userRole: 'ATHLETE' })
+
+    const event = await gateway.parseWebhookEvent(JSON.stringify(payload), '')
+
+    const diffDays = Math.round((event.newPeriodEnd!.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    expect(diffDays).toBeGreaterThanOrEqual(29)
+    expect(diffDays).toBeLessThanOrEqual(31)
   })
 
   it('DECLINED → charge.failed sin newPeriodEnd', async () => {

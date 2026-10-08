@@ -30,16 +30,17 @@ export async function POST(req: NextRequest) {
   }
 
   // returnTo permite que cada página caller reciba el redirect post-pago
-  const body = await req.json().catch(() => ({})) as { returnTo?: string }
+  const body = await req.json().catch(() => ({})) as { returnTo?: string; billingCycle?: string }
   const allowedReturns = ['/upgrade', '/settings/plan']
   const returnTo = allowedReturns.includes(body.returnTo ?? '') ? body.returnTo! : '/upgrade'
+  const billingCycle = body.billingCycle === 'annual' ? 'annual' as const : 'monthly' as const
 
   const baseUrl    = process.env.NEXT_PUBLIC_APP_URL ?? 'https://medaliq.com'
   const successUrl = `${baseUrl}${returnTo}?billing=success`
   const cancelUrl  = `${baseUrl}${returnTo}?billing=cancelled`
 
   const result = await createAthleteCheckout(
-    { userId: session.user.id, successUrl, cancelUrl },
+    { userId: session.user.id, billingCycle, successUrl, cancelUrl },
     getPaymentGateway()
   )
 

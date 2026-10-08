@@ -7,6 +7,8 @@ import DowngradeButton from './DowngradeButton'
 type Props = {
   priceCOP: number
   priceUSD: number
+  annualPriceCOP: number
+  annualPriceUSD: number
   trmDate: string | null
   billingStatus: string | null
 }
@@ -27,11 +29,12 @@ const PRO_FEATURES = [
 const MAX_POLL_ATTEMPTS = 5
 const POLL_INTERVAL_MS = 2_000
 
-export default function UpgradeClient({ priceCOP, priceUSD, trmDate, billingStatus }: Props) {
+export default function UpgradeClient({ priceCOP, priceUSD, annualPriceCOP, annualPriceUSD, trmDate, billingStatus }: Props) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
   const [polling, setPolling] = useState(false)
+  const [cycle, setCycle] = useState<'monthly' | 'annual'>('annual')
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const attemptsRef = useRef(0)
 
@@ -90,7 +93,11 @@ export default function UpgradeClient({ priceCOP, priceUSD, trmDate, billingStat
   const handleUpgrade = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/billing/athlete/checkout', { method: 'POST' })
+      const res = await fetch('/api/billing/athlete/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ billingCycle: cycle }),
+      })
       const data = (await res.json()) as { checkoutUrl?: string; error?: string }
       if (!res.ok) throw new Error(data.error ?? 'Error al crear checkout.')
       window.location.href = data.checkoutUrl!
@@ -100,6 +107,12 @@ export default function UpgradeClient({ priceCOP, priceUSD, trmDate, billingStat
       setLoading(false)
     }
   }
+
+  const isAnnual = cycle === 'annual'
+  const displayPriceCOP = isAnnual ? annualPriceCOP : priceCOP
+  const displayPriceUSD = isAnnual ? annualPriceUSD : priceUSD
+  const perMonthCOP = isAnnual ? Math.round(annualPriceCOP / 12 / 100) * 100 : priceCOP
+  const savingsPercent = Math.round((1 - annualPriceUSD / (priceUSD * 12)) * 100)
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 py-16">
@@ -158,7 +171,7 @@ export default function UpgradeClient({ priceCOP, priceUSD, trmDate, billingStat
 
         {/* Pro */}
         <div className="bg-white rounded-2xl border-2 shadow-sm p-8 flex flex-col" style={{ borderColor: '#1e3a5f' }}>
-          <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center justify-between mb-3">
             <p className="text-sm font-semibold uppercase tracking-wide" style={{ color: '#1e3a5f' }}>
               Pro
             </p>
@@ -166,13 +179,57 @@ export default function UpgradeClient({ priceCOP, priceUSD, trmDate, billingStat
               Recomendado
             </span>
           </div>
-          <p className="text-4xl font-bold text-gray-900 mb-1">
-            ${priceCOP.toLocaleString('es-CO')}
-          </p>
-          <p className="text-gray-400 text-sm mb-1">COP / mes</p>
-          <p className="text-xs text-gray-400 mb-6">
-            ~${priceUSD} USD{trmDate ? ` · TRM ${trmDate}` : ''}
-          </p>
+
+          {/* Toggle mensual/anual */}
+          <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 mb-4">
+            <button
+              onClick={() => setCycle('monthly')}
+              className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition-all ${
+                cycle === 'monthly'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Mensual
+            </button>
+            <button
+              onClick={() => setCycle('annual')}
+              className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition-all ${
+                cycle === 'annual'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Anual
+              <span className="ml-1 text-[10px] font-bold text-green-600">-{savingsPercent}%</span>
+            </button>
+          </div>
+
+          {isAnnual ? (
+            <>
+              <p className="text-4xl font-bold text-gray-900 mb-0.5">
+                ${perMonthCOP.toLocaleString('es-CO')}
+              </p>
+              <p className="text-gray-400 text-sm mb-0.5">COP / mes</p>
+              <p className="text-xs text-gray-500 mb-1">
+                Pago unico de <span className="font-semibold">${displayPriceCOP.toLocaleString('es-CO')} COP/ano</span>
+              </p>
+              <p className="text-xs text-gray-400 mb-6">
+                ~${displayPriceUSD} USD/ano{trmDate ? ` · TRM ${trmDate}` : ''}
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-4xl font-bold text-gray-900 mb-0.5">
+                ${displayPriceCOP.toLocaleString('es-CO')}
+              </p>
+              <p className="text-gray-400 text-sm mb-1">COP / mes</p>
+              <p className="text-xs text-gray-400 mb-6">
+                ~${displayPriceUSD} USD{trmDate ? ` · TRM ${trmDate}` : ''}
+              </p>
+            </>
+          )}
+
           <ul className="text-sm text-gray-600 space-y-2 mb-8 flex-1">
             {PRO_FEATURES.map((f) => (
               <li key={f}>
@@ -186,7 +243,12 @@ export default function UpgradeClient({ priceCOP, priceUSD, trmDate, billingStat
             className="w-full px-5 py-3 rounded-xl text-sm font-semibold text-white transition-all hover:brightness-110 active:scale-95 disabled:opacity-60"
             style={{ background: 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)' }}
           >
-            {loading ? 'Redirigiendo a Wompi...' : `Activar Pro — $${priceCOP.toLocaleString('es-CO')} COP/mes`}
+            {loading
+              ? 'Redirigiendo a Wompi...'
+              : isAnnual
+                ? `Activar Pro — $${displayPriceCOP.toLocaleString('es-CO')} COP/ano`
+                : `Activar Pro — $${displayPriceCOP.toLocaleString('es-CO')} COP/mes`
+            }
           </button>
           <p className="text-xs text-gray-400 mt-3 text-center">
             Pago seguro con Wompi — PSE, Nequi, Daviplata o tarjeta

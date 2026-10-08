@@ -14,6 +14,15 @@ export const COACH_TIER_PRICES_USD: Record<CoachTier, number> = {
 }
 
 export const ATHLETE_PRO_PRICE_USD = 9.99
+export const ATHLETE_PRO_ANNUAL_PRICE_USD = 59.99
+
+export type BillingCycle = 'monthly' | 'annual'
+
+/** Días de suscripción según ciclo. */
+export const BILLING_CYCLE_DAYS: Record<BillingCycle, number> = {
+  monthly: 30,
+  annual: 365,
+}
 
 /**
  * Convierte un precio USD a centavos COP para Wompi.
@@ -52,6 +61,7 @@ export type CoachCheckoutInput = {
 
 export type AthleteCheckoutInput = {
   userId: string
+  billingCycle: BillingCycle
   successUrl: string
   cancelUrl: string
 }

@@ -89,7 +89,7 @@ export async function POST(
     athleteId,
     'PLAN_ACTUALIZADO',
     'Nueva rutina asignada',
-    `Tu coach te asignó la rutina "${template.name}". Ábrela en la sección Ejercicios.`,
+    `Tu coach te asignó la rutina "${template.name}". Ábrela en la sección Entrenamiento.`,
   ).catch((err) => console.error('[coach/gym/assign] createNotification failed:', err))
 
   return NextResponse.json(assignment, { status: 201 })
