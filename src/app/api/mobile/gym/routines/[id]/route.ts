@@ -1,42 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
+import { getMobileUser } from '@/lib/auth/mobile_auth'
+import { rateLimitAsync } from '@/lib/rate_limit'
+import { requireFeature } from '@/lib/guards/feature_gate'
 import type { SetType } from '@/generated/prisma/enums'
-
-async function getSession() {
-  const session = await auth()
-  return session
-}
-
-async function getAthleteIdWithGate(): Promise<{ athleteId: string } | NextResponse> {
-  const session = await getSession()
-  const athleteId = session?.user?.id
-  if (!athleteId) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-  if (!session.user.features?.gym) {
-    return NextResponse.json({ error: 'Función no disponible en tu plan actual.', upgrade: '/upgrade' }, { status: 402 })
-  }
-  return { athleteId }
-}
-
-// ── GET /api/athlete/gym/routines/[id] ──────────────────────────────────────
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  const result = await getAthleteIdWithGate()
-  if (result instanceof NextResponse) return result
-  const { athleteId } = result
+  const mobile = await getMobileUser(req)
+  if (!mobile) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  const gate = requireFeature(mobile.features, 'gym')
+  if (gate) return gate
+  const { allowed } = await rateLimitAsync(`mobile-${mobile.id}:gym-routine-detail`, { limit: 300, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 
   const { id } = await params
-
   const template = await prisma.workoutTemplate.findFirst({
-    where: { id, athleteId },
+    where: { id, athleteId: mobile.id },
     include: {
       days: {
         orderBy: { order: 'asc' },
         include: {
-          exercises: { orderBy: { order: 'asc' }, include: { exercise: true } },
+          exercises: {
+            orderBy: { order: 'asc' },
+            include: { exercise: { select: { id: true, name: true, nameEs: true, bodyPart: true, target: true, equipment: true } } },
+          },
         },
       },
     },
@@ -46,17 +36,19 @@ export async function GET(
   return NextResponse.json(template)
 }
 
-// ── PATCH /api/athlete/gym/routines/[id] — editar (reemplaza días) ──────────
-
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  const result = await getAthleteIdWithGate()
-  if (result instanceof NextResponse) return result
-  const { athleteId } = result
+  const mobile = await getMobileUser(req)
+  if (!mobile) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  const gate = requireFeature(mobile.features, 'gym')
+  if (gate) return gate
+  const { allowed } = await rateLimitAsync(`mobile-${mobile.id}:gym-routine-patch`, { limit: 60, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 
   const { id } = await params
+  const athleteId = mobile.id
 
   const existing = await prisma.workoutTemplate.findFirst({
     where: { id, athleteId },
@@ -68,6 +60,7 @@ export async function PATCH(
   const { name, description, goal, level, daysPerWeek, days } = body
 
   if (!name?.trim()) return NextResponse.json({ error: 'El nombre es obligatorio' }, { status: 400 })
+  if (!days || days.length === 0) return NextResponse.json({ error: 'Incluye al menos un dia' }, { status: 400 })
 
   const updated = await prisma.$transaction(async tx => {
     const tmpl = await tx.workoutTemplate.update({
@@ -89,7 +82,7 @@ export async function PATCH(
         data: {
           templateId: tmpl.id,
           dayOfWeek: day.dayOfWeek,
-          label: day.label || `Día ${day.dayOfWeek}`,
+          label: day.label || `Dia ${day.dayOfWeek}`,
           muscleGroups: day.muscleGroups ?? [],
           isRestDay: day.isRestDay ?? false,
           warmupNotes: day.warmupNotes?.trim() || null,
@@ -99,11 +92,10 @@ export async function PATCH(
       })
 
       if (!day.isRestDay && day.exercises?.length > 0) {
-        for (let j = 0; j < day.exercises.length; j++) {
-          const ex = day.exercises[j]
-          if (!ex.exerciseId) continue
-          await tx.workoutExercise.create({
-            data: {
+        const validExercises = day.exercises.filter((ex: { exerciseId?: string }) => ex.exerciseId)
+        if (validExercises.length > 0) {
+          await tx.workoutExercise.createMany({
+            data: validExercises.map((ex: { exerciseId: string; order?: number; sets?: number; repsScheme?: string; restSeconds?: number | null; setType?: string; notes?: string }, j: number) => ({
               dayId: wDay.id,
               exerciseId: ex.exerciseId,
               order: ex.order ?? j,
@@ -112,7 +104,7 @@ export async function PATCH(
               restSeconds: typeof ex.restSeconds === 'number' ? ex.restSeconds : null,
               setType: (ex.setType as SetType) ?? 'NORMAL',
               notes: ex.notes?.trim() || null,
-            },
+            })),
           })
         }
       }
@@ -124,28 +116,28 @@ export async function PATCH(
   return NextResponse.json(updated)
 }
 
-// ── DELETE /api/athlete/gym/routines/[id] ───────────────────────────────────
-
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  const result = await getAthleteIdWithGate()
-  if (result instanceof NextResponse) return result
-  const { athleteId } = result
+  const mobile = await getMobileUser(req)
+  if (!mobile) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  const gate = requireFeature(mobile.features, 'gym')
+  if (gate) return gate
+  const { allowed } = await rateLimitAsync(`mobile-${mobile.id}:gym-routine-delete`, { limit: 30, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 
   const { id } = await params
-
   const existing = await prisma.workoutTemplate.findFirst({
-    where: { id, athleteId },
+    where: { id, athleteId: mobile.id },
     select: { id: true, assignments: { where: { isActive: true }, select: { id: true } } },
   })
   if (!existing) return NextResponse.json({ error: 'Rutina no encontrada' }, { status: 404 })
 
   if (existing.assignments.length > 0) {
     return NextResponse.json(
-      { error: 'No puedes eliminar una rutina activa. Desactívala primero.' },
-      { status: 409 }
+      { error: 'No puedes eliminar una rutina activa. Asigna otra primero.' },
+      { status: 409 },
     )
   }
 

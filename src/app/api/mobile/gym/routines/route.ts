@@ -34,6 +34,29 @@ interface TemplateBody {
   days: DayInput[]
 }
 
+export async function GET(req: NextRequest) {
+  const mobile = await getMobileUser(req)
+  if (!mobile) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  const gate = requireFeature(mobile.features, 'gym')
+  if (gate) return gate
+  const { allowed } = await rateLimitAsync(`mobile-${mobile.id}:gym-routines-get`, { limit: 300, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
+
+  const templates = await prisma.workoutTemplate.findMany({
+    where: { athleteId: mobile.id },
+    include: {
+      days: {
+        include: { exercises: { include: { exercise: { select: { id: true, name: true, nameEs: true, bodyPart: true, target: true } } }, orderBy: { order: 'asc' } } },
+        orderBy: { order: 'asc' },
+      },
+      assignments: { where: { isActive: true }, select: { id: true } },
+    },
+    orderBy: { createdAt: 'desc' },
+  })
+
+  return NextResponse.json(templates)
+}
+
 export async function POST(req: NextRequest) {
   const mobile = await getMobileUser(req)
   if (!mobile) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
