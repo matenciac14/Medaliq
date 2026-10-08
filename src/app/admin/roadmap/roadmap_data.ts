@@ -2312,6 +2312,42 @@ export const GROUPS: RoadmapGroup[] = [
             priority: 'P1',
             note: 'Eliminados de NewGoalClient.tsx, coach/clients/new/page.tsx y AthleteDetailClient.tsx. Schema DB intacto. Planes existentes intactos.',
           },
+          {
+            title: 'ARCH-07 — Múltiples sesiones por día: CalendarDay como array + sessions/today',
+            done: false,
+            priority: 'P1',
+            note: 'IMPACTO: alto — atleta intermedio+ hace 2+ sesiones/día. Si la segunda es invisible, pierde confianza en la app. Decisión de producto: un día es un contenedor con N sesiones (como Garmin/TrainingPeaks). La DB ya soporta N PlannedSession y N GymSession por día — el cambio es en la capa de display. Cambios: (1) CalendarDay.sessions: SessionSlot[] en vez de 3 slots fijos sport/gym/freeRun, (2) getTodaySession → getTodaySessions retorna array, (3) buildCalendarWeek Maps acumulan en arrays en vez de sobreescribir, (4) week-sessions API: cada día tiene sessions[] en vez de un slot, (5) Dashboard todaySession → todaySessions[]. Plan y Rutina siguen como builders separados del coach — ambos alimentan el calendario. Adherencia ya funciona por sesión individual. Afecta: calendar.types.ts, calendar.ts, gym/session/today, mobile/gym/today, dashboard use cases, week-sessions, plan_sessions.spec, plan_dashboard.spec, gym.spec.',
+          },
+          {
+            title: 'ARCH-11 — Rutina multi-disciplina: WeeklyRoutine como planificador cíclico semanal',
+            done: false,
+            priority: 'P1',
+            note: 'IMPACTO: alto — el atleta que hace gym + running + ciclismo cada semana no tiene dónde estructurar su semana completa. Hoy la rutina (AssignedWorkout/WorkoutTemplate) solo soporta gym. Las demás disciplinas se registran como sesiones libres sin estructura previa. DECISIÓN DE PRODUCTO: la rutina debe poder incluir cualquier disciplina construida en el sistema. Plan = progresivo (semana 1 ≠ semana 8, periodización). Rutina = repetitiva (misma estructura cada semana). Ambos multi-disciplina. IMPLEMENTACIÓN: extender WeeklyRoutine.days (JSON) para que cada día tenga campos por disciplina: (1) GYM → sigue usando AssignedWorkout/WorkoutTemplate (ejercicios/series/reps/peso), (2) RUNNING → type (RODAJE_Z2/FARTLEK/TEMPO/etc), distanceKm, zoneTarget, durationMin, structure, (3) CYCLING → durationMin, zoneTarget, (4) SWIMMING → distanceKm, durationMin, (5) OTHER → durationMin, notes, (6) REST → sin campos. getTodaySessions() (ARCH-07) lee WeeklyRoutine para sugerir la sesión del día según disciplina. El atleta ve "Hoy: Running — Rodaje Z2, 8km" o "Hoy: Gym — Push day" según lo que configuró. Coach también puede configurar la WeeklyRoutine del atleta. NO requiere migración DB (WeeklyRoutine.days es JSON). Requiere: ARCH-07 primero (múltiples sesiones por día). Cada disciplina nueva que se construya en el sistema (con su biblioteca de ejercicios y forma de registro) se integra automáticamente como opción en la rutina.',
+          },
+          {
+            title: 'ARCH-08 — Push notification al publicar sesión en calendario del atleta',
+            done: false,
+            priority: 'P2',
+            note: 'POST /api/coach/athletes/[id]/sessions no envía notificación al atleta. Agregar post-tx fire-and-forget: Notification { type: PLAN_ACTUALIZADO } + push. Patrón ya existe en celebrate-pr y status.',
+          },
+          {
+            title: 'ARCH-09 — Unificar discipline como campo canónico, deprecar freeSessionType',
+            done: false,
+            priority: 'P2',
+            note: 'Web guarda discipline pero no freeSessionType. Mobile guarda freeSessionType pero no discipline. Fix: (1) mobile también guarda discipline, (2) backfill SessionLogs existentes, (3) queries de historial filtran por discipline. freeSessionType queda como legacy.',
+          },
+          {
+            title: 'ARCH-12 — Modelo Discipline: configuración dinámica de disciplinas deportivas',
+            done: true,
+            priority: 'P1',
+            note: 'COMPLETADO (3 phases). P1: modelo Discipline, migration, seed, GET /api/disciplines, backfill. P2: discipline_resolver.ts cacheable, write paths con disciplineId, read paths con disciplineRef. P3: admin CRUD (GET/POST /api/admin/disciplines + GET/PATCH/DELETE /api/admin/disciplines/[id]), SESSION_INTENSITY_MAP centralizado en discipline.types.ts, intensity.ts data-driven, ProfileForm.tsx carga disciplinas dinámicamente, SPORT_LABEL ampliado con slugs. 62 tests discipline en total. CoachProfile.specialties sigue como String[] — NUTRITION no es disciplina deportiva, separación intencional.',
+          },
+          {
+            title: 'ARCH-10 — Feature guard en /coaches (marketplace oculto post-lanzamiento)',
+            done: false,
+            priority: 'P3',
+            note: 'La página /coaches existe sin feature gate. Agregar env var MARKETPLACE_ENABLED=false que oculte la página y el link en navegación. Activar cuando haya tracción.',
+          },
         ],
       },
       {
@@ -3287,7 +3323,7 @@ export const GROUPS: RoadmapGroup[] = [
             title: 'STRA-ENV — Configurar STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET, STRAVA_WEBHOOK_VERIFY_TOKEN',
             done: false,
             priority: 'P1',
-            note: 'Acción manual de Miguel: 1) Crear app en strava.com/settings/api. 2) Agregar STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET, STRAVA_WEBHOOK_VERIFY_TOKEN (openssl rand -hex 16) a .env.local y Vercel env. Sin esto el OAuth flow no funciona.',
+            note: 'Acción manual de Miguel: 1) Crear app en strava.com/settings/api. 2) Agregar STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET, STRAVA_WEBHOOK_VERIFY_TOKEN (openssl rand -hex 16) a .env.local y Vercel env. 3) POST /api/admin/integrations/strava/subscribe una vez tras deploy. Vars documentadas en .env.example (2026-10-07).',
           },
           {
             title: 'STRA-01/02 — OAuth redirect + callback: GET /api/integrations/strava/connect y /callback',
@@ -3502,16 +3538,16 @@ export const GROUPS: RoadmapGroup[] = [
         period: 'Reactivar con usuarios reales',
         label: 'Cron Jobs (desactivados 2026-09-25)',
         items: [
-          { title: 'CRON-01 — checkin-reminder: recordatorio check-in semanal (dom 18:00 COT)', done: false, priority: 'P1', note: 'Desactivado 2026-09-25 para ahorrar Neon compute. Schedule: "0 23 * * 0". Email + Push a atletas con plan activo sin check-in esa semana. Reactivar en vercel.json cuando haya atletas reales.' },
-          { title: 'CRON-02 — session-reminder: recordatorio sesión del lunes (lun 07:00 COT)', done: false, priority: 'P1', note: 'Desactivado 2026-09-25. Schedule: "0 12 * * 1". Email + Push a atletas con sesión planificada el lunes. Reactivar con usuarios reales.' },
-          { title: 'CRON-03 — pending-athlete-reminder: coach con atletas sin activar +48h', done: false, priority: 'P1', note: 'Desactivado 2026-09-25. Schedule: "0 12 * * *". Email + Push al coach. Reactivar cuando haya coaches con atletas.' },
-          { title: 'CRON-04 — inactive-athlete-reminder: re-engagement atletas 3+ días sin actividad', done: false, priority: 'P1', note: 'Desactivado 2026-09-25. Schedule: "0 14 * * *". Email + Push. Reactivar con usuarios reales.' },
-          { title: 'CRON-05 — streak-risk: push a atletas con racha activa que no entrenaron hoy', done: false, priority: 'P2', note: 'Desactivado 2026-09-25. Schedule: "0 20 * * *". Solo Push. Reactivar con usuarios reales.' },
-          { title: 'CRON-06 — nutrition-alert: coach alerta adherencia nutricional <60%', done: false, priority: 'P2', note: 'Desactivado 2026-09-25. Schedule: "0 9 * * *". Solo Push al coach. Reactivar cuando haya coaches con atletas.' },
-          { title: 'CRON-07 — expire-suggestions: expirar sugerencias de check-in no aceptadas', done: false, priority: 'P2', note: 'Desactivado 2026-09-25. Schedule: "0 3 * * *". Solo DB, sin notificaciones. Reactivar con usuarios reales.' },
-          { title: 'CRON-08 — payment-overdue: coach con pagos vencidos', done: false, priority: 'P2', note: 'Desactivado 2026-09-25. Schedule: "0 14 * * *". Email al coach. Reactivar cuando billing esté live.' },
-          { title: 'CRON-09 — billing-check: verificar suscripciones + aplicar downgrades', done: false, priority: 'P2', note: 'Desactivado 2026-09-25. Schedule: "0 2 * * *". Solo DB. Reactivar cuando billing esté live.' },
-          { title: 'CRON-10 — billing-renewal-reminder: aviso renovación en 7 días', done: false, priority: 'P2', note: 'Desactivado 2026-09-25. Schedule: "0 13 * * *". Email. Reactivar cuando billing esté live.' },
+          { title: 'CRON-01 — checkin-reminder: recordatorio check-in semanal (dom 18:00 COT)', done: false, priority: 'P1', note: 'Desactivado para ahorrar Neon compute. Schedule: "0 23 * * 0". Código listo. Activar en vercel.json cuando haya usuarios reales.' },
+          { title: 'CRON-02 — session-reminder: recordatorio sesión del lunes (lun 07:00 COT)', done: false, priority: 'P1', note: 'Desactivado para ahorrar Neon compute. Schedule: "0 12 * * 1". Código listo.' },
+          { title: 'CRON-03 — pending-athlete-reminder: coach con atletas sin activar +48h', done: false, priority: 'P1', note: 'Desactivado para ahorrar Neon compute. Schedule: "0 12 * * *". Código listo.' },
+          { title: 'CRON-04 — inactive-athlete-reminder: re-engagement atletas 3+ días sin actividad', done: false, priority: 'P1', note: 'Desactivado para ahorrar Neon compute. Schedule: "0 14 * * *". Código listo.' },
+          { title: 'CRON-05 — streak-risk: push a atletas con racha activa que no entrenaron hoy', done: false, priority: 'P2', note: 'Desactivado para ahorrar Neon compute. Schedule: "0 20 * * *". Código listo.' },
+          { title: 'CRON-06 — nutrition-alert: coach alerta adherencia nutricional <60%', done: false, priority: 'P2', note: 'Desactivado para ahorrar Neon compute. Schedule: "0 9 * * *". Código listo.' },
+          { title: 'CRON-07 — expire-suggestions: expirar sugerencias de check-in no aceptadas', done: false, priority: 'P2', note: 'Desactivado para ahorrar Neon compute. Schedule: "0 3 * * *". Código listo.' },
+          { title: 'CRON-08 — payment-overdue: coach con pagos vencidos', done: false, priority: 'P2', note: 'Desactivado para ahorrar Neon compute. Schedule: "0 14 * * *". Código listo. Activar cuando billing esté live.' },
+          { title: 'CRON-09 — billing-check: verificar suscripciones + aplicar downgrades', done: false, priority: 'P2', note: 'Desactivado para ahorrar Neon compute. Handler actualizado 2026-10-07: exporta GET + POST (compatible con Vercel cron). Schedule: "0 2 * * *". Código listo.' },
+          { title: 'CRON-10 — billing-renewal-reminder: aviso renovación en 7 días', done: false, priority: 'P2', note: 'Desactivado para ahorrar Neon compute. Schedule: "0 13 * * *". Código listo. Activar cuando billing esté live.' },
         ],
       },
     ],
@@ -3604,7 +3640,7 @@ export const GROUPS: RoadmapGroup[] = [
           { title: 'LAUNCH-05 — MedalIQ Score: métrica gamificada que combina running + gym + adherencia + nutrición (único en el mercado)', done: false, priority: 'P1', note: 'Gravl tiene Strength Score (solo gym). MedalIQ Score es MEJOR: combina todas las dimensiones. Fórmula sugerida: (adherencia% × 0.3) + (PRs recientes × 0.2) + (checkIn score × 0.2) + (nutrición adherencia × 0.15) + (racha × 0.15). Visible en dashboard atleta + panel coach. Leaderboard POR COACH (no global). Se actualiza al completar sesión/check-in.' },
           { title: 'LAUNCH-06 — Recuperación por grupo muscular (CI-F-06): mostrar qué músculos necesitan descanso', done: false, priority: 'P1', note: 'Ya en roadmap como CI-F-06. Gravl lo tiene conectado a wearables. Nosotros podemos calcularlo con datos de gym que ya registramos: sets por bodyPart + fecha último workout + RPE. Visualización: mapa muscular simple con colores (verde=recuperado, amarillo=parcial, rojo=fatigado). Dato informativo para atleta y coach, no prescripción de IA.' },
           { title: 'LAUNCH-07 — Activar Nequi y PSE en Wompi (medios de pago locales Colombia)', done: false, priority: 'P1', note: 'El código ya soporta Wompi payment links que incluyen estos métodos. Solo requiere activarlos en el dashboard de Wompi. Crítico para conversión en Colombia — muchos usuarios no tienen tarjeta de crédito.' },
-          { title: 'LAUNCH-08 — Push notifications: activar cron de recordatorio de sesión + streak en riesgo', done: false, priority: 'P1', note: 'Cron de session-reminder ya existe. Push tokens en DB. Falta: (1) activar cron en producción, (2) push "Tu racha de X días está en riesgo" si no registra actividad hoy, (3) push post-check-in con resultado.' },
+          { title: 'LAUNCH-08 — Push notifications: activar cron de recordatorio de sesión + streak en riesgo', done: false, priority: 'P1', note: 'Infraestructura completa: Expo push service, 8 triggers, token registration. Crons implementados pero desactivados (Neon compute). billing-check handler actualizado GET+POST (2026-10-07). Activar en vercel.json cuando haya usuarios reales.' },
         ],
       },
       {
@@ -3811,6 +3847,141 @@ export const GROUPS: RoadmapGroup[] = [
       { title: 'R7 — Campo discipline en Exercise model', done: true, priority: 'P2', note: 'Campo discipline String? agregado al modelo Exercise en schema.prisma. Migración DB pendiente (npx prisma migrate dev). Backfill pendiente: ejercicios de AscendAPI → GYM, ejercicios custom del coach → según bodyPart/target.' },
       { title: 'R8 — Selector de disciplina en registro de sesión', done: false, priority: 'P2', note: 'Bloqueado por R7 (migración pendiente). Requiere cambios en mobile (otro proyecto).' },
       { title: 'R9 — Filtros en endpoints de historial', done: false, priority: 'P3', note: 'GET /api/mobile/log/history y GET /api/mobile/gym/history no tienen filtros. Agregar query params: ?type= (discipline filter), ?from=&to= (date range), ?limit= (paginación). Aplicar en web y mobile. Permite al atleta ver solo sesiones de running, solo gym, etc.' },
+    ],
+  },
+
+  // ─── MVP GAPS — Retención y experiencia esencial ──────────────────────────
+  // Identificados en análisis de mercado 2026-10-06.
+  // Gaps entre lo que el mercado espera y lo que Medaliq ofrece hoy.
+  // Ordenados por impacto en retención del usuario.
+
+  {
+    id: 'mvp-gaps',
+    label: 'MVP Gaps — Retención & Experiencia Esencial',
+    period: 'Pre-launch / Sprint 1-3',
+    color: '#dc2626',
+    bgColor: '#fef2f2',
+    borderColor: '#fca5a5',
+    items: [
+      {
+        title: 'MVP-01 — Activar Strava sync (backend 100% listo, solo env vars)',
+        done: false,
+        priority: 'P0',
+        note: 'IMPACTO: alto — atleta intermedio+ ya usa reloj. Sin sync = input manual = fricción = churn. TODO de Miguel (no código): (1) Crear app en strava.com/settings/api, (2) Agregar STRAVA_CLIENT_ID + STRAVA_CLIENT_SECRET + STRAVA_WEBHOOK_VERIFY_TOKEN a .env.local y Vercel, (3) POST /api/admin/integrations/strava/subscribe una vez tras deploy. Backend: OAuth connect/callback, webhook handler, activity mapper, token refresh — todo implementado (STRA-01 a STRA-10). Mobile: indicar al atleta que conecte desde web (STRA-MOB pendiente para deep link nativo).',
+      },
+      {
+        title: 'MVP-02 — Fotos de progreso: endpoints + UI comparador',
+        done: false,
+        priority: 'P1',
+        note: 'IMPACTO: alto — motivador #1 para novatos gym. Modelo ProgressPhoto ya en DB (DB-20 done). Pendiente: (1) POST /api/athlete/progress/photos — multipart upload a Vercel Blob, max 5MB, validar image/*, userId ownership. (2) GET /api/athlete/progress/photos — listado paginado por fecha desc. (3) DELETE /api/athlete/progress/photos/[id] — ownership check. (4) Mirror mobile: POST/GET/DELETE /api/mobile/progress/photos. (5) UI web: comparador side-by-side en /progress (slider before/after). (6) UI mobile: cámara + galería + grid de fotos en tab Progreso. Spec: crear progress_photos.spec.md.',
+      },
+      {
+        title: 'MVP-03 — Onboarding B2C mejorado: sugerir rutinas populares del catálogo',
+        done: false,
+        priority: 'P1',
+        note: 'IMPACTO: alto — el novato termina onboarding y ve dashboard vacío = abandono día 1. NO generar plan automático (decisión de producto). Sí: (1) Post-onboarding card "¿Por dónde empezar?" con 3 opciones: explorar rutinas populares / registrar sesión libre / buscar coach. (2) GET /api/athlete/gym/routines/popular — top 5 WorkoutTemplates isPublic=true ordenadas por assignCount desc. (3) Botón "Usar esta rutina" → POST /api/gym/assign con el templateId. UX-ONBOARD-01 ya existe (card orientación con CTAs) — este item lo extiende con rutinas concretas del catálogo. El atleta elige, no el sistema.',
+      },
+      {
+        title: 'MVP-04 — Crons de retención: activar checkin-reminder + session-reminder + inactive-athlete',
+        done: false,
+        priority: 'P1',
+        note: 'Código 100% listo. billing-check handler actualizado GET+POST (2026-10-07). Desactivados para ahorrar Neon compute. Activar en vercel.json cuando haya usuarios reales: copiar schedules de cron.spec.md.',
+      },
+      {
+        title: 'MVP-05 — Coach panel mobile (visibilidad reducida)',
+        done: false,
+        priority: 'P2',
+        note: 'IMPACTO: medio — el coach está en el gym con su atleta, sin laptop. Scope MVP mobile coach: (1) Lista de atletas con badge de adherencia, (2) Perfil de atleta: última sesión, PRs, adherencia semanal, (3) Mensajes (ya existe), (4) Notificaciones (ya existe). NO incluir en MVP: plan builder, constructor de rutinas, templates nutricionales — esos quedan web-only. Stack: React Native en MEDALIQ-MOBILE, nuevas tabs coach con auth por role. Requiere: endpoints /api/mobile/coach/* (nuevos) o reutilizar /api/coach/* con auth mobile.',
+      },
+      {
+        title: 'MVP-06 — Reportes PDF para atletas (resumen mensual)',
+        done: false,
+        priority: 'P3',
+        note: 'IMPACTO: bajo-medio — diferenciador para coaches profesionales. El coach genera un PDF con resumen del mes del atleta: adherencia, PRs, volumen, peso, medidas. Opciones de implementación: (1) @react-pdf/renderer server-side en endpoint GET /api/coach/athletes/[id]/report?month=. (2) Alternativa: HTML template + puppeteer/playwright para PDF. Datos ya existen (adherencia, PRs, check-ins, medidas). Post-MVP.',
+      },
+      {
+        title: 'MVP-07 — Streaks y gamificación básica (racha de días consecutivos)',
+        done: false,
+        priority: 'P2',
+        note: 'IMPACTO: medio — Strava, Duolingo y Nike Run Club usan streaks como driver de retención. (1) Calcular racha actual del atleta (días consecutivos con al menos 1 SessionLog o GymSession). (2) Mostrar en dashboard mobile: llama/fuego + número de días. (3) CRON-05 streak-risk ya existe (push a atletas con racha activa sin entrenar hoy). (4) Milestone celebrations: 7, 14, 30, 60, 90, 180, 365 días. Datos: query SessionLog + GymSession agrupados por fecha, sin modelo nuevo.',
+      },
+      {
+        title: 'MVP-08 — Muscle Visualizer API: diagramas anatómicos dinámicos por sesión y cobertura semanal',
+        done: false,
+        priority: 'P2',
+        note: 'IMPACTO: alto — diferenciador visual premium. Ya tenemos MuscleMap SVG propio en mobile (GYM-S2-02) y web (GYM-WEB-01) con datos de targetMuscles/secondaryMuscles en DB. Este item evalúa reemplazar/complementar los SVGs propios con la Muscle Visualizer API de AscendAPI ($30/mes Pro, 10K req/mes) para diagramas anatómicos HD con heatmaps, workout activation (primario vs secundario con 2 colores), y modelos male/female. Estrategia: (1) sync inicial — generar imágenes para los ~50 targetMuscles × 2 géneros × 2 vistas (front/back) = ~200 imágenes, cachear en nuestro CDN (Cloudflare R2 o similar). (2) Integrar en: vista de ejercicio individual, resumen post-sesión ("músculos trabajados hoy"), cobertura semanal del coach, sugerencias de gaps musculares. (3) Costo temporal: $30/mes durante sync, luego bajar a free o cancelar (imágenes ya cacheadas). Endpoints: GET /v1/visualize/workout (activation), GET /v1/visualize/heatmap (cobertura), GET /v1/visualize/muscles (highlighting), GET /v1/muscles (lista). Auth: RapidAPI headers. ANTES DE IMPLEMENTAR: evaluar alternativas competitivas con mismo funcionamiento — musclewiki.com API, SVGs open-source (e.g. musclesapi.com, body-chart libs en npm), o generación propia con AI (imagen base + overlay por músculo). Comparar: calidad visual, costo, licencia, cacheo, mantenimiento.',
+      },
+    ],
+  },
+
+  // ─── GROWTH FEATURES — Producto ────────────────────────────────────────────
+  // Features de crecimiento y retención identificados en análisis competitivo (Maxed, Hevy, Strava).
+  // Fase 1: features saludables sin AI — generan uso diario.
+  // Fase 2: features con AI/ML — diferenciación futura.
+
+  {
+    id: 'growth-features',
+    label: 'Growth Features — Producto',
+    color: '#0891b2',
+    bgColor: '#ecfeff',
+    borderColor: '#67e8f9',
+    phases: [
+      {
+        id: 'growth-no-ai',
+        label: 'Sin AI — Uso diario & retención',
+        period: 'Post-MVP / Fase 2-3',
+        items: [
+          {
+            title: 'GF-01 — Crews + Leaderboards (grupos de atletas con ranking)',
+            done: false,
+            priority: 'P1',
+            note: 'IMPACTO: alto — retención + viralidad. El coach ya tiene el grupo, solo falta el ranking. Requiere: (1) Modelos nuevos: Group (name, coachId, inviteCode, isActive), GroupMember (groupId, userId, joinedAt). (2) Métricas de ranking: volumen semanal (kg×reps), workouts completados, streak actual. Query de agregación sobre SetLog + GymSession existentes. (3) Endpoints coach: POST/GET /api/coach/groups, POST /api/coach/groups/[id]/members, GET /api/coach/groups/[id]/leaderboard. (4) Endpoints mobile: GET /api/mobile/groups, GET /api/mobile/groups/[id]/leaderboard, POST /api/mobile/groups/join (via inviteCode). (5) Share card nueva: "Mi ranking semanal" con posición + stats. (6) Push notification semanal: "Tu ranking esta semana: #3 de 12". Ref: Hevy (2M descargas con $15K en ads gracias a social features).',
+          },
+          {
+            title: 'GF-02 — Creator Marketplace: coaches venden planes template',
+            done: false,
+            priority: 'P1',
+            note: 'IMPACTO: alto — monetización adicional para coaches + canal de descubrimiento B2C. Scaffold parcial existe: CoachProgram (con priceMonth), WorkoutTemplate.isPublic, página /coaches. Pendiente: (1) Agregar isPublic + priceCOP a NutritionTemplate. (2) Modelo TemplatePurchase (buyerId, templateId, templateType, pricePaid, purchasedAt). (3) Página /marketplace con búsqueda y filtros (deporte, nivel, precio). (4) Endpoint GET /api/marketplace/templates — templates públicos con rating. (5) Endpoint POST /api/marketplace/templates/[id]/purchase — crea TemplatePurchase + asigna copia al atleta. (6) Dashboard coach: ventas, ingresos, templates más vendidos. 0% comisión como diferenciador vs Maxed/Trainerize. Bloqueado por: billing activo (Wompi).',
+          },
+          {
+            title: 'GF-03 — Strength Prediction determinista (proyección de fuerza)',
+            done: false,
+            priority: 'P2',
+            note: 'IMPACTO: medio — gamificación sin AI. PRs tracking ya existe (Epley en mobile, Brzycki en coach). Pendiente: (1) Unificar a Epley en ambos (más preciso para reps >10). (2) Use case: getStrengthProjection(userId, exerciseId) — regresión lineal sobre últimos 8-12 1RM estimados. (3) Output: 1RM actual, tendencia (+X kg/mes), proyección a 4/8/12 semanas. (4) Endpoint GET /api/mobile/gym/prs/projection?exerciseId=. (5) UI mobile: gráfica de tendencia + "Proyección: 100kg bench en ~6 semanas". (6) Share card: "Mi proyección de fuerza". Sin ML — regresión lineal simple sobre datos existentes (SetLog.weightKg × SetLog.repsCompleted). PerformanceBenchmark model existe pero no está integrado con SetLog — oportunidad de unificar.',
+          },
+          {
+            title: 'GF-04 — Auto-reschedule de sesiones perdidas',
+            done: false,
+            priority: 'P2',
+            note: 'IMPACTO: medio — reduce abandono por "me quedé atrás". PlannedSession existe pero sin campos de reschedule. Pendiente: (1) Campos nuevos en PlannedSession: originalDate (DateTime?), rescheduledFromId (self-relation?). (2) Use case: rescheduleSession(sessionId, newDate) — valida no conflicto con otra sesión del mismo día, preserva originalDate. (3) Endpoint PATCH /api/mobile/plan/sessions/[id]/reschedule { newDate }. (4) Lógica auto: si el atleta no completó sesión del lunes, al abrir app el martes ve banner "¿Mover sesión de ayer a hoy?". (5) Mirror web: el coach puede ver sesiones rescheduled vs originales. (6) Límite: max 2 reschedules por sesión (evitar postponeo infinito). No modifica contenido de la sesión — solo la fecha.',
+          },
+          {
+            title: 'GF-05 — Wearables: Garmin + Fitbit (sync automático)',
+            done: false,
+            priority: 'P2',
+            note: 'IMPACTO: medio — atleta intermedio+ ya usa reloj. Strava 100% implementado (solo falta activar env vars — ver MVP-01). WearableConnection schema ya soporta provider genérico. Pendiente: (1) garmin.service.ts — OAuth 1.0a, Garmin Connect API, activity fetch, token refresh. (2) fitbit.service.ts — OAuth 2.0, Fitbit Web API, activity/sleep/hr fetch. (3) Mappers: garmin.mapper.ts, fitbit.mapper.ts → SessionLog via createWearableSession (use case ya existe, acepta GARMIN/HEALTHKIT). (4) Endpoints: GET/POST /api/athlete/integrations/garmin, GET/POST /api/athlete/integrations/fitbit. (5) Webhooks: POST /api/webhooks/garmin, POST /api/webhooks/fitbit. (6) UI: pantalla de integraciones en settings con toggle por provider. Strava primero (MVP-01), luego Garmin (más popular en runners LatAm), luego Fitbit.',
+          },
+        ],
+      },
+      {
+        id: 'growth-ai',
+        label: 'Con AI/ML — Diferenciación futura',
+        period: 'Post-Scale / Fase 4+',
+        items: [
+          {
+            title: 'GF-06 — Body Scan: análisis corporal con foto + proyección visual',
+            done: false,
+            priority: 'P3',
+            note: 'IMPACTO: alto en viralidad — altamente compartible. Requiere computer vision (viola restricción determinista actual). Prerequisito: decisión explícita de Miguel para incorporar AI/ML. Alternativa interim: progress photos manuales con comparador side-by-side (MVP-02 ya planificado). Scope AI: (1) Modelo ML para estimación de % grasa corporal desde foto frontal + lateral. (2) Proyección visual a 4-6 meses basada en plan actual + adherencia. (3) Share card viral: before/after proyectado. Ref: Maxed AI cobra $7.99/mes por esto. Evaluar APIs externas (Bodybuilding.AI, Naked3D) vs modelo propio.',
+          },
+          {
+            title: 'GF-07 — Photo Meal Logging: foto de comida → macros automáticos',
+            done: false,
+            priority: 'P3',
+            note: 'IMPACTO: medio — reduce fricción del food logging (mayor punto de abandono en nutrición). Requiere vision AI. Prerequisito: decisión explícita de Miguel para incorporar AI/ML. Alternativa interim: meal templates (ya implementados) + barcode scanner (ya implementado) + búsqueda rápida. Scope AI: (1) Foto → identificación de alimentos → estimación de porciones → macros. (2) Integrar con NutritionLog existente. (3) Precisión objetivo: ±20% en calorías (benchmark industria). APIs candidatas: Nutritionix Vision, Passio AI, LogMeal. Evaluar costo por request vs beneficio en retención.',
+          },
+        ],
+      },
     ],
   },
 ]
