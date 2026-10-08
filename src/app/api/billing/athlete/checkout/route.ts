@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
+import { rateLimitAsync } from '@/lib/rate_limit'
 import { prisma } from '@/lib/db/prisma'
 import { BillingRepository } from '@/infrastructure/billing/billing.repository'
 import { getPaymentGateway } from '@/infrastructure/billing/payment_gateway.factory'
@@ -10,6 +11,9 @@ export async function POST(req: NextRequest) {
   if (!session?.user?.id || session.user.role !== 'ATHLETE') {
     return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
   }
+
+  const rl = await rateLimitAsync(`web-${session.user.id}:billing-checkout`, { limit: 5, windowMs: 60_000 })
+  if (!rl.allowed) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   // Atleta B2B activo nunca paga — su acceso lo gestiona el coach
   const b2bRelation = await prisma.coachAthlete.findFirst({

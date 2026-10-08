@@ -1,11 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 // GET /api/athlete/nutrition/templates — templates nutricionales propios del atleta B2C
 export async function GET(_req: NextRequest) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
+
+  if (!session.user.features?.nutrition) {
+    return NextResponse.json({ error: 'Función no disponible en tu plan actual.', upgrade: '/upgrade' }, { status: 402 })
+  }
+
+  const { allowed } = await rateLimitAsync(`web-${session.user.id}:nutrition-templates`, { limit: 300, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 
   const userId = session.user.id
 
@@ -29,6 +37,13 @@ export async function GET(_req: NextRequest) {
 export async function POST(req: NextRequest) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
+
+  if (!session.user.features?.nutrition) {
+    return NextResponse.json({ error: 'Función no disponible en tu plan actual.', upgrade: '/upgrade' }, { status: 402 })
+  }
+
+  const { allowed } = await rateLimitAsync(`web-${session.user.id}:nutrition-templates-create`, { limit: 30, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 
   const userId = session.user.id
 

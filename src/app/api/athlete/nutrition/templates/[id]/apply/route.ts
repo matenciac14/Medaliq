@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
+import { rateLimitAsync } from '@/lib/rate_limit'
 import { MealType, NutritionDayType } from '@/generated/prisma/enums'
 import { z } from 'zod'
 import { getIntensityMapForDateRange } from '@/lib/nutrition/get_intensity_for_date'
@@ -21,6 +22,13 @@ function intensityToDayType(intensity: string): NutritionDayType {
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
+
+  if (!session.user.features?.nutrition) {
+    return NextResponse.json({ error: 'Función no disponible en tu plan actual.', upgrade: '/upgrade' }, { status: 402 })
+  }
+
+  const { allowed } = await rateLimitAsync(`web-${session.user.id}:nutrition-template-apply`, { limit: 100, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 
   const userId = session.user.id
   const { id } = await params

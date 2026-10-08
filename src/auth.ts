@@ -36,6 +36,17 @@ function buildFeaturesFromUser(u: {
   featurePlan: boolean; featureCheckin: boolean; featureNutrition: boolean;
   featureProgress: boolean; featureLog: boolean; featureCoach: boolean; featureGym: boolean;
 }) {
+  const billingEnabled = process.env.BILLING_ENABLED === 'true'
+
+  // En beta (billing desactivado), todos son PRO → features gateados por billing se fuerzan a true.
+  // Al activar billing, se respetan las columnas de DB controladas por TierFeatureConfig.
+  if (!billingEnabled) {
+    return {
+      plan: true, checkin: true, nutrition: true,
+      progress: true, log: true, coach: u.featureCoach, gym: true,
+    }
+  }
+
   return {
     plan:      u.featurePlan,
     checkin:   u.featureCheckin,
@@ -88,6 +99,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         // GAP-03: gate de verificación de email — activo solo cuando EMAIL_GATE_ENABLED=true
         if (process.env.EMAIL_GATE_ENABLED === 'true' && !user.emailVerified) return null
+
+        // Bloquear login si el usuario está suspendido/bloqueado (paridad con mobile)
+        if (user.status === 'BLOCKED') throw new Error('ACCOUNT_BLOCKED')
+        if (user.status === 'SUSPENDED') throw new Error('ACCOUNT_SUSPENDED')
+        if (user.status !== 'ACTIVE') return null
 
         const features = buildFeaturesFromUser(user)
 

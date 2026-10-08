@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 export async function PATCH(
   req: NextRequest,
@@ -8,6 +9,9 @@ export async function PATCH(
 ) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+
+  const { allowed } = await rateLimitAsync(`web-${session.user.id}:log-session-edit`, { limit: 100, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 
   const { logId } = await params
   const userId = session.user.id

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 export async function POST(req: NextRequest) {
   const session = await auth()
@@ -12,6 +13,9 @@ export async function POST(req: NextRequest) {
   if (session.user.role !== 'ATHLETE') {
     return NextResponse.json({ error: 'Only athletes can join programs' }, { status: 403 })
   }
+
+  const rl = await rateLimitAsync(`web-${session.user.id}:coach-join`, { limit: 30, windowMs: 60_000 })
+  if (!rl.allowed) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const body = await req.json()
   const { profileId, programId } = body

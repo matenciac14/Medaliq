@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 const VALID_SPORTS = ['RUNNING', 'CYCLING', 'SWIMMING', 'STRENGTH', 'TRIATHLON'] as const
 const VALID_METRICS = ['5K_TIME', '10K_TIME', 'HALF_MARATHON_TIME', 'MARATHON_TIME', 'FTP_WATTS', 'CSS_PACE', 'PACE_Z2', '1RM_SQUAT', '1RM_DEADLIFT', '1RM_BENCH', 'VO2MAX'] as const
@@ -9,6 +10,9 @@ export async function GET(_req: NextRequest) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   if (!session.user.features?.progress) return NextResponse.json({ error: 'Función no disponible' }, { status: 403 })
+
+  const rl = await rateLimitAsync(`web-${session.user.id}:benchmarks-get`, { limit: 300, windowMs: 60_000 })
+  if (!rl.allowed) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const benchmarks = await prisma.performanceBenchmark.findMany({
     where: { userId: session.user.id },
@@ -22,6 +26,9 @@ export async function POST(req: NextRequest) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   if (!session.user.features?.progress) return NextResponse.json({ error: 'Función no disponible' }, { status: 403 })
+
+  const rl = await rateLimitAsync(`web-${session.user.id}:benchmarks-post`, { limit: 60, windowMs: 60_000 })
+  if (!rl.allowed) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const body = await req.json().catch(() => null) as {
     sport: string
@@ -65,6 +72,10 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  if (!session.user.features?.progress) return NextResponse.json({ error: 'Función no disponible' }, { status: 403 })
+
+  const rl = await rateLimitAsync(`web-${session.user.id}:benchmarks-delete`, { limit: 60, windowMs: 60_000 })
+  if (!rl.allowed) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const { benchmarkId } = await req.json().catch(() => ({})) as { benchmarkId?: string }
   if (!benchmarkId) return NextResponse.json({ error: 'benchmarkId requerido' }, { status: 400 })

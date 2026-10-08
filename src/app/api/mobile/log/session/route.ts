@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db/prisma'
 import { getMobileUser } from '@/lib/auth/mobile_auth'
 import { rateLimitAsync } from '@/lib/rate_limit'
 import { requireFeature } from '@/lib/guards/feature_gate'
+import { sendPushNotification } from '@/lib/push/expo_push'
 import { z } from 'zod'
 import type { SessionType } from '@/generated/prisma/enums'
 import { calcNutritionAdjustment } from '@/domain/nutrition/calculate_nutrition_adjustment'
@@ -123,6 +124,16 @@ export async function POST(req: NextRequest) {
       disciplineId,
     },
   })
+
+  // Push notification al coach (paridad con web)
+  const coachRelation = await prisma.coachAthlete.findFirst({
+    where: { athleteId: userId, status: 'ACTIVE' },
+    select: { coach: { select: { pushToken: true } }, athlete: { select: { name: true } } },
+  })
+  if (coachRelation?.coach.pushToken) {
+    const name = coachRelation.athlete.name ?? 'Tu atleta'
+    sendPushNotification(coachRelation.coach.pushToken, `${name} completó una sesión`, 'Sesión registrada 🏃', { screen: 'coach' }).catch((err) => console.error('[mobile/log/session] sendPushNotification to coach failed:', err))
+  }
 
   // ── Sugerencia nutricional informativa por intensidad real ────────────────
   // R6: PendingNutritionAdjustment eliminado del sistema.

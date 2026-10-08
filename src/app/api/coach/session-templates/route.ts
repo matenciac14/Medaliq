@@ -9,6 +9,9 @@ export async function GET() {
   if (!session?.user?.id || session.user.role !== 'COACH')
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const rl = await rateLimitAsync(`web-${session.user.id}:coach-session-templates-get`, { limit: 300, windowMs: 60_000 })
+  if (!rl.allowed) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+
   const templates = await prisma.sessionTemplate.findMany({
     where: { coachId: session.user.id },
     orderBy: { createdAt: 'desc' },

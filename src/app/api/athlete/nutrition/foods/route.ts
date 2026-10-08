@@ -2,10 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import { countryFromTimezone } from '@/lib/utils/timezone_country'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 export async function GET(req: NextRequest) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  if (!session.user.features?.nutrition) {
+    return NextResponse.json({ error: 'Función no disponible en tu plan actual.', upgrade: '/upgrade' }, { status: 402 })
+  }
+  const { allowed } = await rateLimitAsync(`web-${session.user.id}:nutrition-foods`, { limit: 300, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 
   const q = req.nextUrl.searchParams.get('q')?.trim() ?? ''
   const userId = session.user.id
@@ -67,6 +73,11 @@ export async function GET(req: NextRequest) {
 export async function POST(req: Request) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  if (!session.user.features?.nutrition) {
+    return NextResponse.json({ error: 'Función no disponible en tu plan actual.', upgrade: '/upgrade' }, { status: 402 })
+  }
+  const { allowed } = await rateLimitAsync(`web-${session.user.id}:nutrition-foods-create`, { limit: 10, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 
   const body = await req.json()
   const {

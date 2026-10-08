@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
+import { rateLimitAsync } from '@/lib/rate_limit'
 import { prisma } from '@/lib/db/prisma'
 
 const VALID_CRONS = ['checkin-reminder', 'session-reminder', 'payment-overdue'] as const
@@ -12,6 +13,9 @@ export async function POST(req: NextRequest) {
 
   const admin = await prisma.user.findUnique({ where: { id: session.user.id }, select: { role: true } })
   if (admin?.role !== 'ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  const rl = await rateLimitAsync(`web-${session.user.id}:admin-crons-trigger`, { limit: 10, windowMs: 60_000 })
+  if (!rl.allowed) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const { cron } = await req.json()
   if (!VALID_CRONS.includes(cron as CronName)) {

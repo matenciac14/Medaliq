@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 type RoutineDayInput = {
   dow: number
@@ -17,6 +18,9 @@ export async function GET() {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const { allowed: allowedGet } = await rateLimitAsync(`web-${session.user.id}:routine-get`, { limit: 300, windowMs: 60_000 })
+  if (!allowedGet) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
+
   const routine = await prisma.weeklyRoutine.findUnique({ where: { userId: session.user.id } })
   return NextResponse.json({ routine })
 }
@@ -24,6 +28,9 @@ export async function GET() {
 export async function PUT(req: Request) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { allowed: allowedPut } = await rateLimitAsync(`web-${session.user.id}:routine-put`, { limit: 60, windowMs: 60_000 })
+  if (!allowedPut) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 
   const body = await req.json()
   const { days, daysPerWeek } = body as { days: RoutineDayInput[]; daysPerWeek: number }

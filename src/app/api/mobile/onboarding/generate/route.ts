@@ -54,12 +54,24 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const updatedUser = await prisma.user.findUnique({
-      where: { id: mobile.id },
-      select: MOBILE_USER_SELECT,
-    })
+    const [updatedUser, subscription, healthProfile, coachRelation] = await Promise.all([
+      prisma.user.findUnique({ where: { id: mobile.id }, select: MOBILE_USER_SELECT }),
+      prisma.userSubscription.findUnique({ where: { userId: mobile.id }, select: { tier: true, trialEndsAt: true } }),
+      prisma.healthProfile.findUnique({ where: { userId: mobile.id }, select: { sportGoal: true } }),
+      prisma.coachAthlete.findFirst({ where: { athleteId: mobile.id, status: 'ACTIVE' }, select: { id: true } }),
+    ])
+
+    const sport = healthProfile?.sportGoal === 'STRENGTH_TRAINING' ? 'STRENGTH'
+      : healthProfile?.sportGoal === 'BODY_RECOMPOSITION' ? 'BOTH'
+      : 'RUNNING'
+
     const payload = updatedUser
-      ? buildMobileTokenPayload(updatedUser, { isB2B: mobile.isB2B ?? false })
+      ? buildMobileTokenPayload(updatedUser, {
+          isB2B: !!coachRelation,
+          sport,
+          subscriptionTier: subscription?.tier,
+          trialEndsAt: subscription?.trialEndsAt,
+        })
       : { ...mobile, onboardingCompleted: true as const }
     const token = await signMobileToken(payload)
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import type { SetType } from '@/generated/prisma/enums'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 async function getSession() {
   const session = await auth()
@@ -27,6 +28,9 @@ export async function GET(
   const result = await getAthleteIdWithGate()
   if (result instanceof NextResponse) return result
   const { athleteId } = result
+
+  const rl = await rateLimitAsync(`web-${athleteId}:gym-routine-detail`, { limit: 300, windowMs: 60_000 })
+  if (!rl.allowed) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const { id } = await params
 
@@ -55,6 +59,9 @@ export async function PATCH(
   const result = await getAthleteIdWithGate()
   if (result instanceof NextResponse) return result
   const { athleteId } = result
+
+  const rl = await rateLimitAsync(`web-${athleteId}:gym-routine-detail`, { limit: 100, windowMs: 60_000 })
+  if (!rl.allowed) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const { id } = await params
 
@@ -133,6 +140,9 @@ export async function DELETE(
   const result = await getAthleteIdWithGate()
   if (result instanceof NextResponse) return result
   const { athleteId } = result
+
+  const rl = await rateLimitAsync(`web-${athleteId}:gym-routine-detail`, { limit: 100, windowMs: 60_000 })
+  if (!rl.allowed) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const { id } = await params
 

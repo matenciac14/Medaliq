@@ -3,6 +3,7 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import { todayInTz } from '@/lib/core/date_utils'
 import { z } from 'zod'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 const DailyLogSchema = z.object({
   weightKg:    z.number().positive().max(500).optional(),
@@ -17,6 +18,9 @@ export async function GET() {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const rl = await rateLimitAsync(`web-${session.user.id}:metrics-log-get`, { limit: 300, windowMs: 60_000 })
+  if (!rl.allowed) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+
   const logs = await prisma.dailyLog.findMany({
     where: { userId: session.user.id },
     orderBy: { date: 'desc' },
@@ -30,6 +34,9 @@ export async function GET() {
 export async function POST(req: Request) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const rl = await rateLimitAsync(`web-${session.user.id}:metrics-log-post`, { limit: 100, windowMs: 60_000 })
+  if (!rl.allowed) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const parsed = DailyLogSchema.safeParse(await req.json().catch(() => null))
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Body inválido' }, { status: 400 })

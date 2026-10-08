@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
+import { rateLimitAsync } from '@/lib/rate_limit'
 import { BillingRepository } from '@/infrastructure/billing/billing.repository'
 import { getPaymentGateway } from '@/infrastructure/billing/payment_gateway.factory'
 import { createCoachCheckout } from '@/domain/billing/checkout.use_case'
@@ -12,6 +13,9 @@ export async function POST(req: NextRequest) {
   if (!session?.user?.id || session.user.role !== 'COACH') {
     return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
   }
+
+  const rl = await rateLimitAsync(`web-${session.user.id}:billing-checkout`, { limit: 5, windowMs: 60_000 })
+  if (!rl.allowed) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const body = await req.json().catch(() => null) as { targetTier?: unknown } | null
   const targetTier = body?.targetTier

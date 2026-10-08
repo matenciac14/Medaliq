@@ -7,6 +7,10 @@ export async function POST(_req: Request) {
   const session = await auth()
   if (!session?.user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
+  if (!session.user.features?.nutrition) {
+    return Response.json({ error: 'Función no disponible en tu plan actual.', upgrade: '/upgrade' }, { status: 402 })
+  }
+
   const { allowed } = await rateLimitAsync(`nutrition-generate:${session.user.id}`, { limit: 3, windowMs: 60 * 60_000 }) // 3/hora
   if (!allowed) return Response.json({ error: 'Límite de generaciones alcanzado. Intenta más tarde.' }, { status: 429 })
 

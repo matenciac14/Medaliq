@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import { z } from 'zod'
+import { rateLimitAsync } from '@/lib/rate_limit'
 import { calculateTDEE, calculateMacros, KCAL_ADJUSTMENT_MIN, KCAL_ADJUSTMENT_MAX } from '@/domain/plan/formulas'
 
 const EDITABLE_FIELDS = [
@@ -29,6 +30,11 @@ const patchSchema = z.object({
 export async function GET() {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
+  if (!session.user.features?.nutrition) {
+    return NextResponse.json({ error: 'Función no disponible en tu plan actual.', upgrade: '/upgrade' }, { status: 402 })
+  }
+  const { allowed } = await rateLimitAsync(`web-${session.user.id}:nutrition-targets`, { limit: 300, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 
   const plan = await prisma.nutritionPlan.findUnique({ where: { userId: session.user.id } })
   if (!plan) return NextResponse.json({ error: 'Completa tu perfil primero.' }, { status: 404 })
@@ -43,6 +49,11 @@ export async function GET() {
 export async function PATCH(req: NextRequest) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
+  if (!session.user.features?.nutrition) {
+    return NextResponse.json({ error: 'Función no disponible en tu plan actual.', upgrade: '/upgrade' }, { status: 402 })
+  }
+  const { allowed } = await rateLimitAsync(`web-${session.user.id}:nutrition-targets-patch`, { limit: 60, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 
   const userId = session.user.id
 

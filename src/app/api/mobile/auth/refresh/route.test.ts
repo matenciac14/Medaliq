@@ -16,6 +16,7 @@ vi.mock('@/lib/db/prisma', () => ({
     user: { findUnique: vi.fn() },
     coachAthlete: { findFirst: vi.fn() },
     userSubscription: { findUnique: vi.fn() },
+    healthProfile: { findUnique: vi.fn() },
   },
 }))
 
@@ -92,6 +93,7 @@ describe('POST /api/mobile/auth/refresh', () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue(null)
     vi.mocked(prisma.coachAthlete.findFirst).mockResolvedValue(null)
     vi.mocked(prisma.userSubscription.findUnique).mockResolvedValue(null)
+    vi.mocked(prisma.healthProfile.findUnique).mockResolvedValue(null)
     const res = await POST(makeReq())
     expect(res.status).toBe(404)
   })
@@ -101,6 +103,7 @@ describe('POST /api/mobile/auth/refresh', () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue(DB_USER as any)
     vi.mocked(prisma.coachAthlete.findFirst).mockResolvedValue(null)
     vi.mocked(prisma.userSubscription.findUnique).mockResolvedValue(null)
+    vi.mocked(prisma.healthProfile.findUnique).mockResolvedValue(null)
     vi.mocked(buildMobileTokenPayload).mockReturnValue(MOCK_PAYLOAD as any)
     vi.mocked(signMobileToken).mockResolvedValue('new-jwt-token')
 
@@ -117,6 +120,7 @@ describe('POST /api/mobile/auth/refresh', () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue(DB_USER as any)
     vi.mocked(prisma.coachAthlete.findFirst).mockResolvedValue({ id: 'rel-1' } as any)
     vi.mocked(prisma.userSubscription.findUnique).mockResolvedValue(null)
+    vi.mocked(prisma.healthProfile.findUnique).mockResolvedValue(null)
     vi.mocked(buildMobileTokenPayload).mockReturnValue({ ...MOCK_PAYLOAD, isB2B: true } as any)
     vi.mocked(signMobileToken).mockResolvedValue('token-b2b')
 
@@ -125,6 +129,23 @@ describe('POST /api/mobile/auth/refresh', () => {
     expect(buildMobileTokenPayload).toHaveBeenCalledWith(
       DB_USER,
       expect.objectContaining({ isB2B: true })
+    )
+  })
+
+  it('pasa sport desde healthProfile al token', async () => {
+    vi.mocked(getMobileUser).mockResolvedValue(MOBILE_USER as any)
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(DB_USER as any)
+    vi.mocked(prisma.coachAthlete.findFirst).mockResolvedValue(null)
+    vi.mocked(prisma.userSubscription.findUnique).mockResolvedValue(null)
+    vi.mocked(prisma.healthProfile.findUnique).mockResolvedValue({ sportGoal: 'STRENGTH_TRAINING' } as any)
+    vi.mocked(buildMobileTokenPayload).mockReturnValue(MOCK_PAYLOAD as any)
+    vi.mocked(signMobileToken).mockResolvedValue('token-sport')
+
+    await POST(makeReq())
+
+    expect(buildMobileTokenPayload).toHaveBeenCalledWith(
+      DB_USER,
+      expect.objectContaining({ sport: 'STRENGTH' })
     )
   })
 })

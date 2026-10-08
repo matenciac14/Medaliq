@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
+import { rateLimitAsync } from '@/lib/rate_limit'
+import { todayInTz } from '@/lib/core/date_utils'
 
 /**
  * GET /api/athlete/nutrition/planned-summary?date=YYYY-MM-DD
@@ -13,14 +15,22 @@ export async function GET(req: NextRequest) {
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
   }
+
+  if (!session.user.features?.nutrition) {
+    return NextResponse.json({ error: 'Función no disponible en tu plan actual.', upgrade: '/upgrade' }, { status: 402 })
+  }
+
+  const { allowed } = await rateLimitAsync(`web-${session.user.id}:nutrition-planned-summary`, { limit: 300, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
+
   const userId = session.user.id
 
   const { searchParams } = new URL(req.url)
   const dateParam = searchParams.get('date')
 
-  const tz = 'America/Bogota'
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { timezone: true } })
   const todayStr = dateParam
-    ?? new Date().toLocaleDateString('en-CA', { timeZone: tz })  // YYYY-MM-DD
+    ?? todayInTz(user?.timezone ?? null).toISOString().slice(0, 10)
 
   const dayStart = new Date(`${todayStr}T00:00:00.000Z`)
   const dayEnd   = new Date(`${todayStr}T23:59:59.999Z`)

@@ -58,15 +58,29 @@ export function buildMobileTokenPayload(
     trialEndsAt?: Date | null
   },
 ): MobileTokenPayload {
-  const features: UserConfig['features'] = {
-    plan:      user.featurePlan,
-    checkin:   user.featureCheckin,
-    nutrition: user.featureNutrition,
-    progress:  user.featureProgress,
-    log:       user.featureLog,
-    coach:     user.featureCoach,
-    gym:       user.featureGym,
-  }
+  const billingEnabled = process.env.BILLING_ENABLED === 'true'
+
+  // En beta (billing desactivado), todos son PRO → features gateados por billing se fuerzan a true.
+  // Al activar billing, se respetan las columnas de DB controladas por TierFeatureConfig.
+  const features: UserConfig['features'] = billingEnabled
+    ? {
+        plan:      user.featurePlan,
+        checkin:   user.featureCheckin,
+        nutrition: user.featureNutrition,
+        progress:  user.featureProgress,
+        log:       user.featureLog,
+        coach:     user.featureCoach,
+        gym:       user.featureGym,
+      }
+    : {
+        plan:      true,
+        checkin:   true,
+        nutrition: true,
+        progress:  true,
+        log:       true,
+        coach:     user.featureCoach, // coach se controla por rol, no por billing
+        gym:       true,
+      }
 
   const trialDaysLeft = opts.subscriptionTier === 'TRIAL' && opts.trialEndsAt
     ? Math.max(0, Math.ceil((opts.trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))

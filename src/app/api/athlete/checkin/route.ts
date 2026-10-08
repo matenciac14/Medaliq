@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
@@ -11,6 +11,7 @@ import { unauthorized, ok, serverError, badRequest } from '@/lib/api/responses'
 import { sendPlanUpdatedEmail, sendCoachCheckInEmail } from '@/infrastructure/email/resend'
 import { mapWebCheckinBody } from '@/lib/api/checkin_mapper'
 import { createNotification } from '@/infrastructure/db/notification'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 const checkInBodySchema = z.object({
   hardestRpe:            z.number().min(1).max(10).optional(),
@@ -34,6 +35,9 @@ const checkInBodySchema = z.object({
 export async function GET(_req: NextRequest) {
   const session = await auth()
   if (!session?.user?.id) return unauthorized()
+
+  const { allowed: allowedGet } = await rateLimitAsync(`web-${session.user.id}:checkin-get`, { limit: 300, windowMs: 60_000 })
+  if (!allowedGet) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 
   const [last, pendingSuggestions] = await Promise.all([
     prisma.weeklyCheckIn.findFirst({
@@ -69,6 +73,13 @@ export async function GET(_req: NextRequest) {
 export async function POST(req: NextRequest) {
   const session = await auth()
   if (!session?.user?.id) return unauthorized()
+
+  if (!session.user.features?.checkin) {
+    return NextResponse.json({ error: 'Función no disponible en tu plan actual.', upgrade: '/upgrade' }, { status: 402 })
+  }
+
+  const { allowed: allowedPost } = await rateLimitAsync(`web-${session.user.id}:checkin-post`, { limit: 30, windowMs: 60_000 })
+  if (!allowedPost) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 
   const raw = await req.json()
   const parsed = checkInBodySchema.safeParse(raw)

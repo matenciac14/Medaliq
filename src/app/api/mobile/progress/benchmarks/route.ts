@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getMobileUser } from '@/lib/auth/mobile_auth'
 import { rateLimitAsync } from '@/lib/rate_limit'
+import { requireFeature } from '@/lib/guards/feature_gate'
 import { prisma } from '@/lib/db/prisma'
 
 const VALID_SPORTS = ['RUNNING', 'CYCLING', 'SWIMMING', 'STRENGTH', 'TRIATHLON'] as const
@@ -9,6 +10,8 @@ const VALID_METRICS = ['5K_TIME', '10K_TIME', 'HALF_MARATHON_TIME', 'MARATHON_TI
 export async function GET(req: NextRequest) {
   const mobile = await getMobileUser(req)
   if (!mobile) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  const gate = requireFeature(mobile.features, 'progress')
+  if (gate) return gate
   const { allowed } = await rateLimitAsync(`mobile-${mobile.id}:benchmarks-get`, { limit: 120, windowMs: 60_000 })
   if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 
@@ -24,6 +27,8 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const mobile = await getMobileUser(req)
   if (!mobile) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  const gate = requireFeature(mobile.features, 'progress')
+  if (gate) return gate
   const { allowed } = await rateLimitAsync(`mobile-${mobile.id}:benchmarks-post`, { limit: 60, windowMs: 60_000 })
   if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 

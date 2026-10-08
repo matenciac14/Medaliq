@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server'
 import { DELETE, PATCH } from './route'
 
 vi.mock('@/auth', () => ({ auth: vi.fn() }))
+vi.mock('@/lib/rate_limit', () => ({ rateLimitAsync: vi.fn().mockResolvedValue({ allowed: true }) }))
 vi.mock('@/lib/db/prisma', () => ({
   prisma: {
     plannedMeal: { findFirst: vi.fn(), delete: vi.fn(), update: vi.fn() },
@@ -12,7 +13,7 @@ vi.mock('@/lib/db/prisma', () => ({
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 
-const SESSION = { user: { id: 'user-1' } }
+const SESSION = { user: { id: 'user-1', features: { nutrition: true } } }
 
 const MEAL = {
   id: 'pm-1', userId: 'user-1', mealType: 'BREAKFAST', grams: 100,

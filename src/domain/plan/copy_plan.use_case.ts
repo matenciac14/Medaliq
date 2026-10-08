@@ -45,7 +45,7 @@ export async function copyPlanUseCase(
 
   // Verify coach owns the source plan's athlete
   const sourceRelation = await db.coachAthlete.findFirst({
-    where: { coachId, athleteId: sourcePlan.userId },
+    where: { coachId, athleteId: sourcePlan.userId, status: 'ACTIVE' },
   })
   if (!sourceRelation) throw { status: 403, message: 'No tienes acceso al plan de origen.' }
 

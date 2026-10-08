@@ -78,7 +78,7 @@ export async function getMobileDashboard(userId: string, tz: string | undefined,
   const summaryInput = buildDashboardSummaryInput(core, activePlan, lastCompletedPlan, todayDow)
   const { summary, planIdToComplete } = getDashboardSummary(summaryInput)
 
-  // Auto-complete expired plans
+  // Auto-complete expired plans (idempotent — safe in GET, updateMany is a no-op if already COMPLETED)
   let justCompletedPlan: CompletedPlanStats | null = null
 
   if (planIdToComplete && planMeta) {

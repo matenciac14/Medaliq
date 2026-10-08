@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
   if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes. Intenta en un minuto.' }, { status: 429 })
 
   const coachRelation = await prisma.coachAthlete.findFirst({
-    where: { athleteId: mobile.id },
+    where: { athleteId: mobile.id, status: 'ACTIVE' },
     select: { coach: { select: { id: true, name: true } } },
   })
 

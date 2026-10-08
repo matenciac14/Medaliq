@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 // DELETE /api/athlete/nutrition/planned-meals/[id]
 export async function DELETE(
@@ -9,6 +10,13 @@ export async function DELETE(
 ) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
+
+  if (!session.user.features?.nutrition) {
+    return NextResponse.json({ error: 'Función no disponible en tu plan actual.', upgrade: '/upgrade' }, { status: 402 })
+  }
+
+  const { allowed: rlDel } = await rateLimitAsync(`web-${session.user.id}:nutrition-planned-meals-del`, { limit: 60, windowMs: 60_000 })
+  if (!rlDel) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 
   const { id } = await params
   const meal = await prisma.plannedMeal.findFirst({
@@ -29,6 +37,13 @@ export async function PATCH(
 ) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
+
+  if (!session.user.features?.nutrition) {
+    return NextResponse.json({ error: 'Función no disponible en tu plan actual.', upgrade: '/upgrade' }, { status: 402 })
+  }
+
+  const { allowed: rlPatch } = await rateLimitAsync(`web-${session.user.id}:nutrition-planned-meals-patch`, { limit: 100, windowMs: 60_000 })
+  if (!rlPatch) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 
   const { id } = await params
   const meal = await prisma.plannedMeal.findFirst({

@@ -55,11 +55,13 @@ export async function GET(req: NextRequest) {
     email: payload.email,
     name: payload.name,
     role: payload.role,
+    status: payload.status,
     onboardingCompleted: payload.onboardingCompleted,
     activated: payload.activated,
     isB2B: payload.isB2B,
     userPlan: payload.userPlan,
     profileComplete: payload.profileComplete,
     features: payload.features,
+    sport: payload.sport,
   })
 }

@@ -36,10 +36,16 @@ export async function setFreshJwtCookie(req: NextRequest, response: NextResponse
 
   if (!dbUser) return
 
-  const features = {
-    plan: dbUser.featurePlan, checkin: dbUser.featureCheckin, nutrition: dbUser.featureNutrition,
-    progress: dbUser.featureProgress, log: dbUser.featureLog, coach: dbUser.featureCoach, gym: dbUser.featureGym,
-  }
+  const billingEnabled = process.env.BILLING_ENABLED === 'true'
+  const features = billingEnabled
+    ? {
+        plan: dbUser.featurePlan, checkin: dbUser.featureCheckin, nutrition: dbUser.featureNutrition,
+        progress: dbUser.featureProgress, log: dbUser.featureLog, coach: dbUser.featureCoach, gym: dbUser.featureGym,
+      }
+    : {
+        plan: true, checkin: true, nutrition: true,
+        progress: true, log: true, coach: dbUser.featureCoach, gym: true,
+      }
   const isB2B = !!coachRel
   const trialDaysLeft = subscription?.tier === 'TRIAL' && subscription?.trialEndsAt
     ? Math.max(0, Math.ceil((subscription.trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))

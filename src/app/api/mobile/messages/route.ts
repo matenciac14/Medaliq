@@ -17,9 +17,12 @@ export async function GET(req: NextRequest) {
 
   const relationship = await prisma.coachAthlete.findFirst({
     where: { OR: [{ coachId: mobile.id, athleteId: withId }, { coachId: withId, athleteId: mobile.id }] },
-    select: { id: true },
+    select: { id: true, status: true },
   })
   if (!relationship) return NextResponse.json({ error: 'Sin relación coach-atleta' }, { status: 403 })
+
+  const take = Math.min(parseInt(req.nextUrl.searchParams.get('take') ?? '50'), 100)
+  const cursor = req.nextUrl.searchParams.get('cursor') ?? undefined
 
   const messages = await prisma.message.findMany({
     where: {
@@ -29,7 +32,9 @@ export async function GET(req: NextRequest) {
       ],
     },
     orderBy: { createdAt: 'asc' },
-    take: 100,
+    take,
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    select: { id: true, fromId: true, toId: true, content: true, readAt: true, createdAt: true },
   })
 
   return NextResponse.json({ messages })

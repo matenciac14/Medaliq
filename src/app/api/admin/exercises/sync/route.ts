@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
+import { rateLimitAsync } from '@/lib/rate_limit'
 import { WorkoutXClient } from '@/infrastructure/exercise_sync/workoutx.client'
 import { AscendApiClient } from '@/infrastructure/exercise_sync/ascendapi.client'
 import { ExerciseSyncUseCase } from '@/domain/exercise/exercise_sync.use_case'
@@ -23,7 +24,11 @@ function resolveClient(): IExerciseSourceClient {
 
 // POST /api/admin/exercises/sync — re-seed ejercicios (fuente controlada por EXERCISE_SOURCE)
 export async function POST() {
-  if (!(await requireAdmin())) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const session = await requireAdmin()
+  if (!session) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  const rl = await rateLimitAsync(`web-${session.user.id}:admin-exercises-sync`, { limit: 3, windowMs: 60_000 })
+  if (!rl.allowed) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   let client: IExerciseSourceClient
   try {

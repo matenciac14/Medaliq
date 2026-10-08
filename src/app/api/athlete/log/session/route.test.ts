@@ -27,7 +27,7 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import { POST } from './route'
 
-const SESSION = { user: { id: 'user-1' } }
+const SESSION = { user: { id: 'user-1', features: { log: true } } }
 const VALID_SESSION_ID = 'planned-session-1'
 
 function postReq(body: object) {

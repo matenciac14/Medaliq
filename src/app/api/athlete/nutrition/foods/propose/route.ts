@@ -24,6 +24,9 @@ const repo = new PrismaFoodProposalRepository()
 export async function POST(req: NextRequest) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  if (!session.user.features?.nutrition) {
+    return NextResponse.json({ error: 'Función no disponible en tu plan actual.', upgrade: '/upgrade' }, { status: 402 })
+  }
 
   const { allowed } = await rateLimitAsync(`propose-food:${session.user.id}`, { limit: 10, windowMs: 3_600_000 })
   if (!allowed) return NextResponse.json({ error: 'Límite de propuestas por hora alcanzado.' }, { status: 429 })

@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import { resolveDisciplineId } from '@/domain/discipline/discipline_resolver'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 const VALID_RUN_TYPES = ['RODAJE_Z2', 'FARTLEK', 'TEMPO', 'INTERVALOS', 'TIRADA_LARGA', 'OTRO'] as const
 
@@ -17,6 +18,9 @@ const LogRunSchema = z.object({
 export async function POST(req: NextRequest) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+
+  const { allowed } = await rateLimitAsync(`web-${session.user.id}:log-run`, { limit: 100, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 
   const userId = session.user.id
   const parsed = LogRunSchema.safeParse(await req.json().catch(() => null))

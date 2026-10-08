@@ -4,10 +4,14 @@ import { prisma } from '@/lib/db/prisma'
 import { revalidatePath } from 'next/cache'
 import { GymCompleteSchema } from '@/domain/gym/gym_session.schemas'
 import { completeGymSession, SessionNotFoundError } from '@/domain/gym/complete_session.orchestrator'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 export async function POST(req: NextRequest) {
   const athleteId = (await auth())?.user?.id
   if (!athleteId) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+
+  const rl = await rateLimitAsync(`web-${athleteId}:gym-session-complete`, { limit: 30, windowMs: 60_000 })
+  if (!rl.allowed) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const userRecord = await prisma.user.findUnique({ where: { id: athleteId }, select: { featureGym: true, name: true, timezone: true } })
   if (!userRecord?.featureGym) {

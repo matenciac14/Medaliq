@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import { estimateHRMax } from '@/domain/plan/formulas'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 function calcAge(dob: Date): number {
   const today = new Date()
@@ -13,64 +14,73 @@ function calcAge(dob: Date): number {
 }
 
 const profilePatchSchema = z.object({
-  dateOfBirth:  z.string().datetime({ offset: true }).optional(),
-  weightKg:     z.number().min(20).max(500).optional(),
-  weightGoalKg: z.number().min(20).max(500).optional(),
-  heightCm:     z.number().min(50).max(300).optional(),
-  hrResting:    z.number().int().min(30).max(120).optional(),
-  hrMax:        z.number().int().min(100).max(250).optional(),
-  sleepHoursAvg: z.number().min(1).max(24).optional(),
-  injuries:     z.string().max(1000).optional(),
-  conditions:   z.string().max(1000).optional(),
-}).strict()
+  dateOfBirth:     z.string().optional(),
+  weightKg:        z.number().min(10).max(500).optional(),
+  weightGoalKg:    z.number().min(10).max(500).optional(),
+  heightCm:        z.number().min(50).max(300).optional(),
+  hrResting:       z.number().min(0).max(250).optional(),
+  hrMax:           z.number().min(0).max(250).optional(),
+  sleepHoursAvg:   z.number().min(0).max(24).optional(),
+  gender:          z.enum(['male', 'female']).optional(),
+  sport:           z.enum(['RUNNING', 'STRENGTH', 'CYCLING', 'SWIMMING', 'TRIATHLON', 'FOOTBALL']).optional(),
+  experienceLevel: z.enum(['BEGINNER', 'INTERMEDIATE', 'ADVANCED']).optional(),
+  injuries:        z.array(z.string().max(100)).max(20).optional(),
+  conditions:      z.array(z.string().max(100)).max(20).optional(),
+})
 
 export async function PATCH(req: Request) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const body = await req.json()
-  const parsed = profilePatchSchema.safeParse(body)
+  const rl = await rateLimitAsync(`web-${session.user.id}:profile-patch`, { limit: 60, windowMs: 60_000 })
+  if (!rl.allowed) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+
+  const raw = await req.json()
+  const parsed = profilePatchSchema.safeParse(raw)
   if (!parsed.success) {
     return NextResponse.json({ error: 'Datos inválidos', details: parsed.error.flatten() }, { status: 400 })
   }
 
-  const {
-    dateOfBirth,
-    weightKg, weightGoalKg, heightCm,
-    hrResting, hrMax,
-    sleepHoursAvg, injuries, conditions,
-  } = parsed.data
-
+  const body = parsed.data
   const data: Record<string, unknown> = {}
 
-  // Si viene fecha de nacimiento → calcular edad automáticamente
-  if (dateOfBirth) {
-    const dob = new Date(dateOfBirth)
+  if (body.dateOfBirth) {
+    const dob = new Date(body.dateOfBirth)
     data.dateOfBirth = dob
     data.age = calcAge(dob)
-
-    // Si no viene hrMax manual → estimar con la fórmula canónica (Fox: 211 - 0.64×edad)
-    if (!hrMax) {
-      data.hrMax = estimateHRMax(data.age as number)
-    }
+    if (!body.hrMax) data.hrMax = estimateHRMax(data.age as number)
   }
 
-  if (weightKg !== undefined)     data.weightKg     = weightKg
-  if (weightGoalKg !== undefined) data.weightGoalKg = weightGoalKg
-  if (heightCm !== undefined)     data.heightCm     = heightCm
-  if (hrResting !== undefined)    data.hrResting    = hrResting
-  if (hrMax !== undefined)        data.hrMax        = hrMax
-  if (sleepHoursAvg !== undefined) data.sleepHoursAvg = sleepHoursAvg
-  if (injuries !== undefined)     data.injuries     = injuries
-  if (conditions !== undefined)   data.conditions   = conditions
+  if (body.weightKg !== undefined)        data.weightKg        = body.weightKg
+  if (body.weightGoalKg !== undefined)    data.weightGoalKg    = body.weightGoalKg
+  if (body.heightCm !== undefined)        data.heightCm        = body.heightCm
+  if (body.hrResting !== undefined)       data.hrResting       = body.hrResting
+  if (body.hrMax !== undefined)           data.hrMax           = body.hrMax
+  if (body.sleepHoursAvg !== undefined)   data.sleepHoursAvg   = body.sleepHoursAvg
+  if (body.gender !== undefined)          data.gender          = body.gender
+  if (body.sport !== undefined)           data.sport           = body.sport
+  if (body.experienceLevel !== undefined) data.experienceLevel = body.experienceLevel
+  if (body.injuries !== undefined)        data.injuries        = body.injuries
+  if (body.conditions !== undefined)      data.conditions      = body.conditions
 
-  const profile = await prisma.healthProfile.update({
+  if (Object.keys(data).length === 0) {
+    return NextResponse.json({ error: 'Nada que actualizar.' }, { status: 400 })
+  }
+
+  const profile = await prisma.healthProfile.upsert({
     where: { userId: session.user.id },
-    data,
+    update: data,
+    create: { userId: session.user.id, age: 0, heightCm: 0, weightKg: 0, ...data },
+    select: {
+      age: true, dateOfBirth: true,
+      weightKg: true, weightGoalKg: true, heightCm: true,
+      hrResting: true, hrMax: true,
+      sleepHoursAvg: true,
+      gender: true,
+      sport: true, experienceLevel: true,
+      injuries: true, conditions: true,
+    },
   })
 
-  return NextResponse.json({
-    ...profile,
-    estimatedHrMax: profile.hrMax,
-  })
+  return NextResponse.json({ profile })
 }

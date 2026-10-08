@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db/prisma'
 import { getWeekMonday } from '@/lib/core/date_utils'
 import { MealType } from '@/generated/prisma/enums'
 import { z } from 'zod'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 const VALID_MEAL_TYPES = new Set(Object.values(MealType))
 
@@ -27,6 +28,13 @@ const createSchema = z.object({
 export async function GET(req: NextRequest) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
+
+  if (!session.user.features?.nutrition) {
+    return NextResponse.json({ error: 'Función no disponible en tu plan actual.', upgrade: '/upgrade' }, { status: 402 })
+  }
+
+  const { allowed: rlGet } = await rateLimitAsync(`web-${session.user.id}:nutrition-planned-meals`, { limit: 300, windowMs: 60_000 })
+  if (!rlGet) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 
   const userId = session.user.id
   const { searchParams } = new URL(req.url)
@@ -71,6 +79,13 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
+
+  if (!session.user.features?.nutrition) {
+    return NextResponse.json({ error: 'Función no disponible en tu plan actual.', upgrade: '/upgrade' }, { status: 402 })
+  }
+
+  const { allowed: rlPost } = await rateLimitAsync(`web-${session.user.id}:nutrition-planned-meals-post`, { limit: 100, windowMs: 60_000 })
+  if (!rlPost) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 
   const userId = session.user.id
   const parsed = createSchema.safeParse(await req.json())

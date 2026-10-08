@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
         features: DEFAULT_USER_CONFIG.features,
       }
     } else {
-      const [coachRelation, subscription] = await Promise.all([
+      const [coachRelation, subscription, healthProfile] = await Promise.all([
         prisma.coachAthlete.findFirst({
           where: { athleteId: dbUser.id, status: 'ACTIVE' },
           select: { id: true },
@@ -114,9 +114,17 @@ export async function POST(req: NextRequest) {
           where: { userId: dbUser.id },
           select: { tier: true, trialEndsAt: true },
         }),
+        prisma.healthProfile.findUnique({
+          where: { userId: dbUser.id },
+          select: { sportGoal: true },
+        }),
       ])
+      const sport = healthProfile?.sportGoal === 'STRENGTH_TRAINING' ? 'STRENGTH'
+        : healthProfile?.sportGoal === 'BODY_RECOMPOSITION' ? 'BOTH'
+        : 'RUNNING'
       payload = buildMobileTokenPayload(dbUser, {
         isB2B: !!coachRelation,
+        sport,
         subscriptionTier: subscription?.tier,
         trialEndsAt: subscription?.trialEndsAt,
       })
@@ -132,12 +140,14 @@ export async function POST(req: NextRequest) {
         email: payload.email,
         name: payload.name,
         role: payload.role,
+        status: payload.status,
         onboardingCompleted: payload.onboardingCompleted,
         activated: payload.activated,
         isB2B: payload.isB2B,
         userPlan: payload.userPlan,
         profileComplete: payload.profileComplete,
         features: payload.features,
+        sport: payload.sport,
       },
     })
   } catch (err: unknown) {

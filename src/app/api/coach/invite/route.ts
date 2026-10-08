@@ -40,6 +40,9 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  const rl = await rateLimitAsync(`web-${session.user.id}:coach-invite-get`, { limit: 300, windowMs: 60_000 })
+  if (!rl.allowed) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+
   const codes = await prisma.inviteCode.findMany({
     where: { coachId: session.user.id },
     orderBy: { createdAt: 'desc' },

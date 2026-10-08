@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db/prisma'
 import { PrismaSuggestionRepository } from '@/infrastructure/db/suggestion.repository'
 import { PrismaPlanRepository } from '@/infrastructure/db/plan.repository'
 import { applySessionAdjustments } from '@/domain/checkin/process_check_in.use_case'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 export async function POST(
   _req: NextRequest,
@@ -11,6 +12,9 @@ export async function POST(
 ) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+
+  const { allowed } = await rateLimitAsync(`web-${session.user.id}:suggestion-accept`, { limit: 60, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 
   const { id } = await params
   const userId = session.user.id

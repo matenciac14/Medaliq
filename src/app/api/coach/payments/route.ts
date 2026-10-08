@@ -10,6 +10,9 @@ export async function GET(_req: NextRequest) {
     return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
   }
 
+  const rl = await rateLimitAsync(`web-${session.user.id}:coach-payments-get`, { limit: 300, windowMs: 60_000 })
+  if (!rl.allowed) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+
   const payments = await prisma.payment.findMany({
     where: { coachId: session.user.id },
     include: { athlete: { select: { id: true, name: true, email: true } } },

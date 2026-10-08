@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { wearableRepository } from '@/infrastructure/db/wearable.repository'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 const STRAVA_TOKEN_URL = 'https://www.strava.com/oauth/token'
 
@@ -9,6 +10,9 @@ export async function GET(req: NextRequest) {
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
+
+  const rl = await rateLimitAsync(`web-${session.user.id}:strava-callback`, { limit: 10, windowMs: 60_000 })
+  if (!rl.allowed) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const { searchParams } = new URL(req.url)
   const code  = searchParams.get('code')

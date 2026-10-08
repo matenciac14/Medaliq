@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
+import { rateLimitAsync } from '@/lib/rate_limit'
 import { mapCoachAthleteRelation } from '@/infrastructure/db/coach_athlete.mapper'
 
 const TAKE = 20
@@ -10,6 +11,9 @@ export async function GET(req: NextRequest) {
   if (!session?.user?.id || session.user.role !== 'COACH') {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
+
+  const rl = await rateLimitAsync(`web-${session.user.id}:coach-dashboard-athletes`, { limit: 300, windowMs: 60_000 })
+  if (!rl.allowed) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const coachId = session.user.id
   const cursor = req.nextUrl.searchParams.get('cursor') ?? undefined

@@ -10,6 +10,9 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  const rl = await rateLimitAsync(`web-${session.user.id}:coach-profile-get`, { limit: 300, windowMs: 60_000 })
+  if (!rl.allowed) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+
   const [profile, user] = await Promise.all([
     prisma.coachProfile.findUnique({
       where: { coachId: session.user.id },

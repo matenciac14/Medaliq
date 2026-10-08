@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
+import { rateLimitAsync } from '@/lib/rate_limit'
 import type { NutritionDayType, MealType } from '@/generated/prisma/client'
 
 const VALID_DAY_TYPES: NutritionDayType[] = ['HARD', 'EASY', 'REST']
@@ -15,6 +16,13 @@ export async function POST(
 ) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
+
+  if (!session.user.features?.nutrition) {
+    return NextResponse.json({ error: 'Función no disponible en tu plan actual.', upgrade: '/upgrade' }, { status: 402 })
+  }
+
+  const { allowed: allowedPost } = await rateLimitAsync(`web-${session.user.id}:nutrition-template-meals-post`, { limit: 100, windowMs: 60_000 })
+  if (!allowedPost) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 
   const userId = session.user.id
   const { id } = await params
@@ -76,6 +84,13 @@ export async function DELETE(
 ) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
+
+  if (!session.user.features?.nutrition) {
+    return NextResponse.json({ error: 'Función no disponible en tu plan actual.', upgrade: '/upgrade' }, { status: 402 })
+  }
+
+  const { allowed: allowedDel } = await rateLimitAsync(`web-${session.user.id}:nutrition-template-meals-del`, { limit: 60, windowMs: 60_000 })
+  if (!allowedDel) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 
   const userId = session.user.id
   const { id } = await params

@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server'
 import { GET, POST } from './route'
 
 vi.mock('@/auth', () => ({ auth: vi.fn() }))
+vi.mock('@/lib/rate_limit', () => ({ rateLimitAsync: vi.fn().mockResolvedValue({ allowed: true }) }))
 vi.mock('@/lib/db/prisma', () => ({
   prisma: {
     plannedMeal: { findMany: vi.fn(), create: vi.fn() },
@@ -13,7 +14,7 @@ vi.mock('@/lib/db/prisma', () => ({
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 
-const SESSION = { user: { id: 'user-1' } }
+const SESSION = { user: { id: 'user-1', features: { nutrition: true } } }
 
 const FOOD = {
   id: 'f1', name: 'Arroz', category: 'GRAINS',

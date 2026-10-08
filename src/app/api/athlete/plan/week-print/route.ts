@@ -1,7 +1,8 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import { getPlanWeekNumber } from '@/lib/core/week_number'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 const SESSION_LABELS: Record<string, string> = {
   RODAJE_Z2: 'Rodaje Z2', FARTLEK: 'Fartlek', TIRADA_LARGA: 'Tirada Larga',
@@ -23,6 +24,13 @@ export async function GET(req: NextRequest) {
   if (!session?.user?.id) {
     return new Response('Unauthorized', { status: 401 })
   }
+
+  if (!session.user.features?.plan) {
+    return NextResponse.json({ error: 'Función no disponible en tu plan actual.', upgrade: '/upgrade' }, { status: 402 })
+  }
+
+  const { allowed } = await rateLimitAsync(`web-${session.user.id}:plan-week-print`, { limit: 60, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 
   const userId = session.user.id
   const weekParam = req.nextUrl.searchParams.get('week')

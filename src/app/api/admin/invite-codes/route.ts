@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import crypto from 'crypto'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'El usuario no es un coach.' }, { status: 400 })
   }
 
-  const suffix = Math.random().toString(36).substr(2, 6).toUpperCase()
+  const suffix = crypto.randomBytes(4).toString('hex').toUpperCase()
   const code = `MEDAL-${suffix}`
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 

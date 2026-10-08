@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 import { SESSION_NAMES, SESSION_ICONS, WEEK_DAYS_SHORT } from '@/lib/constants/sessions'
 import type { CalendarWeek, CalendarDay } from '@/domain/calendar/calendar.types'
 import type { NutritionTarget, WeightData, BodyMeasures } from '../_lib/plan.types'
+import NutritionCard from './PlanNutritionCard'
 import PageTopBar from '../../_components/PageTopBar'
 import WeekNavBar from '../../_components/WeekNavBar'
 
@@ -174,7 +175,7 @@ export default function PlanTrackingClient({
 
         <TrackingKPIs sessions={weekStats.sessions} totalMin={weekStats.totalMin} />
 
-        {nutritionTarget && <NutritionSnapshotCard nt={nutritionTarget} />}
+        {nutritionTarget && <NutritionCard nt={nutritionTarget} />}
         <BodySnapshotCard weightData={weightData} bodyMeasures={bodyMeasures} />
 
         <CTACard isB2B={isB2B} />
@@ -299,7 +300,7 @@ export default function PlanTrackingClient({
         <div className="xl:col-span-2 space-y-4">
           <p className="text-[10px] font-semibold text-[#9ba2ad] uppercase tracking-[0.3px]">Esta semana</p>
           <TrackingKPIs sessions={weekStats.sessions} totalMin={weekStats.totalMin} />
-          {nutritionTarget && <NutritionSnapshotCard nt={nutritionTarget} />}
+          {nutritionTarget && <NutritionCard nt={nutritionTarget} />}
           <BodySnapshotCard weightData={weightData} bodyMeasures={bodyMeasures} />
           <CTACard isB2B={isB2B} />
         </div>
@@ -471,25 +472,22 @@ function SesionLibreCard() {
       <div className="p-5 space-y-3">
         <div className="flex items-center gap-2">
           <span className="text-xl">📝</span>
-          <h3 className="text-lg font-bold text-[#1c2b45]">Sin actividad</h3>
+          <h3 className="text-lg font-bold text-[#1c2b45]">Sesión libre</h3>
         </div>
-        <p className="text-xs text-[#8c9eb2]">
-          Registra una sesion de running o ve al gym
+        <div className="flex gap-1.5">
+          <span className="bg-[#f0f1f4] text-[#6b7582] text-xs font-semibold px-2 py-[5px] rounded-[6px]">— min</span>
+          <span className="bg-[#f0f1f4] text-[#6b7582] text-xs font-semibold px-2 py-[5px] rounded-[6px]">Zona 2–3</span>
+          <span className="bg-[#fff1ea] text-[#ea580c] text-xs font-bold px-2 py-[5px] rounded-[6px]">Libre</span>
+        </div>
+        <p className="text-[10px] font-bold text-[#8c9eb2] uppercase tracking-[0.6px]">
+          Registra actividad libre
         </p>
-        <div className="flex gap-2">
-          <a
-            href="/log"
-            className="flex-1 flex items-center justify-center bg-[#ea580c] hover:opacity-90 text-white text-sm font-bold h-[42px] rounded-[10px] transition-opacity"
-          >
-            Registrar sesion →
-          </a>
-          <a
-            href="/gym"
-            className="flex items-center justify-center px-4 border border-gray-200 text-gray-600 text-sm font-medium h-[42px] rounded-[10px] hover:bg-gray-50 transition-colors"
-          >
-            Gym
-          </a>
-        </div>
+        <a
+          href="/log"
+          className="flex items-center justify-center w-full bg-[#ea580c] hover:opacity-90 text-white text-sm font-bold h-[42px] rounded-[10px] transition-opacity"
+        >
+          Registrar sesión libre →
+        </a>
       </div>
     </div>
   )
@@ -520,24 +518,6 @@ function TrackingKPIs({ sessions, totalMin }: { sessions: number; totalMin: numb
 
 // ── Nutrition snapshot ────────────────────────────────────────────────
 
-function NutritionSnapshotCard({ nt }: { nt: NutritionTarget }) {
-  return (
-    <a href="/nutrition" className="block bg-white rounded-xl border border-gray-200 p-4 hover:shadow-sm transition-shadow">
-      <p className="text-[10px] font-bold text-[#9ba2ad] uppercase tracking-[0.5px] mb-2">Nutricion</p>
-      <div className="flex items-end gap-4">
-        <div>
-          <span className="text-xl font-bold text-gray-900 leading-none">{nt.kcal.toLocaleString('es')}</span>
-          <span className="text-xs text-[#8c99a6] ml-1">kcal</span>
-        </div>
-        <div className="flex gap-3 text-xs">
-          <span className="text-blue-600 font-semibold">{nt.proteinG}g prot</span>
-          <span className="text-yellow-600 font-semibold">{nt.carbsG}g carbs</span>
-          <span className="text-green-600 font-semibold">{nt.fatG}g grasas</span>
-        </div>
-      </div>
-    </a>
-  )
-}
 
 // ── Body composition snapshot ─────────────────────────────────────────
 

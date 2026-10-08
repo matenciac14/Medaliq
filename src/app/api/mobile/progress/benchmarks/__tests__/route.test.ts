@@ -21,7 +21,7 @@ import { rateLimitAsync } from '@/lib/rate_limit'
 import { prisma } from '@/lib/db/prisma'
 import { GET, POST } from '../route'
 
-const MOBILE_USER = { id: 'mobile-1', role: 'ATHLETE' }
+const MOBILE_USER = { id: 'mobile-1', userId: 'mobile-1', role: 'ATHLETE', features: { progress: true } }
 
 const MOCK_BENCHMARK = {
   id: 'bm-1',

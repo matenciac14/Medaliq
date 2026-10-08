@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import { resolveExerciseGifUrl } from '@/lib/gym/gif_url'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 export async function PATCH(
   req: NextRequest,
@@ -10,6 +11,9 @@ export async function PATCH(
   const session = await auth()
   const athleteId = session?.user?.id
   if (!athleteId) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+
+  const rl = await rateLimitAsync(`web-${athleteId}:gym-session-detail`, { limit: 100, windowMs: 60_000 })
+  if (!rl.allowed) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const { id } = await params
   const body = await req.json()
@@ -38,6 +42,9 @@ export async function GET(
   const session = await auth()
   const athleteId = session?.user?.id
   if (!athleteId) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+
+  const rl = await rateLimitAsync(`web-${athleteId}:gym-session-detail`, { limit: 300, windowMs: 60_000 })
+  if (!rl.allowed) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const { id } = await params
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import { z } from 'zod'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 const VALID_RESTRICTIONS = [
   'SIN_GLUTEN', 'SIN_LACTEOS', 'VEGETARIANO', 'VEGANO',
@@ -19,6 +20,11 @@ const UpdateSchema = z.object({
 export async function GET() {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  if (!session.user.features?.nutrition) {
+    return NextResponse.json({ error: 'Función no disponible en tu plan actual.', upgrade: '/upgrade' }, { status: 402 })
+  }
+  const { allowed } = await rateLimitAsync(`web-${session.user.id}:nutrition-food-profile`, { limit: 300, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 
   const profile = await prisma.foodProfile.findUnique({
     where: { userId: session.user.id },
@@ -30,6 +36,11 @@ export async function GET() {
 export async function PUT(req: NextRequest) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  if (!session.user.features?.nutrition) {
+    return NextResponse.json({ error: 'Función no disponible en tu plan actual.', upgrade: '/upgrade' }, { status: 402 })
+  }
+  const { allowed } = await rateLimitAsync(`web-${session.user.id}:nutrition-food-profile-write`, { limit: 100, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 
   const body = UpdateSchema.safeParse(await req.json())
   if (!body.success) return NextResponse.json({ error: body.error.flatten() }, { status: 400 })

@@ -54,11 +54,14 @@ describe('buildMobileTokenPayload', () => {
     expect(payload.profileComplete).toBe(false)
   })
 
-  it('activated refleja featurePlan', () => {
+  it('en beta (billing desactivado) features son PRO aunque DB tenga false', () => {
     const user = { ...DB_USER, featurePlan: false }
     const payload = buildMobileTokenPayload(user, { isB2B: false })
-    expect(payload.activated).toBe(false)
-    expect(payload.features.plan).toBe(false)
+    // En beta BILLING_ENABLED != 'true', features se fuerzan a true
+    expect(payload.features.plan).toBe(true)
+    expect(payload.features.checkin).toBe(true)
+    // coach se respeta siempre (se controla por rol, no por billing)
+    expect(payload.features.coach).toBe(false)
   })
 
   it('name fallback a string vacío cuando es null', () => {
@@ -70,6 +73,38 @@ describe('buildMobileTokenPayload', () => {
   it('sport es opcional — no incluido cuando no se pasa', () => {
     const payload = buildMobileTokenPayload(DB_USER, { isB2B: false })
     expect(payload.sport).toBeUndefined()
+  })
+
+  it('calcula trialDaysLeft cuando tier es TRIAL', () => {
+    const trialEndsAt = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000) // 5 days from now
+    const payload = buildMobileTokenPayload(DB_USER, {
+      isB2B: false,
+      subscriptionTier: 'TRIAL',
+      trialEndsAt,
+    })
+    expect(payload.trialDaysLeft).toBe(5)
+  })
+
+  it('trialDaysLeft es null cuando tier no es TRIAL', () => {
+    const payload = buildMobileTokenPayload(DB_USER, {
+      isB2B: false,
+      subscriptionTier: 'PRO',
+    })
+    expect(payload.trialDaysLeft).toBeNull()
+  })
+
+  it('incluye sport cuando se pasa en opts', () => {
+    const payload = buildMobileTokenPayload(DB_USER, { isB2B: false, sport: 'STRENGTH' })
+    expect(payload.sport).toBe('STRENGTH')
+  })
+
+  it('userPlan usa subscriptionTier para calcular', () => {
+    const payload = buildMobileTokenPayload(DB_USER, {
+      isB2B: false,
+      subscriptionTier: 'FREE',
+    })
+    // getUserPlan con features y FREE tier
+    expect(payload.userPlan).toBeDefined()
   })
 })
 

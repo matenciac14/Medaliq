@@ -6,6 +6,7 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import { NextResponse } from 'next/server'
 import { todayInTz } from '@/lib/core/date_utils'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 async function getUserTimezone(userId: string): Promise<string | null> {
   const u = await prisma.user.findUnique({ where: { id: userId }, select: { timezone: true } })
@@ -15,6 +16,11 @@ async function getUserTimezone(userId: string): Promise<string | null> {
 export async function GET() {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!session.user.features?.nutrition) {
+    return NextResponse.json({ error: 'Función no disponible en tu plan actual.', upgrade: '/upgrade' }, { status: 402 })
+  }
+  const { allowed } = await rateLimitAsync(`web-${session.user.id}:nutrition-water-get`, { limit: 300, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
   const userId = session.user.id
   const tz = await getUserTimezone(userId)
   const today = todayInTz(tz)
@@ -33,6 +39,11 @@ export async function GET() {
 export async function POST(req: Request) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!session.user.features?.nutrition) {
+    return NextResponse.json({ error: 'Función no disponible en tu plan actual.', upgrade: '/upgrade' }, { status: 402 })
+  }
+  const { allowed } = await rateLimitAsync(`web-${session.user.id}:nutrition-water-post`, { limit: 100, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
   const userId = session.user.id
 
   const body = await req.json().catch(() => ({}))

@@ -38,7 +38,13 @@ export default function LoginPage() {
     setLoading(false)
 
     if (result?.error) {
-      setError('Correo o contraseña incorrectos.')
+      if (result.code === 'ACCOUNT_BLOCKED') {
+        setError('Tu cuenta ha sido bloqueada. Contacta soporte.')
+      } else if (result.code === 'ACCOUNT_SUSPENDED') {
+        setError('Tu cuenta está suspendida.')
+      } else {
+        setError('Correo o contraseña incorrectos.')
+      }
       return
     }
 

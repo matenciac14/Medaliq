@@ -76,6 +76,7 @@ export async function POST(req: NextRequest) {
         email: payload.email,
         name: payload.name,
         role: payload.role,
+        status: payload.status,
         onboardingCompleted: payload.onboardingCompleted,
         activated: payload.activated,
         isB2B: payload.isB2B,

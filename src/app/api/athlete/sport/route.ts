@@ -2,11 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import { z } from 'zod'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 export async function GET() {
   const session = await auth()
   if (!session?.user?.id)
     return NextResponse.json({ sport: null, goal: null })
+
+  const rl = await rateLimitAsync(`web-${session.user.id}:sport-get`, { limit: 300, windowMs: 60_000 })
+  if (!rl.allowed) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const profile = await prisma.healthProfile.findUnique({
     where: { userId: session.user.id },
@@ -28,6 +32,9 @@ const PatchSportSchema = z.object({
 export async function PATCH(req: NextRequest) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+
+  const rl = await rateLimitAsync(`web-${session.user.id}:sport-patch`, { limit: 60, windowMs: 60_000 })
+  if (!rl.allowed) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const raw = await req.json().catch(() => null)
   const parsed = PatchSportSchema.safeParse(raw)

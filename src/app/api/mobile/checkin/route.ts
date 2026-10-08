@@ -11,13 +11,14 @@ import { PrismaUserRepository } from '@/infrastructure/db/user.repository'
 import { unauthorized, ok, serverError, badRequest } from '@/lib/api/responses'
 import { requireFeature } from '@/lib/guards/feature_gate'
 import { sendPlanUpdatedEmail, sendCoachCheckInEmail } from '@/infrastructure/email/resend'
+import { createNotification } from '@/infrastructure/db/notification'
 import { mapMobileCheckinBody } from '@/lib/api/checkin_mapper'
 import { z } from 'zod'
 
 const mobileCheckInSchema = z.object({
-  energyLevel:     z.number().min(1).max(10),
-  muscleSoreness:  z.number().min(1).max(10),
-  stressLevel:     z.number().min(1).max(10).optional(),
+  energyLevel:     z.number().min(1).max(10).optional(),
+  muscleSoreness:  z.number().min(1).max(10).optional(),
+  stressLevel:     z.number().min(0).max(10).optional(),
   motivationLevel: z.number().min(0).max(10).optional(),
   sleepScore:      z.number().min(0).max(10).optional(),
   painLevel:       z.number().min(0).max(10).optional(),
@@ -26,6 +27,7 @@ const mobileCheckInSchema = z.object({
   sleepHours:      z.number().min(0).max(24).optional(),
   nutritionAdherencePct: z.number().min(0).max(100).optional(),
   notes:           z.string().max(5000).optional(),
+  painDescription: z.string().max(500).optional(),
   waistCm:         z.number().min(40).max(200).optional(),
   armsCm:          z.number().min(10).max(100).optional(),
   hipsCm:          z.number().min(40).max(200).optional(),
@@ -64,6 +66,10 @@ export async function POST(req: NextRequest) {
 
   const body = parsed.data
 
+  if (body.energyLevel == null && body.muscleSoreness == null) {
+    return badRequest('Completa al menos la energía percibida o el RPE.')
+  }
+
   try {
     const result = await processCheckIn(
       {
@@ -83,6 +89,16 @@ export async function POST(req: NextRequest) {
       sendPlanUpdatedEmail(mobile.email, mobile.name, result.adjustments).catch((err) => console.error('[mobile/checkin] sendPlanUpdatedEmail failed:', err))
     }
 
+    // Notificar al atleta cuando el check-in ajustó sesiones (paridad con web)
+    if (result.sessionsAdjusted > 0) {
+      createNotification(
+        mobile.id,
+        'PLAN_ACTUALIZADO',
+        'Plan ajustado por tu check-in',
+        `Se ajustaron ${result.sessionsAdjusted} sesión${result.sessionsAdjusted > 1 ? 'es' : ''} de la próxima semana según tus señales de fatiga.`,
+      ).catch((err) => console.error('[mobile/checkin] createNotification plan-adjusted failed:', err))
+    }
+
     // Notify coach (fire-and-forget, B2B athletes only)
     prisma.coachAthlete.findFirst({
       where: { athleteId: mobile.id, status: 'ACTIVE' },
@@ -91,7 +107,7 @@ export async function POST(req: NextRequest) {
       if (rel?.coach.email) {
         return sendCoachCheckInEmail(rel.coach.email, rel.coach.name ?? '', mobile.name, mobile.id, {
           energyLevel: body.energyLevel,
-          hardestRpe:  body.muscleSoreness,
+          hardestRpe:  body.muscleSoreness, // muscleSoreness se mapea a rpe en el dominio (ver checkin_mapper.ts L94)
           weightKg:    body.weightKg,
         })
       }
@@ -113,6 +129,8 @@ export async function POST(req: NextRequest) {
         recommendation: result.recommendation,
         adjustments: result.adjustments,
         triggers: result.triggers,
+        planChanges: result.planChanges,
+        nutritionChanges: result.nutritionChanges,
       },
       pendingSuggestions: result.pendingSuggestions,
       suggestions,

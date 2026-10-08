@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
+import { rateLimitAsync } from '@/lib/rate_limit'
 import { z } from 'zod'
 
 type Params = { params: Promise<{ id: string }> }
@@ -18,6 +19,13 @@ const patchSchema = z.object({
 export async function GET(_req: NextRequest, { params }: Params) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
+
+  if (!session.user.features?.nutrition) {
+    return NextResponse.json({ error: 'Función no disponible en tu plan actual.', upgrade: '/upgrade' }, { status: 402 })
+  }
+
+  const { allowed: allowedGet } = await rateLimitAsync(`web-${session.user.id}:nutrition-template-detail`, { limit: 300, windowMs: 60_000 })
+  if (!allowedGet) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 
   const { id } = await params
   const template = await prisma.nutritionTemplate.findFirst({
@@ -44,6 +52,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
 
+  if (!session.user.features?.nutrition) {
+    return NextResponse.json({ error: 'Función no disponible en tu plan actual.', upgrade: '/upgrade' }, { status: 402 })
+  }
+
+  const { allowed: allowedPatch } = await rateLimitAsync(`web-${session.user.id}:nutrition-template-patch`, { limit: 60, windowMs: 60_000 })
+  if (!allowedPatch) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
+
   const { id } = await params
   const existing = await prisma.nutritionTemplate.findFirst({
     where: { id, athleteId: session.user.id, coachId: null },
@@ -69,6 +84,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 export async function DELETE(_req: NextRequest, { params }: Params) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
+
+  if (!session.user.features?.nutrition) {
+    return NextResponse.json({ error: 'Función no disponible en tu plan actual.', upgrade: '/upgrade' }, { status: 402 })
+  }
+
+  const { allowed: allowedDel } = await rateLimitAsync(`web-${session.user.id}:nutrition-template-delete`, { limit: 60, windowMs: 60_000 })
+  if (!allowedDel) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 
   const { id } = await params
   const existing = await prisma.nutritionTemplate.findFirst({

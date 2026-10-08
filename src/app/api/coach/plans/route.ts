@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 // GET /api/coach/plans — returns all plans from coach's athletes (for plan duplication UI)
 export async function GET() {
@@ -8,6 +9,9 @@ export async function GET() {
   if (!session?.user?.id || session.user.role !== 'COACH') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  const rl = await rateLimitAsync(`web-${session.user.id}:coach-plans`, { limit: 300, windowMs: 60_000 })
+  if (!rl.allowed) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const coachId = session.user.id
 

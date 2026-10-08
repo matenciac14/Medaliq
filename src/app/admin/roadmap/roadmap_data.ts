@@ -594,6 +594,42 @@ export const GROUPS: RoadmapGroup[] = [
           { title: 'GYM-PROD-04 — Coach PATCH/DELETE ejercicios custom', done: true, priority: 'P1', note: 'DONE: PATCH /api/coach/gym/exercises/[id] — solo custom propios (coachId match), valida con validateExercise(). DELETE — 409 si en uso por WorkoutExercise. Rate limits 60/30 por min.' },
           { title: 'GYM-PROD-05 — Tests domain gym: build_gym_week + estimateCalories + sanitizeWeId', done: true, priority: 'P2', note: 'DONE: 27 tests nuevos en build_gym_week.test.ts (getWeekBounds, buildWeekDates, buildDaySummaries) y gym_helpers.test.ts (estimateCalories 7 tests, sanitizeWeId 5 tests). Total gym: 62 tests.' },
 
+          // ── Pre-producción Nutrición — gaps detectados 2026-10-08 ─────────────
+          { title: 'NUT-PROD-01 — Feature gate faltante en 24 rutas web atleta', done: true, priority: 'P0', note: 'DONE: Agregado session.user.features?.nutrition → 402 en las 24 rutas de /api/athlete/nutrition/*. Paridad con mobile que ya tenía requireFeature en 26/26 rutas.' },
+          { title: 'NUT-PROD-02 — Rate limit faltante en 20 rutas web atleta', done: true, priority: 'P1', note: 'DONE: rateLimitAsync en todas las 24 rutas web (antes solo 4 tenían). GETs: 300/min, POSTs: 100/min, DELETEs: 60/min. foods POST: 10/min (crea Food global).' },
+          { title: 'NUT-PROD-03 — Timezone hardcodeado en planned-summary', done: true, priority: 'P1', note: 'DONE: Reemplazado America/Bogota fijo por lectura de user.timezone con todayInTz(). Paridad con water, adherence y demás rutas que ya leían timezone de DB.' },
+          { title: 'NUT-PROD-04 — Ruta deprecada coach/meals (NUT-12) eliminada', done: true, priority: 'P2', note: 'DONE: Eliminado src/app/api/coach/athletes/[id]/nutrition/meals/route.ts — MealPlan JSON blob reemplazado por NutritionTemplate + PlannedMeal desde hace meses.' },
+          { title: 'NUT-PROD-05 — Tests domain nutrition: calculate_food_log + compute_plan + get_athlete_nutrition', done: true, priority: 'P2', note: 'DONE: 30 tests nuevos en 3 archivos. calculate_food_log.test.ts (19), compute_plan.test.ts (6), get_athlete_nutrition.use_case.test.ts (5). Total nutrition: 104 tests.' },
+
+          // ── Pre-producción Plan — gaps detectados 2026-10-08 ──────────────────
+          { title: 'PLAN-PROD-01 — Feature gates selectivos en rutas web Plan', done: true, priority: 'P1', note: 'DONE: requireFeature(plan) en rutas clave web: GET /api/athlete/plan, POST /api/athlete/checkin, POST /api/athlete/sessions/[id]/log, GET /api/athlete/week-print. Paridad con mobile que ya tenía gates en todas las rutas de plan.' },
+          { title: 'PLAN-PROD-02 — Rate limits en 11 rutas web Plan', done: true, priority: 'P1', note: 'DONE: rateLimitAsync agregado en 11 rutas: calendar (GET), checkin (GET/POST), suggestions (GET), sessions (GET/POST), sessions/[id] (GET/PATCH), sessions/[id]/log (POST), routine (GET), week-print (GET). GETs: 300/min, POSTs: 100/min.' },
+          { title: 'PLAN-PROD-03 — Tests domain Plan: active_plan, create_plan, copy_plan, week_sessions, mobile_dashboard', done: true, priority: 'P1', note: 'DONE: 33 tests nuevos en 5 archivos — active_plan.test.ts, create_plan.test.ts, copy_plan.test.ts, week_sessions.test.ts, mobile_dashboard.test.ts. Cobertura de casos happy path, edge cases y validaciones de dominio.' },
+
+          // ── Pre-producción Misc Atleta — gaps detectados 2026-10-08 ─────────────
+          { title: 'MISC-PROD-01 — Rate limits en 11 rutas web misc atleta', done: true, priority: 'P1', note: 'DONE: RL agregado en strava/callback+connect+disconnect (10/min), metrics/log (300/100), notifications (300/60), onboarding/prefilled (60), progress/benchmarks (300/60/60), sport (300/60), user/profile (60), upgrade/downgrade (10).' },
+          { title: 'MISC-PROD-02 — Feature gate progress en DELETE benchmarks web + GET/POST benchmarks mobile + muscles mobile', done: true, priority: 'P1', note: 'DONE: Web benchmarks DELETE no tenia gate progress (GET/POST si). Mobile benchmarks y muscles no tenian gate progress. Paridad completa web↔mobile.' },
+          { title: 'MISC-PROD-03 — RL mobile notifications/read-all + ruta deprecada athlete/planned-meals eliminada', done: true, priority: 'P1', note: 'DONE: Unico endpoint mobile notifications sin RL. Ruta /api/athlete/planned-meals era duplicado obsoleto de /api/athlete/nutrition/planned-meals — referencia en PlannedMealPlannerClient.tsx actualizada, ruta eliminada.' },
+
+          // ── Pre-producción Coach — gaps detectados 2026-10-08 ──────────────────
+          { title: 'COACH-PROD-01 — Rate limits en 11 rutas web Coach (GETs + join)', done: true, priority: 'P1', note: 'DONE: RL en dashboard/athletes, plans, profile GET, invite GET, posts GET, programs GET, session-templates GET, invite-link GET, payments GET (300/min), join POST (30/min). clients/check GET (30/min anti-enumeracion).' },
+          { title: 'COACH-PROD-02 — Fix ownership copyPlanUseCase source relation sin status ACTIVE', done: true, priority: 'P1', note: 'DONE: coachAthlete.findFirst para source athlete ahora incluye status: ACTIVE. Antes un coach con relacion INACTIVE podia copiar planes del source.' },
+
+          // ── Pre-producción Billing — gaps detectados 2026-10-08 ─────────────────
+          { title: 'BILL-PROD-01 — Rate limits en 3 rutas billing (status, coach/checkout, athlete/checkout)', done: true, priority: 'P1', note: 'DONE: billing/status GET (60/min polling), coach/checkout POST (5/min), athlete/checkout POST (5/min). Límites estrictos en checkout para evitar spam de sesiones de pago.' },
+
+          // ── Pre-producción Admin — gaps detectados 2026-10-08 ──────────────────
+          { title: 'ADMIN-PROD-01 — Rate limits en 4 rutas admin criticas (sync, crons, search, strava)', done: true, priority: 'P1', note: 'DONE: exercises/sync POST (3/min), crons/trigger POST (10/min), search GET (60/min), strava/subscribe POST (3/min). Rutas que disparan llamadas externas o busquedas.' },
+          { title: 'ADMIN-PROD-02 — invite-codes Math.random() → crypto.randomBytes()', done: true, priority: 'P2', note: 'DONE: Codigos de invitacion ahora usan crypto.randomBytes(4).toString(hex) en lugar de Math.random(). Formato MEDAL-XXXXXXXX (8 hex chars).' },
+
+          // ── Pre-producción Webhooks — gaps detectados 2026-10-08 ────────────────
+          { title: 'WEBHOOK-PROD-01 — Guard produccion en webhook mercadopago stub', done: true, priority: 'P2', note: 'DONE: POST retorna 404 en NODE_ENV=production. Endpoint stub no debe ser accesible en prod.' },
+
+          // ── Pre-producción Gym Web + Messages + Exercises — gaps detectados 2026-10-08 ──
+          { title: 'GYM-PROD-02 — Rate limits en 8 rutas web athlete/gym', done: true, priority: 'P1', note: 'DONE: RL en assign (30/min), exercises/[id] + search + routines + routines/[id] + session/today (300/min), session/[id] GET/PATCH + session/complete (30-100/min).' },
+          { title: 'MSG-PROD-01 — Rate limits en 3 rutas web messages (me, read, unread-count)', done: true, priority: 'P1', note: 'DONE: messages/me GET (300/min), messages/read PATCH (100/min), messages/unread-count GET (300/min).' },
+          { title: 'EX-PROD-01 — Rate limits en 3 rutas web exercises (list, detail, similar)', done: true, priority: 'P1', note: 'DONE: exercises GET + [id] GET + [id]/similar GET (300/min). Rutas autenticadas de consulta de ejercicios.' },
+
           // ── Biblioteca de ejercicios — fuente de GIFs (2026-08-28) ──────────────
           { title: 'EX-ADAPTER-01 — AscendAPI adapter: IExerciseSourceClient para fuente gratuita de ejercicios', done: true, priority: 'P1', note: 'WorkoutX quotas agotadas (502/500 requests gratis). Implementado infrastructure/exercise_sync/ascendapi.client.ts — implementa IExerciseSourceClient. Cursor pagination vía ?after=<lastId>. 1,500 ejercicios + GIFs en Cloudflare CDN público. gifStoredUrl bypasea proxy WorkoutX. Rollback a WorkoutX: cambiar EXERCISE_SOURCE=workoutx (sin tocar código).' },
           { title: 'EX-SYNC-01 — sync-exercises.ts + admin route soportan EXERCISE_SOURCE env var', done: true, priority: 'P1', note: 'scripts/sync-exercises.ts: flag --source=ascendapi|workoutx o env EXERCISE_SOURCE. Default: ascendapi. src/app/api/admin/exercises/sync/route.ts: lee env, retorna { synced, source }.' },
@@ -3459,6 +3495,73 @@ export const GROUPS: RoadmapGroup[] = [
             done: false,
             priority: 'P1',
             note: 'Acción de Miguel: cd MEDALIQ-MOBILE && npm install react-native-health. Luego rebuild con EAS (eas build --platform ios). El plugin ya está configurado en app.json. Sin instalar la librería el código de HealthKit no compila. HK-00 ya decidió que es react-native-health.',
+          },
+        ],
+      },
+      {
+        id: 'intg-hc',
+        label: 'Google Health Connect (Android) + Auto-sync diario',
+        period: 'P1 — Paridad iOS/Android',
+        items: [
+          {
+            title: 'HC-01 — Instalar react-native-health-connect + permisos Android',
+            done: false,
+            priority: 'P1',
+            note: 'npm install react-native-health-connect. Permisos: ExerciseSession, SleepSession, HeartRate, RestingHeartRate. Requiere Health Connect app en Android 9+. Graceful degradation si no esta disponible.',
+          },
+          {
+            title: 'HC-02 — healthconnect.service.ts: paridad con healthkit.service.ts',
+            done: false,
+            priority: 'P1',
+            note: 'Crear MEDALIQ-MOBILE/src/services/healthconnect.service.ts con misma interfaz: isSyncEnabled, setSyncEnabled, syncRecent (workouts → POST /api/mobile/log/session), querySleepHours, queryRestingHeartRate.',
+          },
+          {
+            title: 'HC-03 — useHealthConnect hook + useHealthSync unificado',
+            done: false,
+            priority: 'P1',
+            note: 'Hook useHealthConnect.ts (permisos Android). Luego useHealthSync.ts que detecta Platform.OS y delega a healthkit o healthconnect. Reemplaza useHealthKit en toda la app.',
+          },
+          {
+            title: 'HC-04 — UI integrations.tsx: toggle Health Connect en Android',
+            done: false,
+            priority: 'P1',
+            note: 'Actualizar integrations.tsx: iOS muestra Apple Health toggle, Android muestra Health Connect toggle. Misma mecanica: AsyncStorage flag + request permissions al activar.',
+          },
+          {
+            title: 'HC-05 — Pre-fill check-in Android: sueno + FC desde Health Connect',
+            done: false,
+            priority: 'P1',
+            note: 'Paridad con HK-05: checkin.tsx usa useHealthSync() para pre-fill sleepHours + hrResting en ambas plataformas. Badge "Google Health" en Android.',
+          },
+          {
+            title: 'SYNC-01 — syncDailyHealth use case: sueno + FC → DailyLog auto-sync',
+            done: false,
+            priority: 'P1',
+            note: 'Crear domain/wearables/sync_daily_health.use_case.ts. Upsert DailyLog por (userId, date). NO sobreescribe entradas manuales existentes. Retorna { synced, skipped }.',
+          },
+          {
+            title: 'SYNC-02 — POST /api/mobile/health/sync-daily endpoint',
+            done: false,
+            priority: 'P1',
+            note: 'Nuevo endpoint. Auth JWT mobile + RL 30/min. Recibe { date, sleepHours?, hrResting?, source }. Llama syncDailyHealth use case. Responde con campos sincronizados vs skipped.',
+          },
+          {
+            title: 'SYNC-03 — syncDailyHealth() en healthkit.service + healthconnect.service',
+            done: false,
+            priority: 'P1',
+            note: 'Agregar syncDailyHealth() a ambos servicios: lee sueno+FC del OS → POST /api/mobile/health/sync-daily. Llamar desde _layout.tsx junto a syncRecent().',
+          },
+          {
+            title: 'SYNC-04 — GET /api/mobile/health/status endpoint',
+            done: false,
+            priority: 'P2',
+            note: 'Estado de providers conectados + ultimo sync. Para UI de configuracion y debugging.',
+          },
+          {
+            title: 'SYNC-05 — Tests: syncDailyHealth use case + endpoint + servicios mobile',
+            done: false,
+            priority: 'P1',
+            note: 'Tests Vitest: syncDailyHealth (no sobreescribe manual, upsert correcto, campos parciales). Tests endpoint (auth, validacion, rate limit). Mock de react-native-health-connect.',
           },
         ],
       },
