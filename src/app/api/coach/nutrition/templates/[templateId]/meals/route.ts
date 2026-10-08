@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import type { NutritionDayType, MealType } from '@/generated/prisma/client'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 const VALID_DAY_TYPES: NutritionDayType[] = ['HARD', 'EASY', 'REST']
 const VALID_MEAL_TYPES: MealType[] = ['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK', 'PRE_WORKOUT', 'POST_WORKOUT']
@@ -17,6 +18,9 @@ export async function POST(
   if (!session?.user?.id || session.user.role !== 'COACH') {
     return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
   }
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:nutrition-template-meals-post`, { limit: 60, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
+
   const { templateId } = await params
 
   const template = await prisma.nutritionTemplate.findFirst({
@@ -100,6 +104,10 @@ export async function DELETE(
   if (!session?.user?.id || session.user.role !== 'COACH') {
     return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
   }
+
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:nutrition-template-meals-delete`, { limit: 60, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
+
   const { templateId } = await params
 
   const { itemId } = await req.json() as { itemId?: string }

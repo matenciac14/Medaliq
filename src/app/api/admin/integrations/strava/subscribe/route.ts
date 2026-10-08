@@ -35,6 +35,7 @@ export async function POST() {
       callback_url: callbackUrl,
       verify_token: process.env.STRAVA_WEBHOOK_VERIFY_TOKEN,
     }),
+    signal: AbortSignal.timeout(10_000),
   })
 
   const data = await res.json()
@@ -64,7 +65,8 @@ export async function GET() {
   }
 
   const res = await fetch(
-    `${STRAVA_SUBSCRIPTIONS_URL}?client_id=${process.env.STRAVA_CLIENT_ID}&client_secret=${process.env.STRAVA_CLIENT_SECRET}`
+    `${STRAVA_SUBSCRIPTIONS_URL}?client_id=${process.env.STRAVA_CLIENT_ID}&client_secret=${process.env.STRAVA_CLIENT_SECRET}`,
+    { signal: AbortSignal.timeout(5_000) },
   )
   const data = await res.json()
   return NextResponse.json(data)

@@ -53,7 +53,7 @@ export default async function GymDashboardPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-8">
         <div>
           <h1 className="text-2xl font-bold" style={{ color: '#1e3a5f' }}>
-            Ejercicios — Rutinas
+            Entrenamiento — Rutinas
           </h1>
           <p className="text-gray-500 text-sm mt-0.5">
             Diseña y asigna rutinas de fuerza a tus atletas

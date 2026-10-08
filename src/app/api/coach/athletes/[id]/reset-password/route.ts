@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs'
 import { SignJWT } from 'jose'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 async function generateResetLink(athleteId: string): Promise<string> {
   const secret = new TextEncoder().encode(process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET)
@@ -20,6 +21,9 @@ export async function POST(
   const session = await auth()
   if (!session?.user?.id || session.user.role !== 'COACH')
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:reset-password`, { limit: 10, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
 
   const { id: athleteId } = await params
   const coachId = session.user.id

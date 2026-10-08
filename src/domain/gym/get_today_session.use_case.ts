@@ -150,7 +150,7 @@ export async function getTodaySession(
               include: {
                 exercises: {
                   orderBy: { order: 'asc' },
-                  include: { exercise: true },
+                  include: { exercise: { select: { id: true, name: true, nameEs: true, bodyPart: true, target: true, equipment: true, mechanic: true, description: true, gifUrl: true, gifStoredUrl: true } } },
                 },
               },
             },
@@ -163,27 +163,19 @@ export async function getTodaySession(
       where: { athleteId, status: 'ACTIVE' },
       select: { coachId: true },
     }),
-    prisma.trainingPlan.findFirst({
-      where: { userId: athleteId, status: 'ACTIVE' },
-      orderBy: { createdAt: 'desc' },
-      select: {
-        weeks: {
-          select: {
-            sessions: {
-              where: { dayOfWeek: todayDow, type: { notIn: ['FUERZA', 'DESCANSO'] } },
-              select: { type: true, durationMin: true, zoneTarget: true, intensity: true },
-              take: 1,
-            },
-          },
-        },
+    prisma.plannedSession.findFirst({
+      where: {
+        week: { plan: { userId: athleteId, status: 'ACTIVE' } },
+        dayOfWeek: todayDow,
+        type: { notIn: ['FUERZA', 'DESCANSO'] },
       },
+      select: { type: true, durationMin: true, zoneTarget: true, intensity: true },
+      orderBy: { week: { weekNumber: 'desc' } },
     }),
     prisma.weeklyRoutine.findUnique({ where: { userId: athleteId }, select: { days: true, daysPerWeek: true } }),
   ])
 
-  const plannedRunToday = plannedRunTodayRaw?.weeks
-    .flatMap(w => w.sessions)
-    .find(Boolean) ?? null
+  const plannedRunToday = plannedRunTodayRaw ?? null
 
   const hasCoach = !!coachRelation
   const todayDay = assigned?.template?.days[0] ?? null

@@ -19,7 +19,7 @@ type InviteInfo = {
 
 const SPECIALTY_LABELS: Record<string, string> = {
   RUNNING: 'Running',
-  GYM: 'Ejercicios',
+  GYM: 'Entrenamiento',
   STRENGTH: 'Fuerza',
   CYCLING: 'Ciclismo',
   TRIATHLON: 'Triatlón',
@@ -54,7 +54,8 @@ export default function JoinPage() {
     const data = await res.json()
     if (data.ok) {
       setDone(true)
-      setTimeout(() => router.push('/onboarding'), 1500)
+      // API response includes Set-Cookie with updated JWT (isB2B=true) — hard navigate
+      setTimeout(() => { window.location.href = '/onboarding' }, 1500)
     } else {
       setError(data.error ?? 'Error al unirte.')
     }

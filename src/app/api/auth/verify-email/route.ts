@@ -1,43 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
-import { redirect } from 'next/navigation'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 export async function GET(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for') ?? 'unknown'
+  const { allowed } = await rateLimitAsync(`verify-email:${ip}`, { limit: 10, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiados intentos.' }, { status: 429 })
+
   const token = req.nextUrl.searchParams.get('token')
   if (!token) {
     return NextResponse.redirect(new URL('/login?error=token-invalido', req.url))
   }
 
-  const record = await prisma.verificationToken.findUnique({
-    where: { token },
-  })
-
+  // Delete-and-check: if delete fails, another request already consumed the token
+  const record = await prisma.verificationToken.delete({ where: { token } }).catch(() => null)
   if (!record) {
     return NextResponse.redirect(new URL('/login?error=token-invalido', req.url))
   }
 
   if (new Date() > record.expires) {
-    await prisma.verificationToken.delete({ where: { token } }).catch(() => {})
     return NextResponse.redirect(new URL('/login?error=token-expirado', req.url))
   }
 
-  // identifier = email del usuario
   const user = await prisma.user.findUnique({
     where: { email: record.identifier },
-    select: { id: true, emailVerified: true },
+    select: { id: true },
   })
 
   if (!user) {
     return NextResponse.redirect(new URL('/login?error=usuario-no-encontrado', req.url))
   }
 
-  await Promise.all([
-    prisma.user.update({
-      where: { id: user.id },
-      data: { emailVerified: new Date() },
-    }),
-    prisma.verificationToken.delete({ where: { token } }),
-  ])
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { emailVerified: new Date() },
+  })
 
   return NextResponse.redirect(new URL('/login?verified=1', req.url))
 }

@@ -230,15 +230,15 @@ export default function CheckInClient({
       {/* ===== MOBILE HEADER (navy) ===== */}
       <div className="lg:hidden bg-[#1e3a5f] px-4 pt-6 pb-5 text-white">
         <div className="flex items-center gap-3 mb-1">
-          <h1 className="text-[22px] font-bold">{`Revisi\u00f3n Semanal`}</h1>
+          <h1 className="text-xl font-bold">{`Revisi\u00f3n Semanal`}</h1>
           {totalWeeks && (
-            <span className="text-[11px] font-semibold bg-[rgba(34,195,93,0.22)] text-[#22c35d] px-3 py-1 rounded-full uppercase tracking-wide">
+            <span className="text-xs font-semibold bg-[rgba(34,195,93,0.22)] text-[#22c35d] px-3 py-1 rounded-full uppercase tracking-wide">
               Semana {currentWeek} de {totalWeeks}
             </span>
           )}
         </div>
-        <p className="text-[13px] text-white/70">{`Eval\u00faa tu semana y ajusta el plan`}</p>
-        <p className="text-[11px] text-white/55 mt-0.5">
+        <p className="text-sm text-white/70">{`Eval\u00faa tu semana y ajusta el plan`}</p>
+        <p className="text-xs text-white/55 mt-0.5">
           {weekLabel} {'\u00b7'} {weekAdherence.completed}/{weekAdherence.total} sesiones completadas
         </p>
         {adherencePct !== null && (
@@ -249,7 +249,7 @@ export default function CheckInClient({
                 style={{ width: `${adherencePct}%`, backgroundColor: '#22c35d' }}
               />
             </div>
-            <p className="text-[11px] text-white/65 mt-1.5">
+            <p className="text-xs text-white/65 mt-1.5">
               {adherencePct}% adherencia {'\u00b7'} {adherencePct >= 80 ? 'sigue bien' : adherencePct >= 50 ? 'puedes mejorar' : 'animo, sigamos'}
             </p>
           </div>
@@ -260,13 +260,13 @@ export default function CheckInClient({
       <div className="hidden lg:block max-w-7xl mx-auto px-4 pt-5">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-[11px] font-bold text-[#1e3a5f] uppercase tracking-wider mb-0.5">{`Revisi\u00f3n Semanal`}</p>
+            <p className="text-xs font-bold text-[#1e3a5f] uppercase tracking-wider mb-0.5">{`Revisi\u00f3n Semanal`}</p>
             <h1 className="text-2xl font-bold text-[#0f1e30]">{`Revisi\u00f3n Semanal`}</h1>
             <p className="text-sm text-gray-400 mt-0.5">{weekLabel}</p>
           </div>
           <div className="text-right space-y-1.5">
             {totalWeeks && (
-              <span className="inline-block text-[11px] font-bold bg-emerald-500 text-white px-3 py-1.5 rounded-full uppercase tracking-wide">
+              <span className="inline-block text-xs font-bold bg-emerald-500 text-white px-3 py-1.5 rounded-full uppercase tracking-wide">
                 Semana {currentWeek} de {totalWeeks}
               </span>
             )}
@@ -291,7 +291,7 @@ export default function CheckInClient({
           <div className="mb-4 bg-[#fff3e0] rounded-xl overflow-hidden flex items-stretch gap-0">
             <div className="w-[3px] bg-[#ea5809] rounded-sm shrink-0 my-3 ml-4" />
             <div className="flex-1 px-3 py-3">
-              <p className="text-[12px] font-semibold text-[#8c4000]">{'\u26a1'}  {`Datos pre-llenados autom\u00e1ticamente`}</p>
+              <p className="text-xs font-semibold text-[#8c4000]">{'\u26a1'}  {`Datos pre-llenados autom\u00e1ticamente`}</p>
               <p className="text-[10px] text-[rgba(140,64,0,0.8)] mt-0.5">
                 {[
                   prevMetrics.hardestSessionRpe ? `RPE pico: ${prevMetrics.hardestSessionRpe}` : '',
@@ -323,8 +323,8 @@ export default function CheckInClient({
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <p className="text-[13px] font-medium text-[#262626]">{`RPE m\u00e1s duro de la semana`}</p>
-                    <p className="text-[11px] text-[#106f33] lg:text-gray-400 mt-0.5">
+                    <p className="text-sm font-medium text-[#262626]">{`RPE m\u00e1s duro de la semana`}</p>
+                    <p className="text-xs text-[#106f33] lg:text-gray-400 mt-0.5">
                       {prevMetrics.hardestSessionRpe
                         ? `\ud83d\udccb Registrado autom\u00e1ticamente`
                         : `Ajusta el RPE de tu sesi\u00f3n m\u00e1s dura`}
@@ -363,7 +363,7 @@ export default function CheckInClient({
               {weekSessions.length > 0 && (
                 <div>
                   <div className="h-px bg-[#e5ecf2] mb-3" />
-                  <p className="text-[11px] font-semibold text-[#99a6b2] mb-1">Adherencia al plan</p>
+                  <p className="text-xs font-semibold text-[#99a6b2] mb-1">Adherencia al plan</p>
                   <p className="text-[10px] text-[#6f859a] mb-2.5">
                     {weekAdherence.completed} de {weekAdherence.total} sesiones completadas esta semana
                   </p>
@@ -383,7 +383,7 @@ export default function CheckInClient({
                           }`}
                         >
                           <span className="text-[10px] font-semibold leading-none">{label}</span>
-                          <span className="text-[11px] font-bold leading-none mt-0.5">{!hasSession ? '\u2014' : done ? '\u2713' : '\u2717'}</span>
+                          <span className="text-xs font-bold leading-none mt-0.5">{!hasSession ? '\u2014' : done ? '\u2713' : '\u2717'}</span>
                         </div>
                       )
                     })}
@@ -394,7 +394,7 @@ export default function CheckInClient({
               {/* Info note — desktop only */}
               <div className="hidden lg:flex items-start gap-2 bg-blue-50 rounded-lg px-3 py-2.5">
                 <span className="text-blue-500 shrink-0 text-sm">i</span>
-                <p className="text-[11px] text-blue-700 leading-relaxed">
+                <p className="text-xs text-blue-700 leading-relaxed">
                   {`Estos datos vienen de tus logs de sesi\u00f3n.`}
                 </p>
               </div>
@@ -415,8 +415,8 @@ export default function CheckInClient({
               {/* Horas de sueno */}
               <div className="space-y-1.5 pb-4 lg:pb-0">
                 <div className="flex items-center justify-between">
-                  <span className="text-[13px] font-medium text-[#262626]">{`Horas de sue\u00f1o`}</span>
-                  <span className="text-[12px] font-semibold text-[#333] bg-[#f5f7fa] rounded-[10px] px-3 py-1 lg:bg-transparent lg:px-0 lg:py-0 lg:text-[13px] lg:text-[#1e3a5f]">
+                  <span className="text-sm font-medium text-[#262626]">{`Horas de sue\u00f1o`}</span>
+                  <span className="text-xs font-semibold text-[#333] bg-[#f5f7fa] rounded-[10px] px-3 py-1 lg:bg-transparent lg:px-0 lg:py-0 lg:text-sm lg:text-[#1e3a5f]">
                     {sleepHours > 0 ? `${sleepHours} hrs` : '\u2014'}
                   </span>
                 </div>
@@ -483,14 +483,14 @@ export default function CheckInClient({
 
               {/* Pain — 3 buttons */}
               <div className="space-y-2 pt-4 lg:pt-0">
-                <span className="text-[13px] font-semibold text-[#1e3a5f]">{`\u00bfAlguna molestia?`}</span>
+                <span className="text-sm font-semibold text-[#1e3a5f]">{`\u00bfAlguna molestia?`}</span>
                 <div className="grid grid-cols-3 gap-2">
                   {PAIN_OPTIONS.map(opt => (
                     <button
                       key={opt.value}
                       type="button"
                       onClick={() => setPainLevel(painLevel === opt.value ? 0 : opt.value)}
-                      className={`py-2 text-[11px] font-semibold rounded-lg border transition-colors ${
+                      className={`py-2 text-xs font-semibold rounded-lg border transition-colors ${
                         painLevel === opt.value
                           ? 'bg-[#1e3a5f] border-[#1e3a5f] text-white'
                           : 'bg-white border-[#1e3a5f] text-[#1e3a5f]'
@@ -510,7 +510,7 @@ export default function CheckInClient({
                   onChange={e => setNotes(e.target.value)}
                   placeholder={`\u00bfAlgo que tu coach deba saber? (opcional)`}
                   rows={2}
-                  className="w-full text-[11px] bg-[#f5f7fa] rounded-[10px] px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/20 text-[#4d4d4d] placeholder:text-[#6f859a]"
+                  className="w-full text-xs bg-[#f5f7fa] rounded-[10px] px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/20 text-[#4d4d4d] placeholder:text-[#6f859a]"
                 />
               </div>
 
@@ -544,11 +544,11 @@ export default function CheckInClient({
           <button
             onClick={handleSubmit}
             disabled={saving}
-            className="w-full bg-[#ea580c] hover:opacity-90 active:opacity-80 disabled:opacity-50 text-white font-bold py-[14px] rounded-xl text-[15px] transition-opacity"
+            className="w-full bg-[#ea580c] hover:opacity-90 active:opacity-80 disabled:opacity-50 text-white font-bold py-[14px] rounded-xl text-sm transition-opacity"
           >
             {saving ? 'Guardando...' : `Enviar revisi\u00f3n semanal \u2192`}
           </button>
-          <p className="text-center text-[12px] text-[rgba(111,133,154,0.8)]">
+          <p className="text-center text-xs text-[rgba(111,133,154,0.8)]">
             <button type="button" onClick={() => router.push('/dashboard')} className="hover:underline">
               Saltar por ahora
             </button>

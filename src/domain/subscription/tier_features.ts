@@ -93,9 +93,9 @@ export function configToAthleteFeatures(config: TierFeatureConfigShape): Athlete
  */
 export function getCoachLimits(tier: CoachTier): CoachLimits {
   switch (tier) {
-    case 'STARTER': return { maxAthletes: 5 }
-    case 'GROWTH':  return { maxAthletes: 25 }
-    case 'PRO':     return { maxAthletes: 75 }
+    case 'STARTER': return { maxAthletes: 2 }
+    case 'GROWTH':  return { maxAthletes: 10 }
+    case 'PRO':     return { maxAthletes: 30 }
     case 'SCALE':   return { maxAthletes: Infinity }
   }
 }

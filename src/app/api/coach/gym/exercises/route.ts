@@ -3,6 +3,8 @@ import { auth } from '@/auth'
 import { PrismaExerciseRepository } from '@/infrastructure/db/exercise.repository'
 import { validateExercise } from '@/domain/admin/exercise'
 import { prisma } from '@/lib/db/prisma'
+import { rateLimitAsync } from '@/lib/rate_limit'
+import { resolveDisciplineId } from '@/domain/discipline/discipline_resolver'
 
 const repo = new PrismaExerciseRepository()
 
@@ -12,6 +14,9 @@ export async function GET(req: NextRequest) {
   if (!session?.user?.id || session.user.role !== 'COACH') {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
+
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:coach-exercises`, { limit: 300, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
 
   const coachId = session.user.id
   const { searchParams } = req.nextUrl
@@ -35,6 +40,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
 
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:exercises-post`, { limit: 60, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
+
   const coachId = session.user.id
 
   const body = await req.json()
@@ -46,6 +54,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ errors }, { status: 400 })
   }
 
+  const disciplineId = await resolveDisciplineId('GYM')
   const exercise = await prisma.exercise.create({
     data: {
       coachId,
@@ -56,6 +65,7 @@ export async function POST(req: NextRequest) {
       description: description?.trim() || null,
       gifUrl:      gifUrl?.trim() || null,
       source:      'custom',
+      disciplineId,
     },
   })
 

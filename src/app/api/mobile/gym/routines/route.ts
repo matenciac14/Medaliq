@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { getMobileUser } from '@/lib/auth/mobile_auth'
 import { rateLimitAsync } from '@/lib/rate_limit'
+import { requireFeature } from '@/lib/guards/feature_gate'
 import type { SetType } from '@/generated/prisma/enums'
 
 interface DayExerciseInput {
@@ -36,6 +37,8 @@ interface TemplateBody {
 export async function POST(req: NextRequest) {
   const mobile = await getMobileUser(req)
   if (!mobile) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  const gate = requireFeature(mobile.features, 'gym')
+  if (gate) return gate
   const { allowed } = await rateLimitAsync(`mobile-${mobile.id}:gym-routines`, { limit: 30, windowMs: 60_000 })
   if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 

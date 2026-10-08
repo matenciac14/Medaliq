@@ -46,10 +46,6 @@ export default async function NutritionPage() {
   const todayDow = todayDowInTz(tz)
   const currentWeek = activePlan ? getPlanWeekNumber(activePlan.startDate, activePlan.totalWeeks) : null
 
-  // Tomorrow = today + 1 day (for date range queries)
-  const tomorrow = new Date(todayStart)
-  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1)
-
   // Last 7 days
   const weekStart = new Date(todayStart)
   weekStart.setUTCDate(weekStart.getUTCDate() - 6)
@@ -185,8 +181,9 @@ export default async function NutritionPage() {
       orderBy: { date: 'asc' },
     }),
     // Today's food logs with full macro data (for DeficitHero + consumed totals)
+    // Uses exact date match (same as queryTodayFoodLogs) — date is @db.Date (no time component)
     prisma.foodLog.findMany({
-      where: { userId, date: { gte: todayStart, lt: tomorrow } },
+      where: { userId, date: todayStart },
       select: {
         id: true, mealType: true, grams: true,
         kcalLogged: true, proteinLogged: true, carbsLogged: true, fatLogged: true,
@@ -280,10 +277,10 @@ export default async function NutritionPage() {
           targetKcalHard: hard.kcal,
           targetKcalEasy: easy.kcal,
           targetKcalRest: rest.kcal,
-          proteinG: easy.proteinG,
+          proteinG: hard.proteinG,
           carbsHardG: hard.carbsG,
           carbsEasyG: easy.carbsG,
-          fatG: easy.fatG,
+          fatG: hard.fatG,
         }
       })()
     : null
@@ -498,12 +495,12 @@ export default async function NutritionPage() {
     <>
       {/* Mobile header — gradient navy bar (matches dashboard/plan pattern) */}
       <div className="sm:hidden bg-gradient-to-b from-[#1e3a5f] to-[#2d5a8e] px-5 pt-[max(env(safe-area-inset-top,0px),20px)] pb-[22px]">
-        <h1 className="text-[20px] font-bold text-white leading-tight tracking-[-0.3px]">Nutricion</h1>
+        <h1 className="text-xl font-bold text-white leading-tight tracking-[-0.3px]">Nutricion</h1>
         <div className="flex items-center gap-2 mt-3">
-          <span className="bg-white/15 text-white text-[12px] font-semibold px-3 py-1.5 rounded-[14px]">
+          <span className="bg-white/15 text-white text-xs font-semibold px-3 py-1.5 rounded-[14px]">
             {todayStart.toLocaleDateString('es', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}
           </span>
-          <span className="bg-white/15 text-white text-[11px] font-semibold px-3 py-1.5 rounded-[14px]">
+          <span className="bg-white/15 text-white text-xs font-semibold px-3 py-1.5 rounded-[14px]">
             {pageState === 'b2b' ? 'Coach asigna' : `${badge.emoji} ${badge.label}`}
           </span>
         </div>
@@ -563,8 +560,8 @@ export default async function NutritionPage() {
 
         phaseBannerSlot={
           planPhaseText ? (
-            <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-800 font-medium">
-              {planPhaseText}
+            <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-800 font-medium flex items-center gap-2">
+              <span>📅</span>{planPhaseText}
             </div>
           ) : null
         }
@@ -661,11 +658,11 @@ export default async function NutritionPage() {
         menuLinksSlot={
           hasMealPlan ? (
             <div className="flex gap-4 text-sm">
-              <Link href="/nutrition/builder" className="text-[#1e3a5f] font-semibold hover:underline">
-                Editar mi menu &rarr;
+              <Link href="/nutrition/builder" className="text-[#1e3a5f] font-semibold hover:underline flex items-center gap-1">
+                ✏️ Editar mi menu &rarr;
               </Link>
-              <Link href="/nutrition/planner" className="text-[#1e3a5f] font-semibold hover:underline">
-                Aplicar menu a esta semana &rarr;
+              <Link href="/nutrition/planner" className="text-[#1e3a5f] font-semibold hover:underline flex items-center gap-1">
+                📅 Aplicar menu a esta semana &rarr;
               </Link>
             </div>
           ) : null

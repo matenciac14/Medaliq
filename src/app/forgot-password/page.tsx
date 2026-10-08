@@ -38,7 +38,7 @@ export default function ForgotPasswordPage() {
         <div className="absolute inset-0 bg-gradient-to-b from-[#162B45]/30 via-[#162B45]/60 to-[#162B45]/80" />
         <div className="relative z-10 flex flex-col items-center justify-center h-full">
           <MedaliqLogo variant="dark" size="lg" />
-          <p className="text-[13px] text-white/70 mt-2">Recupera tu acceso en segundos.</p>
+          <p className="text-sm text-white/70 mt-2">Recupera tu acceso en segundos.</p>
         </div>
       </div>
 
@@ -94,11 +94,11 @@ export default function ForgotPasswordPage() {
             </div>
           ) : (
             <>
-              <h1 className="text-[22px] lg:text-2xl font-bold text-[#1e3a5f] mb-1 text-center">
+              <h1 className="text-xl lg:text-2xl font-bold text-[#1e3a5f] mb-1 text-center">
                 <span className="lg:hidden">Recupera tu acceso</span>
                 <span className="hidden lg:inline">¿Olvidaste tu contraseña?</span>
               </h1>
-              <p className="text-[13px] lg:text-sm text-gray-500 mb-6 lg:mb-8 text-center">
+              <p className="text-sm lg:text-sm text-gray-500 mb-6 lg:mb-8 text-center">
                 <span className="lg:hidden">Te enviamos un enlace a tu correo</span>
                 <span className="hidden lg:inline">Ingresa tu correo y te enviaremos un link para restablecerla.</span>
               </p>
@@ -120,7 +120,7 @@ export default function ForgotPasswordPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="tu@correo.com"
-                    className="w-full h-12 lg:h-auto rounded-xl lg:rounded-lg border-0 lg:border-[1.5px] lg:border-gray-200 bg-[#f6f7f8] lg:bg-white px-4 py-3 text-[15px] lg:text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f] transition-colors"
+                    className="w-full h-12 lg:h-auto rounded-xl lg:rounded-lg border-0 lg:border-[1.5px] lg:border-gray-200 bg-[#f6f7f8] lg:bg-white px-4 py-3 text-sm lg:text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f] transition-colors"
                   />
                 </div>
 
@@ -133,7 +133,7 @@ export default function ForgotPasswordPage() {
                 </button>
               </form>
 
-              <p className="mt-6 text-center text-[13px] lg:text-sm text-gray-500">
+              <p className="mt-6 text-center text-sm lg:text-sm text-gray-500">
                 <Link href="/login" className="text-[#ea580c] font-medium hover:underline">
                   ← Volver al inicio de sesión
                 </Link>

@@ -75,10 +75,10 @@ export default function NutritionSummaryDonut({ consumed, target }: Props) {
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <span className="text-2xl font-black text-[#1e3a5f]">
-            {consumed.kcal > 0 ? consumed.kcal.toLocaleString('es') : `${displayPct}%`}
+            {consumed.kcal > 0 ? `${displayPct}%` : `${displayPct}%`}
           </span>
           <span className="text-[10px] font-medium text-gray-400">
-            {consumed.kcal > 0 ? 'kcal' : 'meta'}
+            meta
           </span>
         </div>
       </div>

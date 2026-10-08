@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 /** Brzycki 1RM estimado: weight × 36 / (37 - reps). Solo válido para reps < 37. */
 function estimated1RM(weightKg: number, reps: number): number {
@@ -16,6 +17,9 @@ export async function GET(
   if (!session?.user?.id || session.user.role !== 'COACH') {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
+
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:coach-athlete-prs`, { limit: 300, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
 
   const { id: athleteId } = await params
 

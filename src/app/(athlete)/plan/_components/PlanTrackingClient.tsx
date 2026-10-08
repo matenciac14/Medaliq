@@ -89,8 +89,8 @@ export default function PlanTrackingClient({
       <div className="bg-gradient-to-b from-[#1e3a5f] to-[#2d5a8e] pb-3 px-5 pt-[max(env(safe-area-inset-top,0px),20px)]">
         <div className="flex items-start justify-between mb-3">
           <div>
-            <h1 className="text-[22px] font-bold text-white leading-tight">Mi Plan</h1>
-            <p className="text-[12px] text-[#99a6b8] mt-0.5">Modo tracking</p>
+            <h1 className="text-xl font-bold text-white leading-tight">Mi Plan</h1>
+            <p className="text-xs text-[#99a6b8] mt-0.5">Modo tracking</p>
           </div>
         </div>
 
@@ -103,13 +103,13 @@ export default function PlanTrackingClient({
             >
               <ChevronLeft size={16} />
             </button>
-            <span className="flex-1 text-[13px] font-semibold text-white text-center whitespace-nowrap">
+            <span className="flex-1 text-sm font-semibold text-white text-center whitespace-nowrap">
               {weekLabel}
             </span>
             {!isCurrentWeek && (
               <button
                 onClick={() => { setWeekOffset(0); setSelectedDow(todayDow) }}
-                className="text-[12px] font-bold text-white bg-[#ea580c] px-3 py-1 rounded-full transition-colors hover:bg-[#d14d07]"
+                className="text-xs font-bold text-white bg-[#ea580c] px-3 py-1 rounded-full transition-colors hover:bg-[#d14d07]"
               >
                 Hoy
               </button>
@@ -137,12 +137,12 @@ export default function PlanTrackingClient({
 
               return (
                 <button key={day.dow} onClick={() => setSelectedDow(day.dow)} className="flex flex-col items-center gap-1">
-                  <span className={cn('text-[11px] font-semibold',
+                  <span className={cn('text-xs font-semibold',
                     isToday ? 'text-[#ea580c]' : isSel ? 'text-[#1e3a5f]' : 'text-gray-400'
                   )}>
                     {WEEK_DAYS_SHORT[i]}
                   </span>
-                  <div className={cn('w-10 h-10 rounded-full flex items-center justify-center text-[15px] font-bold transition-colors',
+                  <div className={cn('w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-colors',
                     isToday ? 'bg-[#ea580c] text-white' :
                     isSel ? 'border-2 border-[#1e3a5f] text-[#1e3a5f] bg-white' :
                     hasActivity ? 'bg-green-100 text-green-700 border border-green-300' :
@@ -154,8 +154,8 @@ export default function PlanTrackingClient({
               )
             }) ?? Array.from({ length: 7 }, (_, i) => (
               <div key={i} className="flex flex-col items-center gap-1">
-                <span className="text-[11px] font-semibold text-gray-400">{WEEK_DAYS_SHORT[i]}</span>
-                <div className="w-10 h-10 rounded-full bg-white text-gray-400 border border-gray-200 flex items-center justify-center text-[15px] font-bold">—</div>
+                <span className="text-xs font-semibold text-gray-400">{WEEK_DAYS_SHORT[i]}</span>
+                <div className="w-10 h-10 rounded-full bg-white text-gray-400 border border-gray-200 flex items-center justify-center text-sm font-bold">—</div>
               </div>
             ))}
           </div>
@@ -226,7 +226,7 @@ export default function PlanTrackingClient({
                 className={cn('flex flex-col items-center py-3.5 px-1 transition-colors text-center relative min-h-[150px]', cardBg)}
               >
                 <div className={cn('absolute top-0 left-0 right-0 h-[3px]', barColor)} />
-                <span className={cn('text-[11px] font-semibold mb-1',
+                <span className={cn('text-xs font-semibold mb-1',
                   isInverted ? 'text-white/70' :
                   isToday || isSelected ? 'text-[#ea580c] font-bold' :
                   isFuture ? 'text-[#ea580c]' : 'text-gray-400'
@@ -234,7 +234,7 @@ export default function PlanTrackingClient({
                   {WEEK_DAYS_SHORT[i]}
                 </span>
                 <div className="flex items-center gap-1 mb-2">
-                  <span className={cn('text-[22px] font-black leading-none',
+                  <span className={cn('text-xl font-black leading-none',
                     isInverted ? 'text-white' :
                     hasActivity ? 'text-green-600' :
                     isToday || isSelected ? 'text-[#ea580c]' :
@@ -243,7 +243,7 @@ export default function PlanTrackingClient({
                     {day.dateNum}
                   </span>
                   {isToday && (
-                    <span className="text-[8px] font-bold bg-[#ea580c] text-white px-1.5 py-0.5 rounded-full leading-none">HOY</span>
+                    <span className="text-[10px] font-bold bg-[#ea580c] text-white px-1.5 py-0.5 rounded-full leading-none">HOY</span>
                   )}
                 </div>
 
@@ -265,15 +265,15 @@ export default function PlanTrackingClient({
                     </span>
                   )}
                   {!day.sport?.done && !day.gym && !day.freeRun && isSelected && (
-                    <span className="text-[11px] font-semibold text-[#ea580c] mt-0.5">Registrar →</span>
+                    <span className="text-xs font-semibold text-[#ea580c] mt-0.5">Registrar →</span>
                   )}
                 </div>
               </button>
             )
           }) ?? Array.from({ length: 7 }, (_, i) => (
             <div key={i} className="flex flex-col items-center py-3.5 px-1 bg-[#f5f7fa] min-h-[150px]">
-              <span className="text-[11px] font-semibold mb-1 text-gray-400">{WEEK_DAYS_SHORT[i]}</span>
-              <span className="text-[22px] font-black leading-none text-gray-300">—</span>
+              <span className="text-xs font-semibold mb-1 text-gray-400">{WEEK_DAYS_SHORT[i]}</span>
+              <span className="text-xl font-black leading-none text-gray-300">—</span>
             </div>
           ))}
         </div>
@@ -281,7 +281,7 @@ export default function PlanTrackingClient({
 
         {/* Footer — session count */}
         <div className="px-5 pb-3 flex justify-end">
-          <span className="text-[12px] text-gray-400 font-medium">
+          <span className="text-xs text-gray-400 font-medium">
             {weekStats.sessions} sesiones esta semana
           </span>
         </div>
@@ -323,8 +323,8 @@ function DayDetailCard({ day, isToday }: { day: CalendarDay | null; isToday: boo
           <div className={`w-1.5 shrink-0 ${accentColor}`} />
           <div className="flex-1 p-5 space-y-3">
             <div className="flex items-center gap-3">
-              <span className="text-[22px]">🏋️</span>
-              <h3 className="text-[20px] font-black text-gray-900 leading-tight">{day.gym.label}</h3>
+              <span className="text-xl">🏋️</span>
+              <h3 className="text-xl font-black text-gray-900 leading-tight">{day.gym.label}</h3>
               {isToday && <span className="text-[10px] font-bold bg-[#ea580c] text-white px-2 py-0.5 rounded-full">HOY</span>}
               {day.gym.done && (
                 <span className="inline-flex items-center gap-1 text-[10px] font-bold text-green-600">
@@ -334,20 +334,20 @@ function DayDetailCard({ day, isToday }: { day: CalendarDay | null; isToday: boo
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {day.gym.durationMin != null && (
-                <span className="text-[12px] font-medium bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full">
+                <span className="text-xs font-medium bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full">
                   {day.gym.durationMin} min
                 </span>
               )}
-              <span className="text-[12px] font-semibold bg-purple-50 text-purple-700 px-3 py-1.5 rounded-full border border-purple-100">
+              <span className="text-xs font-semibold bg-purple-50 text-purple-700 px-3 py-1.5 rounded-full border border-purple-100">
                 💪 Fuerza
               </span>
               {day.gym.templateName && (
-                <span className="text-[12px] font-medium bg-gray-50 text-gray-500 px-3 py-1.5 rounded-full">
+                <span className="text-xs font-medium bg-gray-50 text-gray-500 px-3 py-1.5 rounded-full">
                   {day.gym.templateName}
                 </span>
               )}
               {day.gym.rpe != null && (
-                <span className="text-[12px] font-medium bg-orange-50 text-orange-600 px-3 py-1.5 rounded-full">
+                <span className="text-xs font-medium bg-orange-50 text-orange-600 px-3 py-1.5 rounded-full">
                   RPE {day.gym.rpe}
                 </span>
               )}
@@ -356,19 +356,19 @@ function DayDetailCard({ day, isToday }: { day: CalendarDay | null; isToday: boo
               {day.gym.done ? (
                 <div className="flex items-center gap-2 px-4 py-2.5 bg-green-50 border border-green-200 rounded-xl">
                   <CheckCircle2 size={16} className="text-green-500" />
-                  <span className="text-[13px] font-semibold text-green-700">Completada</span>
+                  <span className="text-sm font-semibold text-green-700">Completada</span>
                 </div>
               ) : (
                 <a
                   href="/gym/session"
-                  className="flex-1 flex items-center justify-center gap-2 bg-[#ea580c] hover:opacity-90 text-white text-[14px] font-bold px-4 py-3 rounded-xl transition-opacity whitespace-nowrap"
+                  className="flex-1 flex items-center justify-center gap-2 bg-[#ea580c] hover:opacity-90 text-white text-sm font-bold px-4 py-3 rounded-xl transition-opacity whitespace-nowrap"
                 >
                   Iniciar sesion de gym →
                 </a>
               )}
               <a
                 href="/gym"
-                className="px-4 py-2.5 border border-gray-200 text-gray-600 text-[13px] font-medium rounded-xl hover:bg-gray-50 transition-colors whitespace-nowrap"
+                className="px-4 py-2.5 border border-gray-200 text-gray-600 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors whitespace-nowrap"
               >
                 Ver rutina
               </a>
@@ -389,33 +389,33 @@ function DayDetailCard({ day, isToday }: { day: CalendarDay | null; isToday: boo
           <div className="w-1.5 shrink-0 bg-blue-400" />
           <div className="flex-1 p-5 space-y-3">
             <div className="flex items-center gap-3">
-              <span className="text-[22px]">{icon}</span>
-              <h3 className="text-[20px] font-black text-gray-900 leading-tight">{name}</h3>
+              <span className="text-xl">{icon}</span>
+              <h3 className="text-xl font-black text-gray-900 leading-tight">{name}</h3>
               {isToday && <span className="text-[10px] font-bold bg-[#ea580c] text-white px-2 py-0.5 rounded-full">HOY</span>}
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {day.freeRun.durationMin != null && (
-                <span className="text-[12px] font-medium bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full">
+                <span className="text-xs font-medium bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full">
                   {day.freeRun.durationMin} min
                 </span>
               )}
               {day.freeRun.distanceKm != null && (
-                <span className="text-[12px] font-medium bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full">
+                <span className="text-xs font-medium bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full">
                   {day.freeRun.distanceKm} km
                 </span>
               )}
               {day.freeRun.rpe != null && (
-                <span className="text-[12px] font-medium bg-orange-50 text-orange-600 px-3 py-1.5 rounded-full">
+                <span className="text-xs font-medium bg-orange-50 text-orange-600 px-3 py-1.5 rounded-full">
                   RPE {day.freeRun.rpe}
                 </span>
               )}
-              <span className="text-[12px] font-semibold bg-blue-50 text-blue-600 px-3 py-1.5 rounded-full border border-blue-100">
+              <span className="text-xs font-semibold bg-blue-50 text-blue-600 px-3 py-1.5 rounded-full border border-blue-100">
                 Sesion libre
               </span>
             </div>
             <div className="flex items-center gap-2 px-4 py-2.5 bg-green-50 border border-green-200 rounded-xl w-fit">
               <CheckCircle2 size={16} className="text-green-500" />
-              <span className="text-[13px] font-semibold text-green-700">Registrada</span>
+              <span className="text-sm font-semibold text-green-700">Registrada</span>
             </div>
           </div>
         </div>
@@ -433,24 +433,24 @@ function DayDetailCard({ day, isToday }: { day: CalendarDay | null; isToday: boo
           <div className="w-1.5 shrink-0 bg-green-400" />
           <div className="flex-1 p-5 space-y-3">
             <div className="flex items-center gap-3">
-              <span className="text-[22px]">{icon}</span>
-              <h3 className="text-[20px] font-black text-gray-900 leading-tight">{name}</h3>
+              <span className="text-xl">{icon}</span>
+              <h3 className="text-xl font-black text-gray-900 leading-tight">{name}</h3>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {day.sport.logDurationMin != null && (
-                <span className="text-[12px] font-medium bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full">
+                <span className="text-xs font-medium bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full">
                   {day.sport.logDurationMin} min
                 </span>
               )}
               {day.sport.logRpe != null && (
-                <span className="text-[12px] font-medium bg-orange-50 text-orange-600 px-3 py-1.5 rounded-full">
+                <span className="text-xs font-medium bg-orange-50 text-orange-600 px-3 py-1.5 rounded-full">
                   RPE {day.sport.logRpe}
                 </span>
               )}
             </div>
             <div className="flex items-center gap-2 px-4 py-2.5 bg-green-50 border border-green-200 rounded-xl w-fit">
               <CheckCircle2 size={16} className="text-green-500" />
-              <span className="text-[13px] font-semibold text-green-700">Completada</span>
+              <span className="text-sm font-semibold text-green-700">Completada</span>
             </div>
           </div>
         </div>
@@ -470,22 +470,22 @@ function SesionLibreCard() {
       <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#e5eaf0] rounded-sm" />
       <div className="p-5 space-y-3">
         <div className="flex items-center gap-2">
-          <span className="text-[22px]">📝</span>
-          <h3 className="text-[18px] font-bold text-[#1c2b45]">Sin actividad</h3>
+          <span className="text-xl">📝</span>
+          <h3 className="text-lg font-bold text-[#1c2b45]">Sin actividad</h3>
         </div>
-        <p className="text-[12px] text-[#8c9eb2]">
+        <p className="text-xs text-[#8c9eb2]">
           Registra una sesion de running o ve al gym
         </p>
         <div className="flex gap-2">
           <a
             href="/log"
-            className="flex-1 flex items-center justify-center bg-[#ea580c] hover:opacity-90 text-white text-[13px] font-bold h-[42px] rounded-[10px] transition-opacity"
+            className="flex-1 flex items-center justify-center bg-[#ea580c] hover:opacity-90 text-white text-sm font-bold h-[42px] rounded-[10px] transition-opacity"
           >
             Registrar sesion →
           </a>
           <a
             href="/gym"
-            className="flex items-center justify-center px-4 border border-gray-200 text-gray-600 text-[13px] font-medium h-[42px] rounded-[10px] hover:bg-gray-50 transition-colors"
+            className="flex items-center justify-center px-4 border border-gray-200 text-gray-600 text-sm font-medium h-[42px] rounded-[10px] hover:bg-gray-50 transition-colors"
           >
             Gym
           </a>
@@ -506,13 +506,13 @@ function TrackingKPIs({ sessions, totalMin }: { sessions: number; totalMin: numb
     <div className="grid grid-cols-2 gap-2">
       <div className="bg-white rounded-xl border border-gray-200 p-3">
         <p className="text-[10px] font-medium text-[#9ba2ad] mb-1">Sesiones</p>
-        <p className="text-[22px] font-bold leading-none text-gray-900">{sessions}</p>
-        <p className="text-[9px] text-[#bcc0c7] mt-1.5">esta semana</p>
+        <p className="text-xl font-bold leading-none text-gray-900">{sessions}</p>
+        <p className="text-[10px] text-[#bcc0c7] mt-1.5">esta semana</p>
       </div>
       <div className="bg-white rounded-xl border border-gray-200 p-3">
         <p className="text-[10px] font-medium text-[#9ba2ad] mb-1">Tiempo</p>
-        <p className="text-[22px] font-bold leading-none text-gray-900">{timeLabel}</p>
-        <p className="text-[9px] text-[#bcc0c7] mt-1.5">registrado</p>
+        <p className="text-xl font-bold leading-none text-gray-900">{timeLabel}</p>
+        <p className="text-[10px] text-[#bcc0c7] mt-1.5">registrado</p>
       </div>
     </div>
   )
@@ -526,10 +526,10 @@ function NutritionSnapshotCard({ nt }: { nt: NutritionTarget }) {
       <p className="text-[10px] font-bold text-[#9ba2ad] uppercase tracking-[0.5px] mb-2">Nutricion</p>
       <div className="flex items-end gap-4">
         <div>
-          <span className="text-[22px] font-bold text-gray-900 leading-none">{nt.kcal.toLocaleString('es')}</span>
-          <span className="text-[11px] text-[#8c99a6] ml-1">kcal</span>
+          <span className="text-xl font-bold text-gray-900 leading-none">{nt.kcal.toLocaleString('es')}</span>
+          <span className="text-xs text-[#8c99a6] ml-1">kcal</span>
         </div>
-        <div className="flex gap-3 text-[11px]">
+        <div className="flex gap-3 text-xs">
           <span className="text-blue-600 font-semibold">{nt.proteinG}g prot</span>
           <span className="text-yellow-600 font-semibold">{nt.carbsG}g carbs</span>
           <span className="text-green-600 font-semibold">{nt.fatG}g grasas</span>
@@ -556,14 +556,14 @@ function BodySnapshotCard({ weightData, bodyMeasures }: { weightData: WeightData
       <p className="text-[10px] font-bold text-[#9ba2ad] uppercase tracking-[0.5px] mb-2">Composicion corporal</p>
       <div className="flex items-start">
         <div className="w-[80px]">
-          <p className="text-[20px] font-bold text-[#1a2744]">{currentKg != null ? `${currentKg} kg` : '— kg'}</p>
+          <p className="text-xl font-bold text-[#1a2744]">{currentKg != null ? `${currentKg} kg` : '— kg'}</p>
         </div>
         <div className="w-px h-8 bg-[#e0e5eb] mx-3 mt-1" />
         <div className="flex flex-1 gap-0">
           {measures.map(m => (
             <div key={m.label} className="flex-1 flex flex-col items-center gap-0.5">
-              <span className="text-[13px] font-semibold text-[#33404d]">{m.value != null ? `${m.value} cm` : '—'}</span>
-              <span className="text-[9px] text-[#808c99]">{m.label}</span>
+              <span className="text-sm font-semibold text-[#33404d]">{m.value != null ? `${m.value} cm` : '—'}</span>
+              <span className="text-[10px] text-[#808c99]">{m.label}</span>
             </div>
           ))}
         </div>
@@ -578,18 +578,18 @@ function CTACard({ isB2B }: { isB2B: boolean }) {
   if (isB2B) {
     return (
       <div className="bg-[#1e3a5f] rounded-xl p-5 space-y-2">
-        <p className="text-[14px] font-bold text-white">Tu coach esta preparando tu plan</p>
-        <p className="text-[11px] text-white/60">Cuando tu entrenador asigne el plan, aparecera aqui automaticamente.</p>
+        <p className="text-sm font-bold text-white">Tu coach esta preparando tu plan</p>
+        <p className="text-xs text-white/60">Cuando tu entrenador asigne el plan, aparecera aqui automaticamente.</p>
       </div>
     )
   }
   return (
     <div className="bg-white rounded-2xl border border-[#d1d9e1] p-4 space-y-2.5">
-      <p className="text-[13px] font-semibold text-[#1c2b45]">Entrena con un plan estructurado</p>
-      <p className="text-[11px] text-[#708299] leading-[15px]">Un plan adaptativo ajusta cada sesion a tus metricas semanales.</p>
+      <p className="text-sm font-semibold text-[#1c2b45]">Entrena con un plan estructurado</p>
+      <p className="text-xs text-[#708299] leading-[15px]">Un plan adaptativo ajusta cada sesion a tus metricas semanales.</p>
       <a
         href="/find-coach"
-        className="flex items-center justify-center w-full bg-[#1e3a5f] hover:bg-[#243f6a] text-white text-[13px] font-semibold py-[11px] rounded-[10px] transition-colors"
+        className="flex items-center justify-center w-full bg-[#1e3a5f] hover:bg-[#243f6a] text-white text-sm font-semibold py-[11px] rounded-[10px] transition-colors"
       >
         Buscar entrenador →
       </a>

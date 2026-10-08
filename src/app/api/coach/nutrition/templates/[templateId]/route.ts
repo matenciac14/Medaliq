@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 async function verifyOwnership(coachId: string, templateId: string) {
   return prisma.nutritionTemplate.findFirst({
@@ -17,6 +18,9 @@ export async function GET(
   if (!session?.user?.id || session.user.role !== 'COACH') {
     return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
   }
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:coach-nutrition-template-detail`, { limit: 300, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
+
   const { templateId } = await params
 
   const template = await prisma.nutritionTemplate.findFirst({
@@ -64,6 +68,9 @@ export async function PATCH(
   if (!session?.user?.id || session.user.role !== 'COACH') {
     return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
   }
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:nutrition-template-patch`, { limit: 60, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
+
   const { templateId } = await params
 
   if (!await verifyOwnership(session.user.id, templateId)) {
@@ -93,6 +100,10 @@ export async function DELETE(
   if (!session?.user?.id || session.user.role !== 'COACH') {
     return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
   }
+
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:nutrition-template-delete`, { limit: 60, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
+
   const { templateId } = await params
 
   if (!await verifyOwnership(session.user.id, templateId)) {

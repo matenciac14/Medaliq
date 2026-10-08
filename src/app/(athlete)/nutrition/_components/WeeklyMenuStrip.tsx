@@ -45,7 +45,7 @@ export default function WeeklyMenuStrip({ days }: Props) {
                     : 'bg-gray-50'
                   }`}
               >
-                <p className={`text-[11px] font-semibold ${day.isToday ? 'text-white' : 'text-gray-700'}`}>
+                <p className={`text-xs font-semibold ${day.isToday ? 'text-white' : 'text-gray-700'}`}>
                   {day.label}
                 </p>
                 {typeLabel && (

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 // DELETE /api/coach/athletes/[id]/nutrition/plan/[mealId]
 export async function DELETE(
@@ -11,6 +12,9 @@ export async function DELETE(
   if (!session?.user?.id || session.user.role !== 'COACH') {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
+
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:nutrition-plan-meal-delete`, { limit: 60, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
 
   const { id: athleteId, mealId } = await params
 

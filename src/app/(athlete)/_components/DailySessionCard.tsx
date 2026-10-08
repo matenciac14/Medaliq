@@ -63,11 +63,11 @@ export default function DailySessionCard({
                 className={`w-3 h-3 rounded-full transition-colors ${i < weekSessionCount ? 'bg-[#ea580c]' : 'bg-gray-200'}`}
               />
             ))}
-            <span className="text-[11px] text-gray-500 ml-1">
+            <span className="text-xs text-gray-500 ml-1">
               {weekSessionCount}/{weekSessionTarget} días esta semana
             </span>
           </div>
-          <Link href="/gym" className="text-[11px] text-gray-400 hover:text-[#1e3a5f]">
+          <Link href="/gym" className="text-xs text-gray-400 hover:text-[#1e3a5f]">
             Ver rutina →
           </Link>
         </div>

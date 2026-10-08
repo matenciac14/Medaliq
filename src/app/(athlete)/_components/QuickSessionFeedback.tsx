@@ -42,22 +42,22 @@ export default function QuickSessionFeedback({ logId, logType, sessionLabel, ses
 
   return (
     <div className="bg-green-50 rounded-2xl border border-green-200 shadow-[0_2px_8px_rgba(0,0,0,0.06)] px-3.5 py-3">
-      <p className="text-[9px] font-semibold text-green-600 uppercase tracking-widest mb-2">
+      <p className="text-[10px] font-semibold text-green-600 uppercase tracking-widest mb-2">
         {'\u2713'} Sesión de hoy
       </p>
       <div className="flex items-center gap-2 mb-3">
         <span className="text-lg">{sessionIcon}</span>
-        <p className="text-[14px] font-semibold text-gray-900">{sessionLabel}{sessionMeta}</p>
+        <p className="text-sm font-semibold text-gray-900">{sessionLabel}{sessionMeta}</p>
       </div>
 
       {selected ? (
         <div className="text-center py-2">
           <span className="text-2xl">{ENERGY_MAP[selected].emoji}</span>
-          <p className="text-[12px] font-semibold text-[#1e3a5f] mt-1">{ENERGY_MAP[selected].label}</p>
+          <p className="text-xs font-semibold text-[#1e3a5f] mt-1">{ENERGY_MAP[selected].label}</p>
         </div>
       ) : (
         <>
-          <p className="text-[12px] text-gray-500 text-center mb-2">
+          <p className="text-xs text-gray-500 text-center mb-2">
             {'\u00BF'}Cómo te sentiste?
           </p>
           <div className="grid grid-cols-3 gap-2">

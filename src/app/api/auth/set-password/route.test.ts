@@ -2,6 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 import { SignJWT } from 'jose'
 
+vi.mock('@/lib/rate_limit', () => ({
+  rateLimitAsync: vi.fn().mockResolvedValue({ allowed: true }),
+}))
 vi.mock('@/lib/db/prisma', () => ({
   prisma: {
     user: { update: vi.fn().mockResolvedValue({}) },

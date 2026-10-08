@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
+import { resolveDisciplineId } from '@/domain/discipline/discipline_resolver'
 
 const VALID_RUN_TYPES = ['RODAJE_Z2', 'FARTLEK', 'TEMPO', 'INTERVALOS', 'TIRADA_LARGA', 'OTRO'] as const
 
@@ -23,6 +24,7 @@ export async function POST(req: NextRequest) {
 
   const { type, durationMin, distanceKm, rpe, notes } = parsed.data
 
+  const disciplineId = await resolveDisciplineId('RUNNING')
   const log = await prisma.sessionLog.create({
     data: {
       userId,
@@ -33,6 +35,8 @@ export async function POST(req: NextRequest) {
       distanceKm: distanceKm ?? null,
       rpe: rpe ?? null,
       notes: notes ?? null,
+      discipline: 'RUNNING',
+      disciplineId,
     },
   })
 

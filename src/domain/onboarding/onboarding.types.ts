@@ -1,25 +1,33 @@
-// Onboarding domain types — pure data shapes, no presentation or framework dependencies
+/**
+ * Onboarding data types — simplified single-step wizard.
+ * Discipline (sport) is NOT asked at onboarding — deferred to first activity log.
+ */
 
+export type OnboardingGoal = 'LOSE_FAT' | 'GAIN_MUSCLE' | 'STAY_HEALTHY'
+
+// Keep legacy types for mobile backward compatibility
 export type ActivityType = 'GYM' | 'RUNNING' | 'BOTH' | 'FREE'
 export type GymGoal = 'MUSCLE_GAIN' | 'FAT_LOSS' | 'RECOMPOSITION'
 export type RunningGoal = 'GENERAL_FITNESS' | 'RACE_5K' | 'RACE_10K'
 export type ExperienceLevel = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'
 
+/** New simplified wizard data — single step */
 export type WizardData = {
-  // ── Paso 1: ¿Qué haces? ──────────────────────────────────────────────────
-  activityType: ActivityType | null
-  gymGoal: GymGoal | null          // solo cuando activityType = 'GYM' o 'BOTH'
-  runningGoal: RunningGoal | null  // solo cuando activityType = 'RUNNING' o 'BOTH'
-
-  // ── Paso 2: Tu perfil (datos físicos + disponibilidad + salud) ───────────
-  age: number | null
+  dateOfBirth: string | null  // ISO date string
   heightCm: number | null
   weightKg: number | null
   gender: 'male' | 'female' | 'other' | null
-  weightGoalKg: number | null      // opcional
+  goal: OnboardingGoal | null
+  weightGoalKg: number | null
   daysPerWeek: number
-  sessionMinutes: number           // 30, 45, 60, 90
-  experienceLevel: ExperienceLevel | null  // opcional
-  injuries: string                 // texto libre, opcional
-  conditions: string               // texto libre, opcional
+
+  // Legacy fields — still accepted for backward compatibility with mobile
+  age?: number | null
+  activityType?: ActivityType | null
+  gymGoal?: GymGoal | null
+  runningGoal?: RunningGoal | null
+  sessionMinutes?: number
+  experienceLevel?: ExperienceLevel | null
+  injuries?: string
+  conditions?: string
 }

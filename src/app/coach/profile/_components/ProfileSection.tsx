@@ -57,7 +57,7 @@ const POST_TYPE_LABELS: Record<string, string> = {
 
 const SPORT_LABELS: Record<string, string> = {
   RUNNING: 'Running',
-  GYM: 'Ejercicios',
+  GYM: 'Entrenamiento',
   FUNCTIONAL: 'Funcional',
 }
 

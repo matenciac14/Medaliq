@@ -152,7 +152,10 @@ export default function NutritionPageClient({
           {/* State-specific content */}
           {state === 'sin-plan' && emptyMealPlanSlot}
 
-          {state === 'con-plan' && target && (
+          {/* B2B: CoachBanner before DeficitHero (Figma 4523:444) */}
+          {state === 'b2b' && coachBannerSlot}
+
+          {(state === 'con-plan' || state === 'b2b') && target && (
             <DeficitHeroCard
               consumed={consumedSafe}
               target={targetSafe}
@@ -165,8 +168,6 @@ export default function NutritionPageClient({
               activityLabel={activityLabel}
             />
           )}
-
-          {state === 'b2b' && coachBannerSlot}
 
           {weeklyMenuSlot}
           {pendingBannerSlot}
@@ -231,6 +232,10 @@ export default function NutritionPageClient({
             totalLogged={mealChecklist.filter(m => m.isLogged).length}
             totalPlanned={mealChecklist.length}
             isB2B={state === 'b2b'}
+            onRegister={() => {
+              const el = document.getElementById('tracking-mobile') ?? document.getElementById('tracking')
+              el?.scrollIntoView({ behavior: 'smooth' })
+            }}
           />
         )}
 

@@ -20,19 +20,19 @@ export function MobileHeader({ firstName, timezone, weekLabel, weekOffset, canGo
       <div className="space-y-1">
         {/* GreetingRow: greeting + icons */}
         <div className="flex items-center justify-between gap-2">
-          <h1 className="text-[22px] font-black text-white tracking-tight leading-tight flex-1 truncate">
+          <h1 className="text-xl font-black text-white tracking-tight leading-tight flex-1 truncate">
             {getGreeting(timezone)}!
           </h1>
           <div className="flex items-center gap-2.5 shrink-0">
             {streakDays >= 2 ? (
-              <span className="inline-flex items-center gap-[3px] px-[7px] py-[3px] rounded-[10px] border border-[#ea580c]/50 text-[11px] font-bold">
-                <span className="text-[11px]">🔥</span>
-                <span className="text-[13px] text-[#f97316] font-bold">{streakDays}</span>
+              <span className="inline-flex items-center gap-[3px] px-[7px] py-[3px] rounded-[10px] border border-[#ea580c]/50 text-xs font-bold">
+                <span className="text-xs">🔥</span>
+                <span className="text-sm text-[#f97316] font-bold">{streakDays}</span>
               </span>
             ) : (
-              <span className="inline-flex items-center gap-[3px] px-[7px] py-[3px] rounded-[10px] border border-white/20 text-[11px] font-bold">
-                <span className="text-[11px] opacity-50">🔥</span>
-                <span className="text-[13px] text-white/30 font-bold">{streakDays}</span>
+              <span className="inline-flex items-center gap-[3px] px-[7px] py-[3px] rounded-[10px] border border-white/20 text-xs font-bold">
+                <span className="text-xs opacity-50">🔥</span>
+                <span className="text-sm text-white/30 font-bold">{streakDays}</span>
               </span>
             )}
             <Link href="/notifications" className="relative flex items-center justify-center w-6 h-6">
@@ -41,10 +41,10 @@ export function MobileHeader({ firstName, timezone, weekLabel, weekOffset, canGo
           </div>
         </div>
         {/* UserName */}
-        <p className="text-[16px] font-semibold text-white/80">{firstName}</p>
+        <p className="text-base font-semibold text-white/80">{firstName}</p>
       </div>
       {/* DateLabel — centered */}
-      <p className="text-[11px] text-white/60 text-center mt-1.5">{formatDate()}</p>
+      <p className="text-xs text-white/60 text-center mt-1.5">{formatDate()}</p>
       {/* WeekNav */}
       <div className="mt-1.5">
         <WeekNavBar
@@ -62,7 +62,7 @@ export function MobileHeader({ firstName, timezone, weekLabel, weekOffset, canGo
 function StreakBadge({ streakDays }: { streakDays: number }) {
   const isActive = streakDays >= 2
   return (
-    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold ${
+    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
       isActive
         ? 'bg-orange-50 border border-orange-200/60 text-[#ea580c]'
         : 'bg-gray-100 border border-gray-200 text-gray-400'

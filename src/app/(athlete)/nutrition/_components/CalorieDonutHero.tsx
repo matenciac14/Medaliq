@@ -57,7 +57,7 @@ export default function CalorieDonutHero({ consumed, target, state = 'con-plan' 
             )}
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-[22px] font-bold text-[#1f3b5e] leading-none">
+            <span className="text-xl font-bold text-[#1f3b5e] leading-none">
               {hasConsumed
                 ? remaining.toLocaleString('es')
                 : target.kcal.toLocaleString('es')}
@@ -70,14 +70,14 @@ export default function CalorieDonutHero({ consumed, target, state = 'con-plan' 
 
         {/* Right info */}
         <div className="flex-1 min-w-0">
-          <p className="text-[9px] font-bold text-[#8c99a6] uppercase" style={{ letterSpacing: '0.72px' }}>
+          <p className="text-[10px] font-bold text-[#8c99a6] uppercase" style={{ letterSpacing: '0.72px' }}>
             {headerLabel}
           </p>
           <div className="flex items-end gap-1 mt-0.5">
-            <span className="text-[24px] font-bold text-[#1f3b5e] leading-none">
+            <span className="text-2xl font-bold text-[#1f3b5e] leading-none">
               {target.kcal.toLocaleString('es')}
             </span>
-            <span className="text-[11px] font-normal text-[#8c99a6]">kcal objetivo</span>
+            <span className="text-xs font-normal text-[#8c99a6]">kcal objetivo</span>
           </div>
           <p className="text-[10px] text-[#8c99a6] font-medium mt-0.5">
             {hasConsumed
@@ -109,8 +109,8 @@ export default function CalorieDonutHero({ consumed, target, state = 'con-plan' 
                       )}
                     </svg>
                   </div>
-                  <span className="text-[11px] font-bold text-[#1f3b5e]">{m.value}g</span>
-                  <span className="text-[9px] text-[#8c99a6] font-medium">{m.label}</span>
+                  <span className="text-xs font-bold text-[#1f3b5e]">{m.value}g</span>
+                  <span className="text-[10px] text-[#8c99a6] font-medium">{m.label}</span>
                 </div>
               )
             })}

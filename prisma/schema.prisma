@@ -60,7 +60,6 @@ model User {
   sessionLogs          SessionLog[]
   checkIns             WeeklyCheckIn[]
   nutritionPlan        NutritionPlan?
-  nutritionAdjustments PendingNutritionAdjustment[]
   coachOf           CoachAthlete[]    @relation("CoachRelation")
   coachedBy         CoachAthlete[]    @relation("AthleteRelation")
 
@@ -108,6 +107,9 @@ model User {
 
   // Rutina semanal self-directed (sin plan)
   weeklyRoutine      WeeklyRoutine?
+
+  // Session templates (coach — sesiones reutilizables en Plan Builder)
+  sessionTemplates   SessionTemplate[] @relation("CoachSessionTemplates")
 
   // Constructor Visual de Nutrición (coach y atleta B2C)
   nutritionTemplates        NutritionTemplate[]    @relation("CoachNutritionTemplates")
@@ -358,6 +360,7 @@ model PlannedSession {
   type         SessionType
   intensity    SessionIntensity @default(MODERATE)
   durationMin  Int
+  distanceKm   Float?
   zoneTarget   String?
   structure    String?
   detailText   String?
@@ -373,6 +376,23 @@ model PlannedSession {
 
   @@index([weekId])
   @@index([date])
+}
+
+model SessionTemplate {
+  id          String      @id @default(cuid())
+  coachId     String
+  name        String
+  type        SessionType
+  durationMin Int
+  distanceKm  Float?
+  zoneTarget  String?
+  detailText  String?
+  sportLabel  String?
+  createdAt   DateTime    @default(now())
+
+  coach User @relation("CoachSessionTemplates", fields: [coachId], references: [id], onDelete: Cascade)
+
+  @@index([coachId])
 }
 
 enum SessionIntensity {
@@ -405,6 +425,27 @@ enum SessionDiscipline {
   OTHER
 }
 
+// ─── DISCIPLINAS DEPORTIVAS ─────────────────────────────────────────────────
+
+model Discipline {
+  id                 String   @id @default(cuid())
+  slug               String   @unique   // "strength", "running", "crossfit"
+  name               String              // "Strength"
+  nameEs             String              // "Fuerza"
+  icon               String   @default("")  // emoji o URL de icono
+  color              String   @default("#6b7280") // hex color para UI
+  isActive           Boolean  @default(true)
+  sortOrder          Int      @default(0)
+  hasExerciseLibrary Boolean  @default(false) // true = tiene biblioteca de ejercicios (gym)
+  trackingFields     Json     @default("{}") // { sets, reps, weight, distance, pace, zones, duration, rounds... }
+  sessionTypes       Json     @default("[]") // tipos de sesion disponibles: ["RODAJE_Z2","FARTLEK"] para running
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  sessionLogs SessionLog[] @relation("SessionLogDiscipline")
+  exercises   Exercise[]   @relation("ExerciseDiscipline")
+}
+
 // ─── REGISTRO DE SESIÓN ─────────────────────────────────────────────────────
 
 model SessionLog {
@@ -424,7 +465,8 @@ model SessionLog {
   garminActivityId String?
   freeSessionType  SessionType?      // solo para logs libres (plannedSessionId = null)
   actualIntensity  SessionIntensity? // intensidad real registrada por el atleta
-  discipline       SessionDiscipline? // discriminador de deporte — RUNNING|STRENGTH|CYCLING|SWIMMING|OTHER
+  discipline       SessionDiscipline? // discriminador de deporte — RUNNING|STRENGTH|CYCLING|SWIMMING|OTHER (legacy enum, migrar a disciplineId)
+  disciplineId     String?            // FK a Discipline — fuente canonica post ARCH-12
   // Wearables — INT-05
   caloriesBurned   Int?    // kcal totales quemadas (fuente: wearable)
   avgPaceSecPerKm  Int?    // ritmo promedio en segundos/km (running)
@@ -433,11 +475,12 @@ model SessionLog {
 
   user                     User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
   plannedSession           PlannedSession?            @relation(fields: [plannedSessionId], references: [id], onDelete: SetNull)
-  nutritionAdjustment      PendingNutritionAdjustment?
+  disciplineRef            Discipline?                @relation("SessionLogDiscipline", fields: [disciplineId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([completedAt])
   @@index([userId, completedAt(sort: Desc)])
+  @@index([disciplineId])
 }
 
 // ─── RUTINA SEMANAL SELF-DIRECTED ───────────────────────────────────────────
@@ -523,6 +566,8 @@ model WeeklyCheckIn {
 model Exercise {
   id                String    @id @default(cuid())
   coachId           String?   // null = librería global (WorkoutX), string = ejercicio personalizado del coach
+  discipline        String?   // GYM | RUNNING | CALISTHENICS | MOBILITY | YOGA | SWIMMING | CYCLING | OTHER — null = sin clasificar (legacy enum string, migrar a disciplineId)
+  disciplineId      String?   // FK a Discipline — fuente canonica post ARCH-12
 
   name              String
   bodyPart          String
@@ -553,11 +598,13 @@ model Exercise {
   updatedAt         DateTime  @updatedAt
 
   coach            User?             @relation("CoachExercises", fields: [coachId], references: [id])
+  disciplineRef    Discipline?       @relation("ExerciseDiscipline", fields: [disciplineId], references: [id], onDelete: SetNull)
   workoutExercises WorkoutExercise[]
 
   @@index([bodyPart])
   @@index([target])
   @@index([equipment])
+  @@index([disciplineId])
 }
 
 model WorkoutTemplate {
@@ -661,7 +708,7 @@ model GymSession {
   athleteId         String
   assignedWorkoutId String?  // null when session comes from a TrainingPlan (plannedSessionId set)
   plannedSessionId  String?  @unique  // link to PlannedSession — exclusive with assignedWorkoutId
-  dayOfWeek         Int
+  dayOfWeek         Int      // 0-6 (formato JS: 0=Dom, 1=Lun...6=Sab)
   date              DateTime
   durationMin       Int?
   rpe               Int?     // 1-10
@@ -1058,40 +1105,6 @@ model Message {
   @@index([toId, readAt])
 }
 
-// ─── AJUSTE NUTRICIONAL POR INTENSIDAD REAL ──────────────────────────────────
-
-model PendingNutritionAdjustment {
-  id               String           @id @default(cuid())
-  userId           String
-  date             DateTime         @db.Date       // día al que aplica el ajuste
-  sessionLogId     String?          @unique         // SessionLog que disparó el ajuste
-  plannedIntensity SessionIntensity
-  actualIntensity  SessionIntensity
-  deltaKcal        Int                              // adjustedKcal − plannedKcal (puede ser negativo)
-  deltaCarbsG      Int                              // adjustedCarbsG − plannedCarbsG
-  plannedKcal      Int
-  plannedCarbsG    Int
-  adjustedKcal     Int
-  adjustedCarbsG   Int
-  status           AdjustmentStatus @default(PENDING)
-  acceptedAt       DateTime?
-  rejectedAt       DateTime?
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-
-  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sessionLog SessionLog? @relation(fields: [sessionLogId], references: [id], onDelete: SetNull)
-
-  @@unique([userId, date])    // un ajuste por atleta por día
-  @@index([userId, status])
-  @@index([userId, date])
-}
-
-enum AdjustmentStatus {
-  PENDING
-  ACCEPTED
-  REJECTED
-}
 
 enum MealType {
   BREAKFAST
@@ -1197,7 +1210,7 @@ model AssignedNutritionPlan {
 model Notification {
   id        String   @id @default(cuid())
   userId    String
-  type      String   // SESION_HOY | CHECKIN_DISPONIBLE | PLAN_ACTUALIZADO | MENSAJE_COACH | AJUSTE_NUTRICIONAL | LOGRO | PROPUESTA_COACH
+  type      String   // SESION_HOY | CHECKIN_DISPONIBLE | PLAN_ACTUALIZADO | MENSAJE_COACH | AJUSTE_NUTRICIONAL | LOGRO | PROPUESTA_COACH | SUGERENCIA_NUTRICIONAL
   title     String
   body      String
   read      Boolean  @default(false)

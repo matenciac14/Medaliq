@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
     )
 
     if (result.adjustments.length > 0 && session.user.email && session.user.name) {
-      sendPlanUpdatedEmail(session.user.email, session.user.name, result.adjustments).catch(() => {})
+      sendPlanUpdatedEmail(session.user.email, session.user.name, result.adjustments).catch((err) => console.error('[athlete/checkin] sendPlanUpdatedEmail failed:', err))
     }
 
     // PLT-11: notificar al atleta cuando el check-in ajustó sesiones de la próxima semana
@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
         'PLAN_ACTUALIZADO',
         'Plan ajustado por tu check-in',
         `Se ajustaron ${result.sessionsAdjusted} sesión${result.sessionsAdjusted > 1 ? 'es' : ''} de la próxima semana según tus señales de fatiga.`,
-      ).catch(() => {})
+      ).catch((err) => console.error('[athlete/checkin] createNotification plan-adjusted failed:', err))
     }
 
     // Notify coach (fire-and-forget, B2B athletes only)
@@ -125,7 +125,7 @@ export async function POST(req: NextRequest) {
           weightKg:    body.weightKg,
         })
       }
-    }).catch(() => {})
+    }).catch((err) => console.error('[athlete/checkin] sendCoachCheckInEmail failed:', err))
 
     // Fetch suggestions created by this check-in (fire after tx completes)
     const suggestions = result.pendingSuggestions > 0

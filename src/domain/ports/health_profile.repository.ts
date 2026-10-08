@@ -22,6 +22,7 @@ export type NutritionTargets = {
 
 export type CreateHealthProfile = {
   age: number
+  dateOfBirth?: Date
   heightCm: number
   weightKg: number
   weightGoalKg?: number
@@ -32,8 +33,9 @@ export type CreateHealthProfile = {
   injuries?: string[]
   conditions?: string[]
   sessionMinutes?: number
-  sport?: string
-  experienceLevel?: string
+  sport?: string | null
+  sportGoal?: string | null
+  experienceLevel?: string | null
   sportDetails?: Record<string, unknown>
   dataSources?: Record<string, unknown>
 }

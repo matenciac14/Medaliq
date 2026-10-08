@@ -20,6 +20,8 @@ import type {
 import {
   COACH_TIER_PRICES_USD,
   ATHLETE_PRO_PRICE_USD,
+  ATHLETE_PRO_ANNUAL_PRICE_USD,
+  BILLING_CYCLE_DAYS,
   usdToCopCents,
 } from '@/domain/billing/billing.types'
 import { getTrm } from './trm'
@@ -38,6 +40,7 @@ type WompiTransaction = {
     userId: string
     userRole: 'COACH' | 'ATHLETE'
     targetTier?: string
+    billingCycle?: string
   }
   signature: { checksum: string; properties: string[] }
 }
@@ -79,6 +82,7 @@ async function createPaymentLink(
       Authorization: `Bearer ${privateKey}`,
     },
     body: JSON.stringify(body),
+    signal: AbortSignal.timeout(10_000),
   })
 
   if (!res.ok) {
@@ -119,12 +123,15 @@ export class WompiPaymentGateway implements IPaymentGateway {
   }
 
   async createAthleteCheckout(input: AthleteCheckoutInput): Promise<CheckoutOutput> {
-    const reference = `athlete-${input.userId}-pro-${Date.now()}`
-    const amountInCents = usdToCopCents(ATHLETE_PRO_PRICE_USD, await getTrm())
+    const cycle = input.billingCycle
+    const priceUsd = cycle === 'annual' ? ATHLETE_PRO_ANNUAL_PRICE_USD : ATHLETE_PRO_PRICE_USD
+    const reference = `athlete-${input.userId}-pro-${cycle}-${Date.now()}`
+    const amountInCents = usdToCopCents(priceUsd, await getTrm())
 
     const { url } = await createPaymentLink(reference, amountInCents, {
       userId: input.userId,
       userRole: 'ATHLETE',
+      billingCycle: cycle,
       successUrl: input.successUrl,
     })
 
@@ -146,12 +153,14 @@ export class WompiPaymentGateway implements IPaymentGateway {
     )
     if (!valid) throw new Error('Firma Wompi inválida.')
 
-    const { userId, userRole, targetTier } = tx.metadata ?? {}
+    const { userId, userRole, targetTier, billingCycle } = tx.metadata ?? {}
     if (!userId || !userRole) throw new Error('Metadata Wompi incompleta.')
 
     if (tx.status === 'APPROVED') {
+      const cycle = (billingCycle === 'annual' ? 'annual' : 'monthly') as import('@/domain/billing/billing.types').BillingCycle
+      const days = BILLING_CYCLE_DAYS[cycle]
       const newPeriodEnd = new Date()
-      newPeriodEnd.setDate(newPeriodEnd.getDate() + 30)
+      newPeriodEnd.setDate(newPeriodEnd.getDate() + days)
 
       return {
         eventId: tx.id,

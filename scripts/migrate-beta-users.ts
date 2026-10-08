@@ -1,7 +1,7 @@
 /**
  * Script: migrate-beta-users
  *
- * Migrates all existing users to a TRIAL subscription (30 days from now).
+ * Migrates all existing users to a TRIAL subscription (14 days from now).
  * Run this BEFORE enabling BILLING_ENABLED=true in production.
  *
  * Usage:
@@ -10,14 +10,14 @@
  *
  * What it does:
  *   - Finds all users WITHOUT a UserSubscription record
- *   - Creates a UserSubscription with tier=TRIAL and trialEndsAt=now+30d
+ *   - Creates a UserSubscription with tier=TRIAL and trialEndsAt=now+14d
  *   - Skips users already on any tier
  */
 
 import { prisma } from '../src/lib/db/prisma'
 
 const DRY_RUN = process.env.DRY_RUN !== 'false'
-const TRIAL_DAYS = 30
+const TRIAL_DAYS = 14
 
 async function main() {
   console.log(`[migrate-beta-users] DRY_RUN=${DRY_RUN}`)

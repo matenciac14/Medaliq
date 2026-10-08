@@ -27,9 +27,9 @@ type Props = {
 }
 
 const TIER_FEATURES: Record<CoachTier, string[]> = {
-  STARTER: ['Hasta 5 asesorados activos', 'Panel web completo', 'Planes de entrenamiento'],
-  GROWTH:  ['Hasta 25 asesorados activos', 'Panel web completo', 'Planes de entrenamiento', 'Seguimiento nutricional'],
-  PRO:     ['Hasta 75 asesorados activos', 'Todo Growth', 'Métricas avanzadas', 'Alertas automáticas'],
+  STARTER: ['Hasta 2 asesorados activos', 'Panel web completo', 'Planes de entrenamiento'],
+  GROWTH:  ['Hasta 10 asesorados activos', 'Panel web completo', 'Planes de entrenamiento', 'Seguimiento nutricional'],
+  PRO:     ['Hasta 30 asesorados activos', 'Todo Growth', 'Métricas avanzadas', 'Alertas automáticas'],
   SCALE:   ['Asesorados ilimitados', 'Todo Pro', 'Soporte prioritario'],
 }
 

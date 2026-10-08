@@ -3,7 +3,7 @@
  * Tags: @atleta @gym
  *
  * Cubre:
- * - /gym sin rutina asignada: plantillas públicas + biblioteca WorkoutX
+ * - /gym sin rutina asignada: plantillas públicas + biblioteca AscendAPI
  * - /gym con rutina asignada: sesión de hoy, calendario semanal, plan semanal
  * - Calendario: click en día (selectedDow query param) muestra detalle de la sesión
  * - Banner post-sesión (?completed=1): resumen con series y kg
@@ -13,8 +13,8 @@
  * - /log/history: feed unificado de actividad (GymSession + SessionLog)
  *
  * ESTRUCTURA /gym/exercises: ejercicios son <button> con p.font-semibold para el nombre.
- * WorkoutX free plan = 10 ejercicios; paid = 1,300+.
- * gifStoredUrl = autohospedado (carga sin restricciones). gifUrl requiere header WorkoutX.
+ * AscendAPI free plan = 10 ejercicios; paid = 1,300+.
+ * gifStoredUrl = autohospedado (carga sin restricciones). gifUrl requiere header AscendAPI.
  */
 
 import { test, expect } from '@playwright/test'

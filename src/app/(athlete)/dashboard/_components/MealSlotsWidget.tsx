@@ -65,7 +65,7 @@ export default function MealSlotsWidget({ initialLogs }: Props = {}) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <UtensilsCrossed size={14} className="text-[#22c55e] shrink-0" />
-            <p className="text-[13px] font-bold text-[#1e3a5f]">Tu alimentacion hoy</p>
+            <p className="text-sm font-bold text-[#1e3a5f]">Tu alimentacion hoy</p>
           </div>
           <Link
             href="/nutrition"
@@ -95,13 +95,13 @@ export default function MealSlotsWidget({ initialLogs }: Props = {}) {
                   {slot.label}
                 </span>
                 {loading ? (
-                  <span className="text-[9px] text-gray-300">...</span>
+                  <span className="text-[10px] text-gray-300">...</span>
                 ) : logged ? (
-                  <span className="text-[9px] font-semibold text-[#22c55e]">
+                  <span className="text-[10px] font-semibold text-[#22c55e]">
                     ✓ {slot.kcal} kcal
                   </span>
                 ) : (
-                  <span className="text-[9px] font-medium text-[#ea580c]">
+                  <span className="text-[10px] font-medium text-[#ea580c]">
                     + Agregar
                   </span>
                 )}

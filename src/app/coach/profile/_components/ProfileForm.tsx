@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 type CoachProfile = {
   id: string
@@ -21,14 +21,32 @@ type Props = {
   initialProfile: CoachProfile | null
 }
 
-const SPECIALTIES = [
-  { value: 'RUNNING', label: 'Running' },
-  { value: 'GYM', label: 'Ejercicios / Fuerza' },
-  { value: 'FUNCTIONAL', label: 'Funcional' },
-  { value: 'NUTRITION', label: 'Nutrición' },
+type SpecialtyOption = { value: string; label: string; icon?: string }
+
+const FIXED_SPECIALTIES: SpecialtyOption[] = [
+  { value: 'NUTRITION', label: 'Nutricion', icon: '🥗' },
 ]
 
 export default function ProfileForm({ initialProfile }: Props) {
+  const [specialtyOptions, setSpecialtyOptions] = useState<SpecialtyOption[]>([
+    { value: 'RUNNING', label: 'Running' },
+    { value: 'GYM', label: 'Entrenamiento / Fuerza' },
+    { value: 'FUNCTIONAL', label: 'Funcional' },
+    { value: 'NUTRITION', label: 'Nutricion' },
+  ])
+
+  useEffect(() => {
+    fetch('/api/disciplines')
+      .then(r => r.json())
+      .then((disciplines: { slug: string; nameEs: string; icon: string }[]) => {
+        const disciplineOptions: SpecialtyOption[] = disciplines.map(d => ({
+          value: d.slug.toUpperCase(),
+          label: `${d.icon} ${d.nameEs}`,
+        }))
+        setSpecialtyOptions([...disciplineOptions, ...FIXED_SPECIALTIES])
+      })
+      .catch(() => { /* keep fallback options */ })
+  }, [])
   const [slug, setSlug] = useState(initialProfile?.slug ?? '')
   const [headline, setHeadline] = useState(initialProfile?.headline ?? '')
   const [bio, setBio] = useState(initialProfile?.bio ?? '')
@@ -163,7 +181,7 @@ export default function ProfileForm({ initialProfile }: Props) {
           Define qué herramientas ves en tu panel y qué disciplinas puedes asignar. Sin selección = acceso completo.
         </p>
         <div className="flex flex-wrap gap-2">
-          {SPECIALTIES.map(({ value, label }) => (
+          {specialtyOptions.map(({ value, label }) => (
             <label key={value} className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"

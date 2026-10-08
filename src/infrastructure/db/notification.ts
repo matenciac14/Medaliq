@@ -9,8 +9,8 @@
  *   SESION_HOY | CHECKIN_DISPONIBLE | PROPUESTA_COACH
  *
  * Uso:
- *   createNotification(userId, 'PLAN_ACTUALIZADO', 'Título', 'Cuerpo').catch(() => {})
- *   createNotification(userId, 'MENSAJE_COACH', ..., { push: false }).catch(() => {})
+ *   createNotification(userId, 'PLAN_ACTUALIZADO', 'Título', 'Cuerpo').catch((err) => console.error('[modulo] createNotification failed:', err))
+ *   createNotification(userId, 'MENSAJE_COACH', ..., { push: false }).catch((err) => console.error('[modulo] createNotification failed:', err))
  */
 
 import { prisma } from '@/lib/db/prisma'
@@ -37,6 +37,6 @@ export async function createNotification(
   ])
 
   if (sendPush && user?.pushToken) {
-    sendPushNotification(user.pushToken, title, body, { screen: 'notifications' }).catch(() => {})
+    sendPushNotification(user.pushToken, title, body, { screen: 'notifications' }).catch((err) => console.error('[notification] sendPushNotification failed:', err))
   }
 }

@@ -29,13 +29,13 @@ export default function MetricSlider({
     <div className="space-y-1.5">
       {/* Label + valor */}
       <div className="flex items-center justify-between">
-        <span className="text-[13px] font-medium text-[#4d4d4d]">{label}</span>
+        <span className="text-sm font-medium text-[#4d4d4d]">{label}</span>
         <div className="flex items-center gap-2">
           {prevValue != null && (
             <span className="text-[10px] text-gray-400">ant. {prevValue}/{max}</span>
           )}
           <span
-            className="text-[13px] font-semibold tabular-nums"
+            className="text-sm font-semibold tabular-nums"
             style={{ color: value > 0 ? color : '#b3b3b3' }}
           >
             {value > 0 ? `${value}/${max}` : '—'}
@@ -44,7 +44,7 @@ export default function MetricSlider({
       </div>
 
       {helperText && (
-        <p className="text-[11px] text-[#71808e] -mt-0.5">{helperText}</p>
+        <p className="text-xs text-[#71808e] -mt-0.5">{helperText}</p>
       )}
 
       {/* Track container — relative para que el input absoluto se alinee */}

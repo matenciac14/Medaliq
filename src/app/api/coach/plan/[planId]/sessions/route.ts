@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import { getSessionIntensity } from '@/domain/plan/intensity'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 export async function POST(
   req: NextRequest,
@@ -10,6 +11,9 @@ export async function POST(
   const session = await auth()
   if (!session?.user?.id || session.user.role !== 'COACH')
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:plan-sessions-post`, { limit: 60, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
 
   const { planId } = await params
   const coachId = session.user.id
@@ -26,7 +30,7 @@ export async function POST(
   if (!relation) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const body = await req.json()
-  const { weekId, dayOfWeek, type, durationMin, zoneTarget, detailText, sportLabel, workoutDayId } = body
+  const { weekId, dayOfWeek, type, durationMin, distanceKm, zoneTarget, detailText, sportLabel, workoutDayId } = body
 
   if (!weekId || dayOfWeek === undefined || !type || !durationMin)
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -55,6 +59,7 @@ export async function POST(
       type,
       intensity: getSessionIntensity(type),
       durationMin: Number(durationMin),
+      distanceKm:  typeof distanceKm === 'number' && distanceKm > 0 ? distanceKm : null,
       zoneTarget:  zoneTarget?.trim()  || null,
       detailText:  detailText?.trim()  || null,
       sportLabel:  sportLabel?.trim()  || null,

@@ -12,6 +12,7 @@
  */
 
 import { test, expect } from '@playwright/test'
+import { USERS } from '../fixtures/users'
 import { goTo } from '../fixtures/helpers'
 
 // Estos tests NO usan storageState — verifican flujos de auth desde cero
@@ -31,7 +32,6 @@ test.describe('Auth — Flujos de autenticación @shared @auth', () => {
     await page.locator('input[type="password"]').fill('wrongpassword123')
     await page.getByRole('button', { name: /iniciar sesión/i }).click()
 
-    // Debe aparecer mensaje de error — sin redirección
     const errorMsg = page.getByText(/credenciales|contraseña|email|inválid|incorrecto/i)
     await expect(errorMsg.first()).toBeVisible({ timeout: 8_000 })
     await expect(page).toHaveURL(/\/login/)
@@ -40,8 +40,8 @@ test.describe('Auth — Flujos de autenticación @shared @auth', () => {
   test('login correcto con coach → redirige a /coach/dashboard @critical', async ({ page }) => {
     await page.goto('/login')
 
-    await page.locator('input[type="email"]').fill('e2e-coach@test.medaliq.com')
-    await page.locator('input[type="password"]').fill('Test1234!')
+    await page.locator('input[type="email"]').fill(USERS.coach.email)
+    await page.locator('input[type="password"]').fill(USERS.coach.password)
     await page.getByRole('button', { name: /iniciar sesión/i }).click()
 
     await expect(page).toHaveURL(/\/coach\/dashboard/, { timeout: 15_000 })
@@ -50,26 +50,35 @@ test.describe('Auth — Flujos de autenticación @shared @auth', () => {
   test('login correcto con atleta B2C → redirige a /dashboard @critical', async ({ page }) => {
     await page.goto('/login')
 
-    await page.locator('input[type="email"]').fill('e2e-atleta-b2c@test.medaliq.com')
-    await page.locator('input[type="password"]').fill('Test1234!')
+    await page.locator('input[type="email"]').fill(USERS.atletaB2C.email)
+    await page.locator('input[type="password"]').fill(USERS.atletaB2C.password)
     await page.getByRole('button', { name: /iniciar sesión/i }).click()
 
     await expect(page).toHaveURL(/\/dashboard/, { timeout: 15_000 })
   })
 
+  test('login correcto con admin → redirige a /admin @critical', async ({ page }) => {
+    await page.goto('/login')
+
+    await page.locator('input[type="email"]').fill(USERS.admin.email)
+    await page.locator('input[type="password"]').fill(USERS.admin.password)
+    await page.getByRole('button', { name: /iniciar sesión/i }).click()
+
+    await expect(page).toHaveURL(/\/admin/, { timeout: 15_000 })
+  })
+
   test('ruta protegida /dashboard redirige a /login sin sesión @critical', async ({ page }) => {
-    // Sin cookies ni storageState
-    const response = await page.goto('/dashboard')
+    await page.goto('/dashboard')
     await expect(page).toHaveURL(/\/login/)
   })
 
   test('ruta protegida /coach/dashboard redirige a /login sin sesión @critical', async ({ page }) => {
-    const response = await page.goto('/coach/dashboard')
+    await page.goto('/coach/dashboard')
     await expect(page).toHaveURL(/\/login/)
   })
 
   test('ruta protegida /admin redirige a /login sin sesión @critical', async ({ page }) => {
-    const response = await page.goto('/admin')
+    await page.goto('/admin')
     await expect(page).toHaveURL(/\/login|\/dashboard/)
   })
 
@@ -78,7 +87,6 @@ test.describe('Auth — Flujos de autenticación @shared @auth', () => {
     await expect(page.locator('body')).not.toContainText('500')
     await expect(page.locator('body')).not.toContainText('404')
 
-    // Formulario de registro
     const emailField = page.getByLabel(/email/i)
     const passwordField = page.getByLabel(/contraseña|password/i)
     const count = await emailField.count() + await passwordField.count()
@@ -88,14 +96,12 @@ test.describe('Auth — Flujos de autenticación @shared @auth', () => {
   })
 
   test('logout: sesión eliminada y redirección a /login', async ({ page }) => {
-    // Login primero
     await page.goto('/login')
-    await page.locator('input[type="email"]').fill('e2e-atleta-b2c@test.medaliq.com')
-    await page.locator('input[type="password"]').fill('Test1234!')
+    await page.locator('input[type="email"]').fill(USERS.atletaB2C.email)
+    await page.locator('input[type="password"]').fill(USERS.atletaB2C.password)
     await page.getByRole('button', { name: /iniciar sesión/i }).click()
     await page.waitForURL(/\/dashboard/, { timeout: 15_000 })
 
-    // Logout
     const logoutBtn = page.getByRole('button', { name: /cerrar sesión|salir|logout/i }).first()
     if (await logoutBtn.count() > 0) {
       await logoutBtn.click()

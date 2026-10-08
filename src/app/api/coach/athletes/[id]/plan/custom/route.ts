@@ -3,6 +3,7 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import { buildCustomPlanWeeks, calcPlanEndDate } from '@/domain/plan/custom_plan'
 import { forceMonday } from '@/lib/core/date_utils'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 export async function POST(
   req: NextRequest,
@@ -12,6 +13,9 @@ export async function POST(
   if (!session?.user?.id || session.user.role !== 'COACH') {
     return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
   }
+
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:athlete-plan-custom`, { limit: 30, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
 
   const { id: athleteId } = await params
   const coachId = session.user.id

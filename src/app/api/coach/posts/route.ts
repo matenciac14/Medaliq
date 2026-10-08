@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 export async function GET() {
   const session = await auth()
@@ -19,6 +20,7 @@ export async function GET() {
   const posts = await prisma.coachPost.findMany({
     where: { profileId: profile.id },
     orderBy: { createdAt: 'desc' },
+    take: 100,
   })
 
   return NextResponse.json({ posts })
@@ -29,6 +31,9 @@ export async function POST(req: NextRequest) {
   if (!session?.user?.id || session.user.role !== 'COACH') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:posts-post`, { limit: 60, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
 
   const profile = await prisma.coachProfile.findUnique({
     where: { coachId: session.user.id },

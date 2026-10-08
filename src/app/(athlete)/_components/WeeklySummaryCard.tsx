@@ -26,7 +26,7 @@ export default function WeeklySummaryCard({
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm px-5 py-4">
       <div className="flex justify-between items-center mb-4">
         <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Resumen Semanal</p>
-        <span className="text-[8px] font-bold text-gray-400 uppercase tracking-wide">datos de tu log</span>
+        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">datos de tu log</span>
       </div>
 
       <div className="grid grid-cols-2 gap-0">

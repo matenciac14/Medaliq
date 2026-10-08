@@ -101,7 +101,7 @@ export async function GET(req: NextRequest) {
       'Nutrición baja 🥗',
       `${athlete.name ?? 'Tu atleta'} lleva 3 días con menos del 60% de adherencia nutricional.`,
       { screen: 'coach' },
-    ).catch(() => {})
+    ).catch((err) => console.error('[cron/nutrition-alert] sendPushNotification failed:', err))
 
     alerted++
   }
@@ -138,9 +138,9 @@ function synthesizeTargetsFromTemplate(plan: {
     targetKcalHard: hard.kcal,
     targetKcalEasy: easy.kcal,
     targetKcalRest: rest.kcal,
-    proteinG: easy.proteinG,
+    proteinG: hard.proteinG,
     carbsHardG: hard.carbsG,
     carbsEasyG: easy.carbsG,
-    fatG: easy.fatG,
+    fatG: hard.fatG,
   }
 }

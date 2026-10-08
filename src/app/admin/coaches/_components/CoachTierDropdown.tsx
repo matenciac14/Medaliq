@@ -5,10 +5,10 @@ import { useState } from 'react'
 type CoachTier = 'STARTER' | 'GROWTH' | 'PRO' | 'SCALE'
 
 const TIER_LABELS: Record<CoachTier, string> = {
-  STARTER: 'Starter — gratis (≤5)',
-  GROWTH:  'Growth — $39/mes (≤25)',
-  PRO:     'Pro — $79/mes (≤75)',
-  SCALE:   'Scale — $129/mes (75+)',
+  STARTER: 'Starter — gratis (≤2)',
+  GROWTH:  'Growth — $59/mes (≤10)',
+  PRO:     'Pro — $139/mes (≤30)',
+  SCALE:   'Scale — $139+$4/atleta (30+)',
 }
 
 const TIER_COLORS: Record<CoachTier, string> = {

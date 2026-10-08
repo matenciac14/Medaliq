@@ -34,10 +34,10 @@ export default async function CoachDashboardPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-5">
         <div>
-          <h1 className="text-[22px] font-bold leading-tight" style={{ color: '#1f3b5e' }}>
+          <h1 className="text-xl font-bold leading-tight" style={{ color: '#1f3b5e' }}>
             {data.greeting}, {data.firstName} 👋
           </h1>
-          <p className="text-[11px] mt-1" style={{ color: '#738090' }}>{data.subLineParts.join(' · ')}</p>
+          <p className="text-xs mt-1" style={{ color: '#738090' }}>{data.subLineParts.join(' · ')}</p>
         </div>
         <div className="flex items-center gap-4 shrink-0">
           {data.saludScore !== null && (
@@ -48,20 +48,20 @@ export default async function CoachDashboardPage() {
               >
                 <span className="text-base font-bold text-white">{data.saludScore}</span>
               </div>
-              <span className="text-[9px] font-medium" style={{ color: '#738090' }}>Salud negocio</span>
+              <span className="text-[10px] font-medium" style={{ color: '#738090' }}>Salud negocio</span>
             </div>
           )}
           <div className="flex items-center gap-2">
             <a
               href="/coach/invite"
-              className="inline-flex items-center px-4 py-2 rounded-lg text-[11px] font-medium border hover:bg-gray-50 transition-colors"
+              className="inline-flex items-center px-4 py-2 rounded-lg text-xs font-medium border hover:bg-gray-50 transition-colors"
               style={{ borderColor: '#ccd1d9', color: '#1f3b5e' }}
             >
               Compartir link
             </a>
             <a
               href="/coach/clients/new"
-              className="inline-flex items-center px-4 py-2 rounded-lg text-[11px] font-semibold text-white hover:opacity-90 transition-opacity"
+              className="inline-flex items-center px-4 py-2 rounded-lg text-xs font-semibold text-white hover:opacity-90 transition-opacity"
               style={{ backgroundColor: '#1f3b5e' }}
             >
               + Nuevo

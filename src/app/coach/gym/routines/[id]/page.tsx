@@ -560,19 +560,19 @@ export default function EditRoutinePage() {
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       <div>
-                        <label className="block text-[11px] text-gray-500 mb-0.5">Series</label>
+                        <label className="block text-xs text-gray-500 mb-0.5">Series</label>
                         <input type="number" min={1} max={20} value={ex.sets} onChange={(e) => updateExercise(activeDay, exIndex, { sets: Number(e.target.value) })} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none text-gray-800 bg-white" />
                       </div>
                       <div>
-                        <label className="block text-[11px] text-gray-500 mb-0.5">Reps / Esquema</label>
+                        <label className="block text-xs text-gray-500 mb-0.5">Reps / Esquema</label>
                         <input type="text" value={ex.repsScheme} onChange={(e) => updateExercise(activeDay, exIndex, { repsScheme: e.target.value })} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none text-gray-800 bg-white" />
                       </div>
                       <div>
-                        <label className="block text-[11px] text-gray-500 mb-0.5">Descanso (seg)</label>
+                        <label className="block text-xs text-gray-500 mb-0.5">Descanso (seg)</label>
                         <input type="number" min={0} step={15} value={ex.restSeconds} onChange={(e) => updateExercise(activeDay, exIndex, { restSeconds: Number(e.target.value) })} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none text-gray-800 bg-white" />
                       </div>
                       <div>
-                        <label className="block text-[11px] text-gray-500 mb-0.5">Tipo de set</label>
+                        <label className="block text-xs text-gray-500 mb-0.5">Tipo de set</label>
                         <select value={ex.setType} onChange={(e) => updateExercise(activeDay, exIndex, { setType: e.target.value })} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none text-gray-800 bg-white">
                           {SET_TYPES.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
                         </select>

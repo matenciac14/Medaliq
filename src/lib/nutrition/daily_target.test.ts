@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { getDailyNutritionTarget, type NutritionPlanTargets } from './daily_target'
+import { calculateMacros } from '@/domain/plan/formulas'
 
 const PLAN: NutritionPlanTargets = {
   targetKcalHard: 2800,
@@ -124,5 +125,36 @@ describe('getDailyNutritionTarget — invariantes', () => {
     expect(high).toBeGreaterThan(mod)
     expect(mod).toBeGreaterThan(low)
     expect(low).toBeGreaterThan(rest)
+  })
+})
+
+// ---------------------------------------------------------------------------
+describe('calculateMacros → store → getDailyNutritionTarget — round-trip', () => {
+  it('fatG derivado coincide con fatG almacenado para varios perfiles', () => {
+    const profiles = [
+      { weight: 60,  tdee: 2000, adj: 0 },
+      { weight: 75,  tdee: 2400, adj: -250 },
+      { weight: 100, tdee: 2800, adj: -500 },
+      { weight: 50,  tdee: 1800, adj: 200 },
+      { weight: 120, tdee: 3200, adj: 0 },
+    ]
+    profiles.forEach(({ weight, tdee, adj }) => {
+      const macros = calculateMacros(tdee, weight, adj)
+      const storedPlan = {
+        targetKcalHard: macros.hard.kcal,
+        targetKcalEasy: macros.easy.kcal,
+        targetKcalRest: macros.rest.kcal,
+        proteinG: macros.hard.protein,
+        carbsHardG: macros.hard.carbs,
+        carbsEasyG: macros.easy.carbs,
+        fatG: macros.hard.fat,
+      }
+
+      const derived = getDailyNutritionTarget('HIGH', storedPlan)
+      expect(derived.fatG).toBe(macros.hard.fat)
+      expect(derived.proteinG).toBe(macros.hard.protein)
+      expect(derived.carbsG).toBe(macros.hard.carbs)
+      expect(derived.kcal).toBe(macros.hard.kcal)
+    })
   })
 })

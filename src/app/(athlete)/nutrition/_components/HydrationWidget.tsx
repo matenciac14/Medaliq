@@ -6,12 +6,10 @@
 
 import { useState, useEffect } from 'react'
 
-const REMOVE_BUTTON = { label: '-250', delta: -250 }
-
 const ADD_BUTTONS = [
-  { label: '+250', delta: 250 },
-  { label: '+500', delta: 500 },
-  { label: '+1L',  delta: 1000 },
+  { label: '+250ml', delta: 250 },
+  { label: '+500ml', delta: 500 },
+  { label: '+1L',    delta: 1000 },
 ]
 
 type Props = {
@@ -69,16 +67,16 @@ export default function HydrationWidget({ initialMl, initialTarget, vertical }: 
   if (vertical) {
     return (
       <div className="bg-white rounded-[16px] border border-[#f0f2f5] px-4 py-3 h-full flex flex-col justify-center gap-2">
-        {/* Value row */}
-        <div className="flex items-baseline gap-1.5">
-          <span className="text-base leading-none shrink-0">💧</span>
+        {/* Header row: label left, value right */}
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-xs font-semibold text-[#1f3b5e]">Agua</p>
+            <p className="text-[10px] text-[#8c99a6]">Objetivo: {targetL} L</p>
+          </div>
           {loading ? (
             <span className="text-[10px] text-gray-400">...</span>
           ) : (
-            <>
-              <span className="text-xl font-bold text-[#3b82f5] leading-none">{liters}</span>
-              <span className="text-xs text-[#8c99a6]">/ {targetL} L</span>
-            </>
+            <span className="text-xl font-bold text-[#3b82f5] leading-none">{liters} L</span>
           )}
         </div>
         {/* Progress bar */}
@@ -90,13 +88,6 @@ export default function HydrationWidget({ initialMl, initialTarget, vertical }: 
         </div>
         {/* Buttons */}
         <div className="flex gap-1.5">
-          <button
-            onClick={() => handleAdd(REMOVE_BUTTON.delta)}
-            disabled={adding !== null || mlLogged === 0}
-            className="flex-1 py-1.5 rounded-[8px] text-[10px] font-semibold text-[#dc2626] bg-[#fee9e9] hover:bg-red-100 disabled:opacity-50 transition-colors"
-          >
-            {adding === REMOVE_BUTTON.delta ? '...' : REMOVE_BUTTON.label}
-          </button>
           {ADD_BUTTONS.map(({ label, delta }) => (
             <button
               key={delta}
@@ -140,15 +131,8 @@ export default function HydrationWidget({ initialMl, initialTarget, vertical }: 
       {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Right: 4 buttons (-250 red + 3 add blue) */}
+      {/* Right: 3 add buttons */}
       <div className="flex gap-1 min-w-0 flex-wrap justify-end">
-        <button
-          onClick={() => handleAdd(REMOVE_BUTTON.delta)}
-          disabled={adding !== null || mlLogged === 0}
-          className="px-2 py-1.5 rounded-[8px] text-[10px] font-semibold text-[#dc2626] bg-[#fee9e9] hover:bg-red-100 disabled:opacity-50 transition-colors"
-        >
-          {adding === REMOVE_BUTTON.delta ? '...' : REMOVE_BUTTON.label}
-        </button>
         {ADD_BUTTONS.map(({ label, delta }) => (
           <button
             key={delta}

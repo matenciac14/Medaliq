@@ -35,6 +35,7 @@ type Template = {
 type Athlete = {
   id: string; name: string | null; email: string
   assignedTemplateId: string | null
+  hasActivePlan: boolean
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -232,6 +233,7 @@ function AssignModal({
   async function handleAssign(athleteId: string, isAssigned: boolean) {
     setAssigningId(athleteId)
     setError(null)
+    const athlete = athletes.find((a) => a.id === athleteId)
     startTransition(async () => {
       const res = await fetch(`/api/coach/nutrition/templates/${templateId}/assign`, {
         method: isAssigned ? 'DELETE' : 'POST',
@@ -247,6 +249,14 @@ function AssignModal({
           isAssigned ? next.delete(athleteId) : next.add(athleteId)
           return next
         })
+        // Also link/unlink template to athlete's active plan
+        if (athlete?.hasActivePlan) {
+          await fetch(`/api/coach/athletes/${athleteId}/plan/nutrition-template`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nutritionTemplateId: isAssigned ? null : templateId }),
+          })
+        }
         router.refresh()
       }
       setAssigningId(null)
@@ -281,7 +291,10 @@ function AssignModal({
                   <p className="text-sm font-medium text-gray-900">{a.name ?? '—'}</p>
                   <p className="text-xs text-gray-400">{a.email}</p>
                   {a.assignedTemplateId && a.assignedTemplateId !== templateId && (
-                    <p className="text-xs text-amber-500">Tiene otro plan asignado</p>
+                    <p className="text-xs text-amber-500">Tiene otro plan nutricional asignado</p>
+                  )}
+                  {a.hasActivePlan && (
+                    <p className="text-xs text-blue-500">{assigned ? 'Vinculado al plan activo' : 'Se vinculará al plan activo'}</p>
                   )}
                 </div>
                 {loading ? (

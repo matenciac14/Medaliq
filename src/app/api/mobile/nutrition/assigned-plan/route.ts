@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db/prisma'
 import { todayInTz } from '@/lib/core/date_utils'
 import { getDailyNutritionTarget } from '@/lib/nutrition/daily_target'
 import type { SessionIntensity } from '@/generated/prisma/client'
+import { requireFeature } from '@/lib/guards/feature_gate'
 
 // GET /api/mobile/nutrition/assigned-plan
 // Devuelve el plan nutricional asignado por el coach al atleta,
@@ -15,6 +16,8 @@ export async function GET(req: NextRequest) {
   if (!mobile) {
     return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
   }
+  const gate = requireFeature(mobile.features, 'nutrition')
+  if (gate) return gate
   const { allowed } = await rateLimitAsync(`mobile-${mobile.id}:assigned-plan`, { limit: 300, windowMs: 60_000 })
   if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 

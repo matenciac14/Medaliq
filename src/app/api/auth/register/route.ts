@@ -65,10 +65,11 @@ export async function POST(req: NextRequest) {
           }),
         },
       })
+      const billingEnabled = process.env.BILLING_ENABLED === 'true'
       await tx.userSubscription.create({
         data: {
           userId:   user.id,
-          tier:     'PRO',  // Beta: todos PRO. Post-beta: isCoach ? 'PRO' : 'FREE'
+          tier:     billingEnabled ? 'FREE' : 'PRO',
           ...(isCoach ? { coachTier: 'STARTER' } : {}),
         },
       })
@@ -85,7 +86,7 @@ export async function POST(req: NextRequest) {
     const baseUrl = process.env.NEXTAUTH_URL ?? 'https://medaliq.com'
 
     if (userRole === 'COACH') {
-      sendCoachWelcomeEmail(email, name, `${baseUrl}/login`).catch(() => {})
+      sendCoachWelcomeEmail(email, name, `${baseUrl}/login`).catch((err) => console.error('[auth/register] sendCoachWelcomeEmail failed:', err))
     }
 
     // Email verification — solo para registro email+password (Google OAuth ya verifica)
@@ -95,7 +96,7 @@ export async function POST(req: NextRequest) {
       data: { identifier: email, token: verificationToken, expires },
     })
     const verifyUrl = `${baseUrl}/api/auth/verify-email?token=${verificationToken}`
-    sendEmailVerification(email, name, verifyUrl).catch(() => {})
+    sendEmailVerification(email, name, verifyUrl).catch((err) => console.error('[auth/register] sendEmailVerification failed:', err))
 
     return NextResponse.json({ success: true }, { status: 201 })
   } catch (err) {

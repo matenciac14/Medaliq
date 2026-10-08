@@ -38,6 +38,7 @@ export async function refreshStravaTokenIfNeeded(userId: string): Promise<string
       grant_type:    'refresh_token',
       refresh_token: conn.refreshToken,
     }),
+    signal: AbortSignal.timeout(5_000),
   })
 
   if (!res.ok) {
@@ -58,6 +59,7 @@ export async function refreshStravaTokenIfNeeded(userId: string): Promise<string
 export async function fetchStravaActivity(activityId: number, accessToken: string): Promise<StravaActivity | null> {
   const res = await fetch(`${STRAVA_API_URL}/activities/${activityId}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
+    signal: AbortSignal.timeout(5_000),
   })
 
   if (!res.ok) {

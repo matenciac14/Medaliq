@@ -126,11 +126,17 @@ export const COACH_CONFIG: UserConfig = {
  * Al activar billing, lee de UserSubscription.tier pasado como argumento.
  * Los atletas B2B (isB2B=true) siempre son PRO — su acceso lo gestiona el coach.
  */
-export function getUserPlan(_features: UserConfig['features'], subscriptionTier?: string | null, isB2B?: boolean): UserPlan {
+export function getUserPlan(
+  _features: UserConfig['features'],
+  subscriptionTier?: string | null,
+  isB2B?: boolean,
+  trialEndsAt?: Date | null,
+): UserPlan {
   const billingEnabled = process.env.BILLING_ENABLED === 'true'
   if (!billingEnabled) return 'PRO'
   if (isB2B) return 'PRO'
   if (subscriptionTier === 'PRO') return 'PRO'
+  if (subscriptionTier === 'TRIAL' && trialEndsAt && trialEndsAt > new Date()) return 'PRO'
   return 'FREE'
 }
 

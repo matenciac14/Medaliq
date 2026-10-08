@@ -14,20 +14,20 @@ export function CoachAlertsList({ athletesWithAlerts, totalAlerts }: Props) {
       {/* Requieren atencion */}
       <div className="bg-white rounded-lg overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
-          <h2 className="text-[13px] font-semibold" style={{ color: '#1f3b5e' }}>● Requieren atención</h2>
+          <h2 className="text-sm font-semibold" style={{ color: '#1f3b5e' }}>● Requieren atención</h2>
           {totalAlerts > 0 && (
-            <span className="text-[9px] font-semibold text-white px-2 py-0.5 rounded-full" style={{ backgroundColor: '#ea580c' }}>
+            <span className="text-[10px] font-semibold text-white px-2 py-0.5 rounded-full" style={{ backgroundColor: '#ea580c' }}>
               {totalAlerts} alertas
             </span>
           )}
-          <Link href="/coach/athletes?filter=alerts" className="ml-auto text-[11px] font-medium" style={{ color: '#ea580c' }}>
+          <Link href="/coach/athletes?filter=alerts" className="ml-auto text-xs font-medium" style={{ color: '#ea580c' }}>
             Ver todos →
           </Link>
         </div>
         {athletesWithAlerts.length === 0 ? (
           <div className="px-4 py-8 text-center">
             <p className="text-2xl mb-2">✅</p>
-            <p className="text-[11px]" style={{ color: '#808c99' }}>Todos tus atletas están al día</p>
+            <p className="text-xs" style={{ color: '#808c99' }}>Todos tus atletas están al día</p>
           </div>
         ) : (
           <ul className="divide-y divide-gray-50 max-h-[250px] overflow-y-auto">
@@ -45,7 +45,7 @@ export function CoachAlertsList({ athletesWithAlerts, totalAlerts }: Props) {
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="text-xs font-semibold" style={{ color: '#1f3b5e' }}>{a.name}</p>
                       {alerts.map((al, i) => (
-                        <span key={i} className="text-[9px] font-medium px-2 py-0.5 rounded" style={{ backgroundColor: '#f7f2eb', color: al.color }}>
+                        <span key={i} className="text-[10px] font-medium px-2 py-0.5 rounded" style={{ backgroundColor: '#f7f2eb', color: al.color }}>
                           {al.msg}
                         </span>
                       ))}
@@ -70,7 +70,7 @@ export function CoachAlertsList({ athletesWithAlerts, totalAlerts }: Props) {
 
       {/* Acciones rapidas */}
       <div className="bg-white rounded-lg p-4">
-        <h2 className="text-[13px] font-semibold mb-4" style={{ color: '#1f3b5e' }}>Acciones rápidas</h2>
+        <h2 className="text-sm font-semibold mb-4" style={{ color: '#1f3b5e' }}>Acciones rápidas</h2>
         <div className="space-y-2">
           {QUICK_ACTIONS.map((action) => (
             <a

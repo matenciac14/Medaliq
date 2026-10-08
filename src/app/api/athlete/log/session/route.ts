@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { calcNutritionAdjustment } from '@/domain/nutrition/calculate_nutrition_adjustment'
 import { rateLimitAsync } from '@/lib/rate_limit'
 import { createNotification } from '@/infrastructure/db/notification'
+import { resolveDisciplineId } from '@/domain/discipline/discipline_resolver'
 
 const INTENSITIES = ['HIGH', 'MODERATE', 'LOW', 'REST'] as const
 
@@ -39,6 +40,7 @@ export async function POST(req: NextRequest) {
   const body = parsed.data
   const sessionDate = body.sessionDate ? new Date(`${body.sessionDate}T00:00:00.000Z`) : null
   const discipline = body.discipline ?? null
+  const disciplineId = await resolveDisciplineId(discipline)
 
   // Si completed === false, no registrar (la sesión queda pendiente)
   if (body.completed === false) {
@@ -82,6 +84,7 @@ export async function POST(req: NextRequest) {
         notes: body.notes,
         actualIntensity: body.actualIntensity ?? null,
         discipline,
+        disciplineId,
       },
     })
   } catch (err) {
@@ -97,11 +100,11 @@ export async function POST(req: NextRequest) {
 
   if (coachRelation?.coach.pushToken) {
     const name = coachRelation.athlete.name ?? 'Tu atleta'
-    sendPushNotification(coachRelation.coach.pushToken, `${name} completó una sesión`, 'Sesión registrada 🏃', { screen: 'coach' }).catch(() => {})
+    sendPushNotification(coachRelation.coach.pushToken, `${name} completó una sesión`, 'Sesión registrada 🏃', { screen: 'coach' }).catch((err) => console.error('[athlete/log/session] sendPushNotification to coach failed:', err))
   }
 
   // ── Sugerencia nutricional informativa por intensidad real ────────────────
-  // DEPRECATED: PendingNutritionAdjustment ya no se genera.
+  // R6: PendingNutritionAdjustment eliminado del sistema.
   // Solo se envía notificación informativa si source=SYSTEM (plan de onboarding, no editado).
   if (body.actualIntensity && plannedIntensity && body.actualIntensity !== plannedIntensity) {
     try {
@@ -124,7 +127,7 @@ export async function POST(req: NextRequest) {
             adj.deltaKcal > 0
               ? `Tu sesión fue más intensa de lo planificado. Tu cuerpo necesita ~${adj.adjustedKcal} kcal y ~${adj.adjustedCarbsG}g de carbos para recuperarte bien.`
               : `Tu sesión fue más suave de lo planificado. Un target de ~${adj.adjustedKcal} kcal es suficiente para hoy.`,
-          ).catch(() => {})
+          ).catch((err) => console.error('[athlete/log/session] createNotification nutrition-suggestion failed:', err))
         }
       }
     } catch {

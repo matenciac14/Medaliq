@@ -31,10 +31,10 @@ async function getAthleteCounts(profileIds: string[]) {
   return result
 }
 
-const SPORTS = ['Todos', 'Running', 'Ejercicios', 'Funcional'] as const
+const SPORTS = ['Todos', 'Running', 'Entrenamiento', 'Funcional'] as const
 const SPORT_MAP: Record<string, string> = {
   Running: 'RUNNING',
-  Ejercicios: 'GYM',
+  Entrenamiento: 'GYM',
   Funcional: 'FUNCTIONAL',
 }
 
@@ -49,7 +49,7 @@ function initials(name: string | null): string {
 }
 
 function sportLabel(s: string): string {
-  const map: Record<string, string> = { RUNNING: 'Running', GYM: 'Ejercicios', FUNCTIONAL: 'Funcional' }
+  const map: Record<string, string> = { RUNNING: 'Running', GYM: 'Entrenamiento', FUNCTIONAL: 'Funcional' }
   return map[s] ?? s
 }
 

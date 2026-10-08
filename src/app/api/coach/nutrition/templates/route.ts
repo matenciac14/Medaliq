@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 // GET /api/coach/nutrition/templates — lista de templates del coach con conteo de atletas asignados
 export async function GET(_req: NextRequest) {
@@ -8,6 +9,9 @@ export async function GET(_req: NextRequest) {
   if (!session?.user?.id || session.user.role !== 'COACH') {
     return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
   }
+
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:coach-nutrition-templates`, { limit: 300, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
 
   const templates = await prisma.nutritionTemplate.findMany({
     where: { coachId: session.user.id },
@@ -31,6 +35,9 @@ export async function POST(req: NextRequest) {
   if (!session?.user?.id || session.user.role !== 'COACH') {
     return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
   }
+
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:nutrition-templates-post`, { limit: 60, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
 
   const body = await req.json() as { name?: string; description?: string; goal?: string }
   const name = body.name?.trim()

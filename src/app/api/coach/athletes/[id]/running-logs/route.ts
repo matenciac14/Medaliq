@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 export async function GET(
   _req: Request,
@@ -10,6 +11,9 @@ export async function GET(
   if (!session?.user?.id || session.user.role !== 'COACH') {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
+
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:coach-athlete-running-logs`, { limit: 300, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
 
   const { id: athleteId } = await params
 
@@ -38,6 +42,7 @@ export async function GET(
       hrMax: true,
       rpe: true,
       notes: true,
+      disciplineRef: { select: { slug: true, name: true, nameEs: true, icon: true, color: true } },
       plannedSession: {
         select: { type: true, intensity: true, detailText: true },
       },
@@ -47,7 +52,8 @@ export async function GET(
   const result = logs.map((l) => ({
     id: l.id,
     date: (l.sessionDate ?? l.completedAt).toISOString().split('T')[0],
-    discipline: l.discipline ?? l.freeSessionType ?? 'RUNNING',
+    discipline: l.disciplineRef?.slug ?? l.discipline ?? l.freeSessionType ?? 'RUNNING',
+    disciplineInfo: l.disciplineRef ?? null,
     durationMin: l.durationMin,
     distanceKm: l.distanceKm,
     avgPaceSecPerKm: l.avgPaceSecPerKm,

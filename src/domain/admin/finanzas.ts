@@ -9,14 +9,14 @@ export const ATHLETE_PRO_PRICE_USD = 9.99
 
 /**
  * Fee mensual plano por tier de coach.
- * SCALE: $129 base + $1.50 por asesorado sobre 100 (Scale+).
+ * SCALE: $139 base + $4.00 por asesorado sobre 30 (Scale+).
  */
 export function coachTierFee(tier: CoachTier, athleteCount: number = 0): number {
   switch (tier) {
     case 'STARTER': return 0
-    case 'GROWTH':  return 39
-    case 'PRO':     return 79
-    case 'SCALE':   return 129 + Math.max(0, athleteCount - 100) * 1.5
+    case 'GROWTH':  return 59
+    case 'PRO':     return 139
+    case 'SCALE':   return 139 + Math.max(0, athleteCount - 30) * 4
   }
 }
 
@@ -26,12 +26,12 @@ export function coachTierFee(tier: CoachTier, athleteCount: number = 0): number 
 export function coachTierFeeLabel(tier: CoachTier, athleteCount: number = 0): string {
   switch (tier) {
     case 'STARTER': return 'Starter — $0/mes'
-    case 'GROWTH':  return 'Growth — $39/mes'
-    case 'PRO':     return 'Pro — $79/mes'
+    case 'GROWTH':  return 'Growth — $59/mes'
+    case 'PRO':     return 'Pro — $139/mes'
     case 'SCALE':
-      return athleteCount > 100
-        ? `Scale+ — $129 + $${((athleteCount - 100) * 1.5).toFixed(0)} extra`
-        : 'Scale — $129/mes'
+      return athleteCount > 30
+        ? `Scale+ — $139 + $${((athleteCount - 30) * 4).toFixed(0)} extra`
+        : 'Scale — $139/mes'
   }
 }
 

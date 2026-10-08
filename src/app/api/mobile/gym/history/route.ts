@@ -2,19 +2,27 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { getMobileUser } from '@/lib/auth/mobile_auth'
 import { rateLimitAsync } from '@/lib/rate_limit'
+import { requireFeature } from '@/lib/guards/feature_gate'
 
 export async function GET(req: NextRequest) {
   const mobile = await getMobileUser(req)
   if (!mobile) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  const gate = requireFeature(mobile.features, 'gym')
+  if (gate) return gate
   const { allowed } = await rateLimitAsync(`mobile-${mobile.id}:gym-history`, { limit: 300, windowMs: 60_000 })
   if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes. Intenta en un minuto.' }, { status: 429 })
 
   const athleteId = mobile.id
 
+  // R1: Free users only see last 30 days of history
+  const historyDateFilter = mobile.userPlan === 'FREE'
+    ? { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }
+    : undefined
+
   // Fetch en paralelo: sesiones de rutina asignada + logs libres de FUERZA
   const [gymSessions, freeLogs] = await Promise.all([
     prisma.gymSession.findMany({
-      where: { athleteId },
+      where: { athleteId, ...(historyDateFilter ? { date: historyDateFilter } : {}) },
       orderBy: { date: 'desc' },
       take: 50,
       include: {
@@ -38,7 +46,7 @@ export async function GET(req: NextRequest) {
       },
     }),
     prisma.sessionLog.findMany({
-      where: { userId: athleteId, plannedSessionId: null, freeSessionType: 'FUERZA' },
+      where: { userId: athleteId, plannedSessionId: null, freeSessionType: 'FUERZA', ...(historyDateFilter ? { completedAt: historyDateFilter } : {}) },
       orderBy: { completedAt: 'desc' },
       take: 50,
       select: {

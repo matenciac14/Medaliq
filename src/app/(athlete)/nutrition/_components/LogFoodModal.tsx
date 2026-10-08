@@ -282,7 +282,7 @@ export default function LogFoodModal({ foods, date, onClose }: Props) {
               </button>
             )}
             <h2 className="text-base font-bold text-gray-900">
-              {step === 'search' ? 'Registrar comida' : step === 'save-template' ? 'Guardar plantilla' : step === 'propose' ? 'Proponer alimento' : selected?.name}
+              {step === 'save-template' ? 'Guardar plantilla' : step === 'propose' ? 'Proponer alimento' : 'Registrar comida'}
             </h2>
           </div>
           <button onClick={handleClose} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
@@ -332,9 +332,49 @@ export default function LogFoodModal({ foods, date, onClose }: Props) {
             </div>
 
             <div className="flex-1 overflow-y-auto px-5 pb-5">
-              {/* Recientes / templates — solo cuando no hay busqueda (GAP-7/8) */}
+              {/* Recientes header (Figma: Recientes first, then Mis Menús) */}
+              {!query.trim() && (
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Recientes</p>
+              )}
+
+              {searching ? (
+                <p className="text-center text-sm text-gray-400 mt-10">Buscando...</p>
+              ) : filtered.length === 0 ? (
+                <p className="text-center text-sm text-gray-400 mt-10">Sin resultados para &quot;{query}&quot;</p>
+              ) : (
+                filtered.map(food => {
+                  const r = food.servingG / 100
+                  const kcal = Math.round(food.kcalPer100g * r)
+                  const prot = Math.round(food.proteinPer100g * r * 10) / 10
+                  return (
+                    <button
+                      key={food.id}
+                      onClick={() => selectFood(food)}
+                      className="w-full flex items-center justify-between py-3 border-b border-gray-100 text-left hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs shrink-0">
+                          {food.category === 'PROTEIN' ? '🥩' : food.category === 'CARB' ? '🍚' : food.category === 'FRUIT' ? '🍌' : food.category === 'VEGETABLE' ? '🥦' : food.category === 'DAIRY' ? '🥛' : food.category === 'FAT' ? '🥑' : food.category === 'LEGUME' ? '🫘' : '🍽️'}
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900">{food.name}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            {food.kcalPer100g} kcal / 100g
+                          </p>
+                        </div>
+                      </div>
+                      <div className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 shrink-0">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14"/></svg>
+                      </div>
+                    </button>
+                  )
+                })
+              )}
+
+              {/* Mis menus — after recientes (Figma 4523:1169) */}
               {!query.trim() && templates.length > 0 && (
-                <div className="mb-4">
+                <div className="mt-4 mb-2">
+                  <div className="border-t border-gray-100 mb-4" />
                   <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Mis menus</p>
                   <div className="flex flex-col gap-2">
                     {templates.map(t => {
@@ -380,47 +420,7 @@ export default function LogFoodModal({ foods, date, onClose }: Props) {
                       )
                     })}
                   </div>
-                  <div className="border-t border-gray-100 mt-4 mb-2" />
                 </div>
-              )}
-
-              {/* Recientes header */}
-              {!query.trim() && (
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Recientes</p>
-              )}
-
-              {searching ? (
-                <p className="text-center text-sm text-gray-400 mt-10">Buscando...</p>
-              ) : filtered.length === 0 ? (
-                <p className="text-center text-sm text-gray-400 mt-10">Sin resultados para &quot;{query}&quot;</p>
-              ) : (
-                filtered.map(food => {
-                  const r = food.servingG / 100
-                  const kcal = Math.round(food.kcalPer100g * r)
-                  const prot = Math.round(food.proteinPer100g * r * 10) / 10
-                  return (
-                    <button
-                      key={food.id}
-                      onClick={() => selectFood(food)}
-                      className="w-full flex items-center justify-between py-3 border-b border-gray-100 text-left hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs shrink-0">
-                          {food.category === 'PROTEIN' ? '🥩' : food.category === 'CARB' ? '🍚' : food.category === 'FRUIT' ? '🍌' : food.category === 'VEGETABLE' ? '🥦' : food.category === 'DAIRY' ? '🥛' : food.category === 'FAT' ? '🥑' : food.category === 'LEGUME' ? '🫘' : '🍽️'}
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-gray-900">{food.name}</p>
-                          <p className="text-xs text-gray-400 mt-0.5">
-                            {food.kcalPer100g} kcal / 100g
-                          </p>
-                        </div>
-                      </div>
-                      <div className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 shrink-0">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14"/></svg>
-                      </div>
-                    </button>
-                  )
-                })
               )}
 
               {/* Crear alimento — siempre visible (GAP-9) */}

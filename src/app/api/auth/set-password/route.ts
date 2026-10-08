@@ -4,6 +4,7 @@ import { jwtVerify } from 'jose'
 import { z } from 'zod'
 import { prisma } from '@/lib/db/prisma'
 import { passwordSchema, parseBody } from '@/lib/validation'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 const SetPasswordSchema = z.object({
   token: z.string().min(1, 'Token requerido.'),
@@ -11,6 +12,10 @@ const SetPasswordSchema = z.object({
 })
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for') ?? 'unknown'
+  const { allowed } = await rateLimitAsync(`set-password:${ip}`, { limit: 5, windowMs: 900_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiados intentos.' }, { status: 429 })
+
   const raw = await req.json().catch(() => null)
   const parsed = parseBody(SetPasswordSchema, raw)
   if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 })

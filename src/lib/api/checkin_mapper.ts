@@ -11,11 +11,11 @@
  *   motivationLevel   →  motivation               →  motivationLevel
  *   nutritionAdherencePct (0-100) → nutritionAdherence (1-10) → nutritionAdherencePct
  *
- *   body mobile (escala 1–5) → CheckInInput (escala 1–10)
- *   ─────────────────────────────────────────────────────
- *   muscleSoreness    →  rpe          (×2)
- *   energyLevel       →  energyLevel  (×2)
- *   stressLevel       →  stressLevel  (×2)
+ *   body mobile (escala 1–10) → CheckInInput (escala 1–10)
+ *   ──────────────────────────────────────────────────────
+ *   muscleSoreness    →  rpe
+ *   energyLevel       →  energyLevel
+ *   stressLevel       →  stressLevel
  *
  * Al agregar un campo nuevo al check-in:
  *   1. Añadir al CheckInInput en domain/checkin/check_in.types.ts (nombre dominio)
@@ -24,13 +24,6 @@
  */
 
 import type { CheckInInput } from '@/domain/checkin/check_in.types'
-
-// ── Escala mobile 1–5 → dominio 1–10 ─────────────────────────────────────────
-
-/** Convierte escala 1–5 (mobile) a escala 1–10 (dominio). */
-export function scale5to10(v: number): number {
-  return Math.round(v * 2)
-}
 
 // ── Web (escala 1–10 nativa) ──────────────────────────────────────────────────
 
@@ -76,7 +69,7 @@ export function mapWebCheckinBody(body: WebCheckinBody): CheckInInput {
   }
 }
 
-// ── Mobile (escala 1–5 → 1–10) ────────────────────────────────────────────────
+// ── Mobile (escala 1–10 nativa) ───────────────────────────────────────────────
 
 export type MobileCheckinBody = {
   energyLevel:           number   // 1–10 → energyLevel 1–10

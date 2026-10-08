@@ -178,7 +178,7 @@ export default function EjerciciosTab({ athleteId, gymAssignedLoading, gymAssign
                           <div className="flex items-center gap-1.5">
                             <p className="text-sm font-medium text-gray-800">{s.date}</p>
                             {s.source === 'plan' && (
-                              <span className="text-[9px] font-bold bg-indigo-50 text-indigo-600 border border-indigo-200 px-1.5 py-0.5 rounded-full uppercase tracking-wide">
+                              <span className="text-[10px] font-bold bg-indigo-50 text-indigo-600 border border-indigo-200 px-1.5 py-0.5 rounded-full uppercase tracking-wide">
                                 Plan
                               </span>
                             )}

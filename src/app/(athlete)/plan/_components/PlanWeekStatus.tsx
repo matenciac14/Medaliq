@@ -14,13 +14,13 @@ export default function PlanWeekStatus({ checkInData }: {
 
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-      <span className="text-[13px] font-bold text-gray-900 block mb-3">Tu estado esta semana</span>
+      <span className="text-sm font-bold text-gray-900 block mb-3">Tu estado esta semana</span>
       <div className="flex gap-3">
         {items.map(i => (
           <div key={i.label} className="flex-1 text-center">
-            <span className="text-[16px] block mb-1">{i.icon}</span>
-            <span className="text-[14px] font-bold text-gray-900 block">{i.value}</span>
-            <span className="text-[9px] text-gray-400">{i.label}</span>
+            <span className="text-base block mb-1">{i.icon}</span>
+            <span className="text-sm font-bold text-gray-900 block">{i.value}</span>
+            <span className="text-[10px] text-gray-400">{i.label}</span>
           </div>
         ))}
       </div>

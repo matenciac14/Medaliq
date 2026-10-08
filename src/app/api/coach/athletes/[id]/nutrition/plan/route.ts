@@ -3,6 +3,7 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import { getWeekMonday } from '@/lib/core/date_utils'
 import { MealType } from '@/generated/prisma/enums'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 const VALID_MEAL_TYPES = new Set(Object.values(MealType))
 
@@ -15,6 +16,9 @@ export async function GET(
   if (!session?.user?.id || session.user.role !== 'COACH') {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
+
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:coach-athlete-nutrition-plan`, { limit: 300, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
 
   const { id: athleteId } = await params
 
@@ -78,6 +82,9 @@ export async function POST(
   if (!session?.user?.id || session.user.role !== 'COACH') {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
+
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:nutrition-plan-post`, { limit: 60, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
 
   const { id: athleteId } = await params
 

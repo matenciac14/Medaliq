@@ -5,7 +5,7 @@
  * Cubre:
  * - /admin/exercises: lista de ejercicios
  * - Filtros por músculo/grupo
- * - Botón de sync con WorkoutX
+ * - Botón de sync con AscendAPI
  * - Ver detalle de ejercicio
  * - Ejercicios con nombre en español
  */
@@ -34,10 +34,10 @@ test.describe('Gestión de Ejercicios — Admin @admin @exercises', () => {
     expect(hasContent).toBeGreaterThan(0)
   })
 
-  test('botón sync WorkoutX visible', async ({ page }) => {
+  test('botón sync AscendAPI visible', async ({ page }) => {
     await goTo(page, '/admin/exercises')
 
-    const syncBtn = page.getByRole('button', { name: /sync|sincronizar|workoutx/i }).first()
+    const syncBtn = page.getByRole('button', { name: /sync|sincronizar|ascend/i }).first()
     if (await syncBtn.count() > 0) {
       await expect(syncBtn).toBeVisible()
     }

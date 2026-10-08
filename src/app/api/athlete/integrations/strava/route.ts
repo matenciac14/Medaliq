@@ -17,7 +17,7 @@ export async function DELETE() {
     fetch(STRAVA_DEAUTH_URL, {
       method:  'POST',
       headers: { Authorization: `Bearer ${conn.accessToken}` },
-    }).catch(() => {})
+    }).catch((err) => console.error('[strava/deauth] Strava deauthorize request failed:', err))
 
     await wearableRepository.delete(session.user.id, 'strava')
   }

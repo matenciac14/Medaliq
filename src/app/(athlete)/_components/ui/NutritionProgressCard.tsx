@@ -18,7 +18,6 @@ type ConsumedData = {
 type Props = {
   data: NutritionData | null
   variant: 'card' | 'compact' | 'banner'
-  targetKcalHard?: number | null
   consumed?: ConsumedData | null
 }
 
@@ -35,9 +34,9 @@ const MINI_CIRCUM = 2 * Math.PI * MINI_RADIUS
 
 const TRACK_COLOR = '#f3f4f6'
 
-export default function NutritionProgressCard({ data, variant, targetKcalHard, consumed }: Props) {
+export default function NutritionProgressCard({ data, variant, consumed }: Props) {
   if (variant === 'banner') return <BannerVariant data={data} />
-  if (variant === 'card') return <CardVariant data={data} targetKcalHard={targetKcalHard ?? null} consumed={consumed} />
+  if (variant === 'card') return <CardVariant data={data} consumed={consumed} />
   // compact — same design as plan page NutritionCard (mobile view)
   return <CompactVariant data={data} consumed={consumed ?? null} />
 }
@@ -71,14 +70,14 @@ function CalorieRingSvg({ consumed, target, size = RING_SIZE }: { consumed: numb
         {consumed === 0 ? (
           <>
             <span className={`text-[${fontSize}px] font-black leading-none text-[#b3b3b3]`}>0</span>
-            <span className="text-[8px] font-medium text-[#8c99a6] text-center leading-tight mt-0.5">kcal</span>
+            <span className="text-[10px] font-medium text-[#8c99a6] text-center leading-tight mt-0.5">kcal</span>
           </>
         ) : (
           <>
             <span className={`text-[${fontSize}px] font-black leading-none ${over ? 'text-red-500' : 'text-[#1e3a5f]'}`}>
               {(remaining > 0 ? remaining : Math.round(consumed - target)).toLocaleString('es')}
             </span>
-            <span className="text-[8px] font-medium text-gray-400 text-center leading-tight mt-0.5">
+            <span className="text-[10px] font-medium text-gray-400 text-center leading-tight mt-0.5">
               {remaining > 0 ? 'kcal\nrestantes' : 'kcal\nextra'}
             </span>
           </>
@@ -110,8 +109,8 @@ function MiniMacroRingSvg({ value, max, color, label, bgColor = TRACK_COLOR, siz
           />
         </svg>
       </div>
-      <span className="text-[11px] font-bold text-[#1e3a5f]">{Math.round(value)}g</span>
-      <span className="text-[9px] text-gray-400">{label}</span>
+      <span className="text-xs font-bold text-[#1e3a5f]">{Math.round(value)}g</span>
+      <span className="text-[10px] text-gray-400">{label}</span>
     </div>
   )
 }
@@ -129,10 +128,10 @@ function CompactVariant({ data, consumed: consumedData }: { data: NutritionData 
         <div className="flex items-center justify-center gap-5">
           <CalorieRingSvg consumed={consumed} target={data.kcal} />
           <div className="flex-1 min-w-0">
-            <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-widest">Calorías de hoy</p>
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Calorías de hoy</p>
             <div className="flex items-baseline gap-1.5 mt-1">
-              <span className="text-[28px] font-black text-[#1e3a5f] leading-none tracking-tight">{data.kcal.toLocaleString('es')}</span>
-              <span className="text-[11px] text-gray-400">kcal objetivo</span>
+              <span className="text-2xl font-black text-[#1e3a5f] leading-none tracking-tight">{data.kcal.toLocaleString('es')}</span>
+              <span className="text-xs text-gray-400">kcal objetivo</span>
             </div>
             <p className="text-[10px] text-gray-400 mt-0.5">
               {consumed === 0 ? 'Sin registros hoy' : `${consumed.toLocaleString('es')} kcal consumidas`}
@@ -151,7 +150,7 @@ function CompactVariant({ data, consumed: consumedData }: { data: NutritionData 
 
 // ── Card variant (desktop hero — donut chart) ────────────────────────
 
-function CardVariant({ data, targetKcalHard, consumed: consumedData }: { data: NutritionData | null; targetKcalHard: number | null; consumed?: ConsumedData | null }) {
+function CardVariant({ data, consumed: consumedData }: { data: NutritionData | null; consumed?: ConsumedData | null }) {
   if (!data) {
     return (
       <Link href="/nutrition" className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden block transition-shadow hover:shadow-md">
@@ -160,7 +159,7 @@ function CardVariant({ data, targetKcalHard, consumed: consumedData }: { data: N
           <div className="flex-1 px-4 py-3">
             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1">NUTRICION HOY</p>
             <p className="text-base font-black text-[#1e3a5f] leading-none mb-0.5">Sin registros</p>
-            <p className="text-[11px] text-gray-500 mb-1.5">nutricionales hoy</p>
+            <p className="text-xs text-gray-500 mb-1.5">nutricionales hoy</p>
             <div className="flex justify-end">
               <span className="text-[10px] font-semibold text-[#22c55e]">Registrar →</span>
             </div>
@@ -170,7 +169,8 @@ function CardVariant({ data, targetKcalHard, consumed: consumedData }: { data: N
     )
   }
 
-  const targetKcal = targetKcalHard ?? data.kcal
+  // Use intensity-adjusted target (data.kcal), not hard-day fallback
+  const targetKcal = data.kcal
   const consumed = consumedData?.kcal ?? 0
 
   return (
@@ -178,12 +178,12 @@ function CardVariant({ data, targetKcalHard, consumed: consumedData }: { data: N
       <div className="flex items-center gap-3 px-5 py-2.5">
         <CalorieRingSvg consumed={consumed} target={targetKcal} size={90} />
         <div className="flex-1 min-w-0 flex flex-col items-center justify-between self-stretch py-0.5">
-          <p className="text-[8px] font-semibold text-gray-400 uppercase tracking-[0.4px]">Calorías de hoy</p>
+          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.4px]">Calorías de hoy</p>
           <div className="flex items-baseline gap-1 justify-center">
-            <span className="text-[22px] font-black text-[#1e3a5f] leading-none">{targetKcal.toLocaleString('es')}</span>
-            <span className="text-[9px] text-gray-400">kcal objetivo</span>
+            <span className="text-xl font-black text-[#1e3a5f] leading-none">{targetKcal.toLocaleString('es')}</span>
+            <span className="text-[10px] text-gray-400">kcal objetivo</span>
           </div>
-          <p className="text-[9px] text-gray-400">
+          <p className="text-[10px] text-gray-400">
             {consumed === 0 ? 'Sin registros hoy' : `${consumed.toLocaleString('es')} kcal consumidas`}
           </p>
           <div className="flex items-center justify-center gap-5">
@@ -206,7 +206,7 @@ function BannerVariant({ data }: { data: NutritionData | null }) {
         <span className="text-xs">🍎</span>
         <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Nutricion hoy</span>
         {data?.label && (
-          <span className="text-[9px] font-bold text-white bg-[#ea580c] px-1.5 py-0.5 rounded-full uppercase ml-auto">
+          <span className="text-[10px] font-bold text-white bg-[#ea580c] px-1.5 py-0.5 rounded-full uppercase ml-auto">
             {data.label}
           </span>
         )}

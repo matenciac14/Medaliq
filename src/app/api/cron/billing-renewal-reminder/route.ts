@@ -76,6 +76,7 @@ export async function GET(req: NextRequest) {
       } else {
         const checkout = await gateway.createAthleteCheckout({
           userId: user.id,
+          billingCycle: 'monthly',
           successUrl: `${baseUrl}/settings/plan?billing=success`,
           cancelUrl:  `${baseUrl}/settings/plan?billing=cancelled`,
         })

@@ -2,17 +2,5 @@
   "functions": {
     "src/app/api/onboarding/generate/route.ts": { "maxDuration": 60 },
     "src/app/api/coach/athlete/[id]/plan/route.ts": { "maxDuration": 60 }
-  },
-  "crons": [
-    { "path": "/api/cron/checkin-reminder", "schedule": "0 23 * * 0" },
-    { "path": "/api/cron/session-reminder", "schedule": "0 12 * * 1" },
-    { "path": "/api/cron/payment-overdue",          "schedule": "0 14 * * *" },
-    { "path": "/api/cron/pending-athlete-reminder", "schedule": "0 12 * * *" },
-    { "path": "/api/cron/expire-suggestions", "schedule": "0 3 * * *" },
-    { "path": "/api/cron/billing-check",     "schedule": "0 2 * * *" },
-    { "path": "/api/cron/inactive-athlete-reminder", "schedule": "0 14 * * *" },
-    { "path": "/api/cron/streak-risk", "schedule": "0 20 * * *" },
-    { "path": "/api/cron/nutrition-alert", "schedule": "0 9 * * *" },
-    { "path": "/api/cron/billing-renewal-reminder", "schedule": "0 13 * * *" }
-  ]
+  }
 }

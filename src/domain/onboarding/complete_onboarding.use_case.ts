@@ -3,9 +3,8 @@
  *
  * Routing:
  *   B2B   — profile only, no plan, no features (coach activates later)
- *   GYM   — TDEE + nutrition + WeeklyRoutine, sport=STRENGTH
- *   RUNNING / BOTH — TDEE + nutrition + WeeklyRoutine, sport=RUNNING|BOTH
- *   FREE  — TDEE + nutrition + WeeklyRoutine, no sport
+ *   New flow (goal-based) — TDEE + nutrition + WeeklyRoutine, sport deferred
+ *   Legacy (activityType-based) — TDEE + nutrition + WeeklyRoutine, sport mapped
  *
  * No path generates a TrainingPlan during onboarding.
  * Structured plans are assigned by the coach (B2B).
@@ -44,23 +43,58 @@ export async function completeOnboardingUseCase(
   }
 ): Promise<CompleteOnboardingResult> {
 
+  // ── Idempotencia: si ya completó onboarding, no sobrescribir (protege nutrición ajustada por coach)
+  const existingUser = await deps.db.user.findUnique({
+    where: { id: userId },
+    select: { onboardingCompleted: true },
+  })
+  if (existingUser?.onboardingCompleted) {
+    const isB2B = await checkIsB2B(deps.db, userId)
+    return { isB2B, planId: null }
+  }
+
   const isB2B = await checkIsB2B(deps.db, userId)
 
-  // ── Compute TDEE + macros (common to all paths) ───────────────────────────
-  const tdee = calculateTDEE(
-    data.weightKg!,
-    data.heightCm!,
-    data.age!,
-    (data.gender === 'female' ? 'female' : 'male'),
-    data.daysPerWeek
-  )
-  const hasDeficit = !!data.weightGoalKg || data.gymGoal === 'FAT_LOSS' || data.gymGoal === 'RECOMPOSITION'
-  const kcalAdjustment = hasDeficit ? -500 : 0
+  // ── Compute age from DOB or fallback ────────────────────────────────────
+  const age = data.dateOfBirth
+    ? Math.floor((Date.now() - new Date(data.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+    : data.age ?? 25
+
+  // Mifflin-St Jeor requiere sexo biológico. 'other' → usa fórmula masculina (estimación conservadora, ~160 kcal/día más que femenina).
+  const genderForCalc = data.gender === 'female' ? 'female' as const : 'male' as const
+  const sessionMinutes = data.sessionMinutes ?? 60
+
+  // ── Compute TDEE + macros ───────────────────────────────────────────────
+  const tdee = calculateTDEE(data.weightKg!, data.heightCm!, age, genderForCalc, data.daysPerWeek, sessionMinutes)
+
+  // New goal-based kcal adjustment (takes priority)
+  let kcalAdjustment = 0
+  if (data.goal === 'LOSE_FAT' || data.weightGoalKg) {
+    kcalAdjustment = -500
+  } else if (data.goal === 'GAIN_MUSCLE') {
+    kcalAdjustment = 300
+  } else if (data.goal === 'STAY_HEALTHY') {
+    kcalAdjustment = 0
+  }
+  // Legacy fallback: if no goal but has gymGoal/activityType (mobile backward compat)
+  if (!data.goal && data.gymGoal) {
+    if (data.gymGoal === 'FAT_LOSS' || data.gymGoal === 'RECOMPOSITION') kcalAdjustment = -500
+    else if (data.gymGoal === 'MUSCLE_GAIN') kcalAdjustment = 300
+  }
+
   const macros = calculateMacros(tdee, data.weightKg!, kcalAdjustment)
 
-  // ── Derive sport fields from activityType ─────────────────────────────────
-  const sportType = activityToSport(data.activityType)
-  const sportGoal = activityToSportGoal(data.activityType, data.gymGoal, data.runningGoal)
+  // ── Derive sport fields ─────────────────────────────────────────────────
+  // Sport type: null if new flow (deferred to first activity log), mapped if legacy
+  const sportType = data.goal ? null : activityToSport(data.activityType)
+
+  // Sport goal from new `goal` field
+  let sportGoal: string | null = null
+  if (data.goal === 'LOSE_FAT') sportGoal = 'BODY_RECOMPOSITION'
+  else if (data.goal === 'GAIN_MUSCLE') sportGoal = 'STRENGTH_TRAINING'
+  else if (data.goal === 'STAY_HEALTHY') sportGoal = 'GENERAL_FITNESS'
+  // Legacy fallback
+  else sportGoal = activityToSportGoal(data.activityType, data.gymGoal, data.runningGoal)
 
   const nutritionTargets = {
     tdee,
@@ -81,17 +115,21 @@ export async function completeOnboardingUseCase(
     await txPlan.upsertNutrition(userId, nutritionTargets)
 
     await txHealthProfile.upsertProfile(userId, {
-      age: data.age!,
+      age,
+      dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : undefined,
       heightCm: data.heightCm!,
       weightKg: data.weightKg!,
       weightGoalKg: data.weightGoalKg ?? undefined,
       gender: data.gender ?? undefined,
       sport: sportType,
-      experienceLevel: data.experienceLevel ?? undefined,
-      sessionMinutes: data.sessionMinutes ?? undefined,
-      injuries: parseListField(data.injuries),
-      conditions: parseListField(data.conditions),
-      sportDetails: buildSportDetails(data),
+      sportGoal,
+      experienceLevel: data.experienceLevel ?? null,
+      sessionMinutes,
+      injuries: parseListField(data.injuries ?? ''),
+      conditions: parseListField(data.conditions ?? ''),
+      sportDetails: data.goal
+        ? { goal: data.goal }
+        : buildSportDetails(data.activityType, data.gymGoal, data.runningGoal),
       dataSources: {},
     })
 
@@ -107,13 +145,14 @@ export async function completeOnboardingUseCase(
         onboarding: { completed: true, completedAt: now() },
         sport: { type: sportType, goal: sportGoal },
       })
-      // DEBT-02: WeeklyRoutine dentro del $transaction — evita estado inconsistente si falla el upsert
-      await tx.weeklyRoutine.upsert({
-        where: { userId },
-        update: { daysPerWeek: data.daysPerWeek },
-        create: { userId, daysPerWeek: data.daysPerWeek, days: [] },
-      })
     }
+
+    // WeeklyRoutine para TODOS (B2B y B2C) — el coach necesita saber cuántos días entrena el atleta
+    await tx.weeklyRoutine.upsert({
+      where: { userId },
+      update: { daysPerWeek: data.daysPerWeek },
+      create: { userId, daysPerWeek: data.daysPerWeek, days: [] },
+    })
   })
 
   return { isB2B, planId: null }
@@ -126,7 +165,7 @@ function now(): string {
 }
 
 async function checkIsB2B(db: PrismaDbClient, userId: string): Promise<boolean> {
-  const relation = await db.coachAthlete.findFirst({ where: { athleteId: userId } })
+  const relation = await db.coachAthlete.findFirst({ where: { athleteId: userId, status: 'ACTIVE' } })
   return !!relation
 }
 
@@ -156,10 +195,14 @@ function activityToSportGoal(
   return 'GENERAL_FITNESS'
 }
 
-function buildSportDetails(data: WizardData): Record<string, unknown> {
+function buildSportDetails(
+  activityType: WizardData['activityType'],
+  gymGoal: WizardData['gymGoal'],
+  runningGoal: WizardData['runningGoal'],
+): Record<string, unknown> {
   const details: Record<string, unknown> = {}
-  if (data.gymGoal) details.gymGoal = data.gymGoal
-  if (data.runningGoal) details.runningGoal = data.runningGoal
+  if (gymGoal) details.gymGoal = gymGoal
+  if (runningGoal) details.runningGoal = runningGoal
   return details
 }
 

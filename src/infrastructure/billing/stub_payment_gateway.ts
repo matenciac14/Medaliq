@@ -37,6 +37,7 @@ export class StubPaymentGateway implements IPaymentGateway {
       sessionId,
       type: 'athlete',
       userId: input.userId,
+      billingCycle: input.billingCycle,
       successUrl: input.successUrl,
     })
     return {

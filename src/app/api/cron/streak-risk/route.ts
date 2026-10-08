@@ -67,7 +67,7 @@ export async function GET(req: NextRequest) {
         'Tu racha está en riesgo 🔥',
         `Llevas ${streakDays} días seguidos entrenando. ¡No rompas la racha hoy!`,
         { screen: 'log' },
-      ).catch(() => {})
+      ).catch((err) => console.error('[cron/streak-risk] sendPushNotification failed:', err))
       sent++
     }
   }

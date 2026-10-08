@@ -38,7 +38,7 @@ function ExerciseCard({ ex }: { ex: FeaturedExercise }) {
         )}
       </div>
       <div className="p-2.5">
-        <p className="font-semibold text-[11px] text-gray-900 line-clamp-2 leading-snug">
+        <p className="font-semibold text-xs text-gray-900 line-clamp-2 leading-snug">
           {ex.nameEs ?? ex.name}
         </p>
         <span className="inline-block mt-1 text-[10px] font-medium bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded-full">

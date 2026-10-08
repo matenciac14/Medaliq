@@ -146,7 +146,6 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         weeklyWeightChange={d.weeklyWeightChange}
         weightProgressPct={d.weightProgressPct}
         dashSummary={d.dashSummary}
-        nutritionPlan={d.nutritionPlan}
         todayConsumed={d.todayConsumed}
       />
 
@@ -205,7 +204,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
           {/* Desktop: FREE upsell banner */}
           {d.dashboardMode === 'FREE' && (
-            <Link href="/find-coach" className="hidden sm:block">
+            <div className="hidden sm:block">
               <div className="flex bg-orange-50 rounded-2xl border border-orange-200/60 overflow-hidden">
                 <div className="w-1 bg-[#ea580c] shrink-0" />
                 <div className="flex-1 px-4 py-3 flex items-center justify-between gap-3">
@@ -219,16 +218,16 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-xs font-semibold text-[#1e3a5f] border border-gray-200 bg-white px-3 py-1.5 rounded-lg whitespace-nowrap">
+                    <Link href="/find-coach" className="text-xs font-semibold text-[#1e3a5f] border border-gray-200 bg-white px-3 py-1.5 rounded-lg whitespace-nowrap hover:bg-gray-50 transition-colors">
                       Buscar entrenador
-                    </span>
-                    <span className="text-xs font-semibold text-white bg-[#ea580c] px-3 py-1.5 rounded-lg whitespace-nowrap">
+                    </Link>
+                    <Link href="/upgrade" className="text-xs font-semibold text-white bg-[#ea580c] px-3 py-1.5 rounded-lg whitespace-nowrap hover:bg-[#c2410c] transition-colors">
                       Activar Pro →
-                    </span>
+                    </Link>
                   </div>
                 </div>
               </div>
-            </Link>
+            </div>
           )}
 
           {/* Desktop: Meal slots + Water widget (per Figma "Tu alimentacion hoy") */}

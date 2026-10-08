@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
     if (checkedInIds.has(row.userId)) continue
     try {
       await sendCheckinReminderEmail(row.user.email!, row.user.name ?? 'Atleta')
-      sendPushNotification(row.user.pushToken, '¿Cómo fue tu semana? 💪', 'Completa tu check-in semanal en Medaliq.', { screen: 'checkin' }).catch(() => {})
+      sendPushNotification(row.user.pushToken, '¿Cómo fue tu semana? 💪', 'Completa tu check-in semanal en Medaliq.', { screen: 'checkin' }).catch((err) => console.error('[cron/checkin-reminder] sendPushNotification failed:', err))
       sent++
     } catch {
       failed++

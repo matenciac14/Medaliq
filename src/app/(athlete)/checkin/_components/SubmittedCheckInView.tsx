@@ -61,7 +61,7 @@ export default function SubmittedCheckInView({
         </div>
 
         <div className="bg-white rounded-2xl shadow-[0px_2px_8px_0px_rgba(0,0,0,0.06)] p-5 space-y-3">
-          <h3 className="text-[13px] font-semibold text-[#0f1e30]">Lo que reportaste</h3>
+          <h3 className="text-sm font-semibold text-[#0f1e30]">Lo que reportaste</h3>
           <div className="space-y-2.5">
             {[
               { label: 'Peso corporal',    value: prevMetrics.weightKg != null    ? `${prevMetrics.weightKg} kg`       : null },
@@ -70,7 +70,7 @@ export default function SubmittedCheckInView({
               { label: 'Estrés',           value: prevMetrics.stressLevel != null ? `${prevMetrics.stressLevel}/10`    : null },
               { label: 'Motivación',       value: prevMetrics.motivationLevel != null ? `${prevMetrics.motivationLevel}/10` : null },
             ].filter(r => r.value).map(r => (
-              <div key={r.label} className="flex justify-between text-[13px]">
+              <div key={r.label} className="flex justify-between text-sm">
                 <span className="text-[#4d4d4d]">{r.label}</span>
                 <span className="font-semibold text-[#0f1e30]">{r.value}</span>
               </div>
@@ -80,14 +80,14 @@ export default function SubmittedCheckInView({
 
         {lastWeekSummary && lastWeekSummary.adjustmentsTriggered.length > 0 && (
           <div className="bg-white rounded-2xl shadow-[0px_2px_8px_0px_rgba(0,0,0,0.06)] p-5 space-y-3">
-            <h3 className="text-[13px] font-semibold text-[#0f1e30]">Semana pasada</h3>
+            <h3 className="text-sm font-semibold text-[#0f1e30]">Semana pasada</h3>
             <div className="space-y-2.5">
               {[
                 { label: 'Peso corporal', value: lastWeekSummary.weightKg != null     ? `${lastWeekSummary.weightKg} kg`     : null },
                 { label: 'Horas de sueño', value: lastWeekSummary.sleepHours != null  ? `${lastWeekSummary.sleepHours} h`    : null },
                 { label: 'Energía',        value: lastWeekSummary.energyLevel != null ? `${lastWeekSummary.energyLevel}/10`  : null },
               ].filter(r => r.value).map(r => (
-                <div key={r.label} className="flex justify-between text-[13px]">
+                <div key={r.label} className="flex justify-between text-sm">
                   <span className="text-[#4d4d4d]">{r.label}</span>
                   <span className="font-semibold text-[#0f1e30]">{r.value}</span>
                 </div>
@@ -98,28 +98,28 @@ export default function SubmittedCheckInView({
 
         {hasAdjustments ? (
           <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-5 space-y-2">
-            <h3 className="text-[13px] font-semibold text-yellow-800">⚙️ Ajustes aplicados al plan</h3>
+            <h3 className="text-sm font-semibold text-yellow-800">⚙️ Ajustes aplicados al plan</h3>
             <ul className="space-y-1">
               {submittedTriggers.map(t => (
-                <li key={t} className="text-[13px] text-yellow-700">{TRIGGER_LABELS[t] ?? t}</li>
+                <li key={t} className="text-sm text-yellow-700">{TRIGGER_LABELS[t] ?? t}</li>
               ))}
             </ul>
-            <p className="text-[11px] text-yellow-600">Las sesiones de la semana siguiente fueron ajustadas.</p>
+            <p className="text-xs text-yellow-600">Las sesiones de la semana siguiente fueron ajustadas.</p>
           </div>
         ) : (
           <div className="bg-green-50 border border-green-200 rounded-2xl p-5">
-            <p className="text-[13px] text-green-700 font-medium">✅ Métricas en rango óptimo — sin ajustes necesarios.</p>
+            <p className="text-sm text-green-700 font-medium">✅ Métricas en rango óptimo — sin ajustes necesarios.</p>
           </div>
         )}
 
         <div className="bg-white rounded-2xl shadow-[0px_2px_8px_0px_rgba(0,0,0,0.06)] p-5 text-center space-y-1">
-          <p className="text-[11px] text-[#808080] uppercase tracking-wide font-semibold">Próximo check-in</p>
-          <p className="text-[15px] font-bold text-[#0f1e30]">{getNextFridayAfterSubmit()}</p>
+          <p className="text-xs text-[#808080] uppercase tracking-wide font-semibold">Próximo check-in</p>
+          <p className="text-sm font-bold text-[#0f1e30]">{getNextFridayAfterSubmit()}</p>
         </div>
 
         {suggestions.length > 0 && (
           <div className="space-y-3">
-            <h3 className="text-[13px] font-semibold text-[#0f1e30]">💡 Sugerencias para tu plan</h3>
+            <h3 className="text-sm font-semibold text-[#0f1e30]">💡 Sugerencias para tu plan</h3>
             {suggestions.map(s => (
               <div key={s.id} className="rounded-xl border border-blue-200 bg-blue-50 p-4 space-y-3">
                 <div>

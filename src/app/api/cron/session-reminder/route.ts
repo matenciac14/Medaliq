@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
       const pushBody = session.durationMin
         ? `${typeLabel} · ${session.durationMin} min — ¡a entrenar!`
         : `${typeLabel} — ¡a entrenar!`
-      sendPushNotification(user.pushToken, 'Sesión de hoy 🏃', pushBody, { screen: 'plan' }).catch(() => {})
+      sendPushNotification(user.pushToken, 'Sesión de hoy 🏃', pushBody, { screen: 'plan' }).catch((err) => console.error('[cron/session-reminder] sendPushNotification failed:', err))
       sent++
     } catch {
       failed++

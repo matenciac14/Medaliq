@@ -279,7 +279,7 @@ export default function MuscleMapWeb({ data, mode = 'fatigue', compact = false }
                 key={v}
                 type="button"
                 onClick={() => setView(v)}
-                className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all ${
+                className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
                   view === v
                     ? 'bg-white text-[#1e3a5f] shadow-sm'
                     : 'text-slate-400 hover:text-slate-600'
@@ -310,13 +310,13 @@ export default function MuscleMapWeb({ data, mode = 'fatigue', compact = false }
     <div className="flex flex-col items-center gap-5">
       <div className="flex items-end justify-center gap-8">
         <div className="flex flex-col items-center gap-2">
-          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.15em]">Frente</span>
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em]">Frente</span>
           <div className="w-24">
             <FrontBody data={data} mode={mode} filterId="mq-normal-f" />
           </div>
         </div>
         <div className="flex flex-col items-center gap-2">
-          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.15em]">Espalda</span>
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em]">Espalda</span>
           <div className="w-24">
             <BackBody data={data} mode={mode} filterId="mq-normal-b" />
           </div>
@@ -330,7 +330,7 @@ export default function MuscleMapWeb({ data, mode = 'fatigue', compact = false }
               className="w-2.5 h-2.5 rounded-sm border border-slate-200"
               style={{ backgroundColor: palette[level] }}
             />
-            <span className="text-[11px] text-slate-500 font-medium">{label}</span>
+            <span className="text-xs text-slate-500 font-medium">{label}</span>
           </div>
         ))}
       </div>

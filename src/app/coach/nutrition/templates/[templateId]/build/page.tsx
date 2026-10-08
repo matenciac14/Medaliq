@@ -49,7 +49,11 @@ export default async function NutritionBuilderPage({
     where: { coachId: session.user.id, status: 'ACTIVE' },
     include: {
       athlete: {
-        select: { id: true, name: true, email: true, assignedNutritionPlan: { select: { templateId: true } } },
+        select: {
+          id: true, name: true, email: true,
+          assignedNutritionPlan: { select: { templateId: true } },
+          trainingPlans: { where: { status: 'ACTIVE' }, select: { id: true }, take: 1 },
+        },
       },
     },
     orderBy: { createdAt: 'desc' },
@@ -63,6 +67,7 @@ export default async function NutritionBuilderPage({
         name: a.athlete.name,
         email: a.athlete.email,
         assignedTemplateId: a.athlete.assignedNutritionPlan?.templateId ?? null,
+        hasActivePlan: a.athlete.trainingPlans.length > 0,
       }))}
     />
   )

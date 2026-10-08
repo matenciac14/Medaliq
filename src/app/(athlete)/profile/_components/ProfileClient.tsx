@@ -189,7 +189,7 @@ export default function ProfileClient({ user }: Props) {
           </div>
           <p className="text-xl font-bold text-white">{user.name}</p>
           <div className={`mt-2 px-3.5 py-1.5 rounded-full ${planBadgeBg}`}>
-            <span className="text-[11px] font-semibold text-white">
+            <span className="text-xs font-semibold text-white">
               {user.userPlan === 'PRO' ? '✦ Pro' : user.hasCoach ? 'B2B' : 'Free'}
             </span>
           </div>
@@ -237,11 +237,11 @@ export default function ProfileClient({ user }: Props) {
               <div className="w-9 h-9 rounded-[10px] bg-red-50 flex items-center justify-center">
                 <LogOut size={18} className="text-red-500" />
               </div>
-              <span className="text-[15px] font-medium text-red-500">Cerrar sesión</span>
+              <span className="text-sm font-medium text-red-500">Cerrar sesión</span>
             </button>
           </div>
 
-          <p className="text-center text-[11px] text-gray-300 px-4">
+          <p className="text-center text-xs text-gray-300 px-4">
             Medaliq v1.0 · Hecho en Colombia 🇨🇴
           </p>
         </div>
@@ -616,7 +616,7 @@ export default function ProfileClient({ user }: Props) {
 function MobileMenuSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-4 pt-3.5 pb-2">{title}</p>
+      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 pt-3.5 pb-2">{title}</p>
       <div className="bg-white rounded-2xl mx-4 shadow-sm overflow-hidden">{children}</div>
     </div>
   )
@@ -626,8 +626,8 @@ function MobileMenuItem({ icon, label, value }: { icon: string; label: string; v
   return (
     <div className="flex items-center gap-3.5 px-4 py-[15px]">
       <div className="w-9 h-9 rounded-[10px] bg-gray-100 flex items-center justify-center text-sm">{icon}</div>
-      <span className="flex-1 text-[15px] font-medium text-gray-900">{label}</span>
-      {value && <span className="text-[13px] text-gray-400">{value}</span>}
+      <span className="flex-1 text-sm font-medium text-gray-900">{label}</span>
+      {value && <span className="text-sm text-gray-400">{value}</span>}
     </div>
   )
 }
@@ -636,7 +636,7 @@ function MobileMenuLink({ icon, label, href, external }: { icon: string; label: 
   const inner = (
     <>
       <div className="w-9 h-9 rounded-[10px] bg-gray-100 flex items-center justify-center text-sm">{icon}</div>
-      <span className="flex-1 text-[15px] font-medium text-gray-900">{label}</span>
+      <span className="flex-1 text-sm font-medium text-gray-900">{label}</span>
       <ChevronRight size={16} className="text-gray-300" />
     </>
   )

@@ -3,12 +3,9 @@
 import { useState } from 'react'
 import { MedaliqLogo } from '@/components/brand/MedaliqLogo'
 import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
-import Image from 'next/image'
 
 export default function SelectRolePage() {
-  const { data: session, update } = useSession()
-  const router = useRouter()
+  const { data: session } = useSession()
   const [loading, setLoading] = useState<'ATHLETE' | 'COACH' | null>(null)
 
   async function handleSelect(role: 'ATHLETE' | 'COACH') {
@@ -21,14 +18,8 @@ export default function SelectRolePage() {
       })
       if (!res.ok) throw new Error('Error al configurar el rol.')
 
-      // Actualiza el JWT con el nuevo rol y config
-      await update()
-
-      if (role === 'COACH') {
-        router.replace('/coach/dashboard')
-      } else {
-        router.replace('/onboarding')
-      }
+      // API response includes Set-Cookie with updated JWT — hard navigate to use it
+      window.location.href = role === 'COACH' ? '/coach/dashboard' : '/onboarding'
     } catch (err) {
       console.error(err)
       setLoading(null)

@@ -1,10 +1,10 @@
 import type { NextAuthConfig } from 'next-auth'
-import type { JWT } from 'next-auth/jwt'
 import Credentials from 'next-auth/providers/credentials'
 import Google from 'next-auth/providers/google'
-import { DEFAULT_USER_CONFIG } from '@/lib/config/user_config'
+import { mapUserToToken, mapTokenToSession } from '@/lib/auth/session_mappers'
 
 // Config sin Prisma — compatible con Edge Runtime (middleware)
+// Los mapeos JWT↔Session vienen de session_mappers.ts (single source of truth)
 export const authConfig: NextAuthConfig = {
   session: { strategy: 'jwt', maxAge: 30 * 24 * 60 * 60 },
   pages: {
@@ -21,32 +21,11 @@ export const authConfig: NextAuthConfig = {
   ],
   callbacks: {
     async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id
-        token.role = user.role
-        token.status = user.status ?? 'ACTIVE'
-        token.onboardingCompleted = user.onboardingCompleted ?? false
-        token.activated = user.activated ?? false
-        token.userPlan = user.userPlan ?? 'FREE'
-        token.features = user.features ?? DEFAULT_USER_CONFIG.features
-      }
+      if (user) mapUserToToken(token, user)
       return token
     },
     async session({ session, token }) {
-      // Cast required: next-auth v5 beta.31 doesn't resolve JWT module augmentation
-      // correctly in callback context — the augmented JWT from next-auth/jwt is correct.
-      const t = token as JWT
-      if (t) {
-        session.user.id = t.id ?? ''
-        session.user.role = t.role ?? 'ATHLETE'
-        session.user.status = t.status ?? 'ACTIVE'
-        session.user.onboardingCompleted = t.onboardingCompleted ?? false
-        session.user.activated = t.activated ?? false
-        session.user.userPlan = t.userPlan ?? 'FREE'
-        session.user.needsRoleSelection = t.needsRoleSelection ?? false
-        session.user.features = t.features ?? DEFAULT_USER_CONFIG.features
-      }
-      return session
+      return mapTokenToSession(session, token)
     },
   },
 }

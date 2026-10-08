@@ -53,6 +53,18 @@ export async function GET(req: NextRequest) {
               weekNumber: true,
             },
           },
+          athleteAssignments: {
+            where: { isActive: true },
+            take: 1,
+            select: {
+              isActive: true,
+              startDate: true,
+              template: { select: { daysPerWeek: true } },
+            },
+          },
+          _count: {
+            select: { gymSessions: { where: { completed: true } } },
+          },
         },
       },
     },

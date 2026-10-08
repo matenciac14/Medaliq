@@ -588,7 +588,7 @@ export default function NewRoutinePage() {
                     {/* Sets row */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       <div>
-                        <label className="block text-[11px] text-gray-500 mb-0.5">Series</label>
+                        <label className="block text-xs text-gray-500 mb-0.5">Series</label>
                         <input
                           type="number"
                           min={1}
@@ -599,7 +599,7 @@ export default function NewRoutinePage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-[11px] text-gray-500 mb-0.5">Reps / Esquema</label>
+                        <label className="block text-xs text-gray-500 mb-0.5">Reps / Esquema</label>
                         <input
                           type="text"
                           value={ex.repsScheme}
@@ -609,7 +609,7 @@ export default function NewRoutinePage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-[11px] text-gray-500 mb-0.5">Descanso (seg)</label>
+                        <label className="block text-xs text-gray-500 mb-0.5">Descanso (seg)</label>
                         <input
                           type="number"
                           min={0}
@@ -621,7 +621,7 @@ export default function NewRoutinePage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-[11px] text-gray-500 mb-0.5">Tipo de set</label>
+                        <label className="block text-xs text-gray-500 mb-0.5">Tipo de set</label>
                         <select
                           value={ex.setType}
                           onChange={(e) => updateExercise(activeDay, exIndex, { setType: e.target.value })}

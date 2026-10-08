@@ -155,7 +155,7 @@ export default function ProgresoTab({ checkInsSorted, weights, maxWeight, minWei
                       <div className="flex gap-1 mt-0.5">
                         {pts.map(c => (
                           <div key={c.id} className="flex-1 text-center">
-                            <span className="text-[9px] text-gray-400">S{c.weekNumber}</span>
+                            <span className="text-[10px] text-gray-400">S{c.weekNumber}</span>
                           </div>
                         ))}
                       </div>

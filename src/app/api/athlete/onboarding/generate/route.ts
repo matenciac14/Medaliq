@@ -8,26 +8,28 @@ import { PrismaHealthProfileRepository } from '@/infrastructure/db/health_profil
 import { PrismaUserRepository } from '@/infrastructure/db/user.repository'
 import { sendAthleteReadyEmail } from '@/infrastructure/email/resend'
 import { sendPushNotification } from '@/lib/push/expo_push'
-import type { WizardData } from '@/app/onboarding/_types'
+import { setFreshJwtCookie } from '@/lib/auth/refresh_jwt_cookie'
+import { wizardDataSchema } from '@/domain/onboarding/onboarding.schema'
 
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get('x-forwarded-for') ?? req.headers.get('x-real-ip') ?? 'unknown'
-  const { allowed } = await rateLimitAsync(`onboarding:${ip}`, { limit: 3, windowMs: 60_000 })
+  const session = await auth()
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
+  }
+
+  const { allowed } = await rateLimitAsync(`onboarding:${session.user.id}`, { limit: 5, windowMs: 60_000 })
   if (!allowed) {
     return NextResponse.json({ error: 'Too many requests. Try again in a minute.' }, { status: 429 })
   }
 
   try {
-    const data: WizardData = await req.json()
-
-    if (!data.age || !data.weightKg || !data.heightCm) {
-      return NextResponse.json({ error: 'Faltan datos del perfil (edad, peso o talla).' }, { status: 400 })
+    const raw = await req.json()
+    const parsed = wizardDataSchema.safeParse(raw)
+    if (!parsed.success) {
+      const msg = parsed.error.issues[0]?.message ?? 'Datos inválidos.'
+      return NextResponse.json({ error: msg }, { status: 400 })
     }
-
-    const session = await auth()
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
-    }
+    const data = parsed.data
 
     const result = await completeOnboardingUseCase(data, session.user.id, {
       db: prisma,
@@ -49,12 +51,14 @@ export async function POST(req: NextRequest) {
       if (coachRel?.coach) {
         const { coach } = coachRel
         const athleteName = session.user.name ?? 'Tu atleta'
-        sendPushNotification(coach.pushToken ?? null, `${athleteName} completó su perfil`, 'Entra al panel para asignarle un plan de entrenamiento.').catch(() => {})
-        sendAthleteReadyEmail(coach.email ?? '', coach.name ?? 'Coach', athleteName, session.user.id).catch(() => {})
+        sendPushNotification(coach.pushToken ?? null, `${athleteName} completó su perfil`, 'Entra al panel para asignarle un plan de entrenamiento.').catch((err) => console.error('[athlete/onboarding] sendPushNotification to coach failed:', err))
+        sendAthleteReadyEmail(coach.email ?? '', coach.name ?? 'Coach', athleteName, session.user.id).catch((err) => console.error('[athlete/onboarding] sendAthleteReadyEmail failed:', err))
       }
     }
 
-    return NextResponse.json({ success: true, ...result })
+    const response = NextResponse.json({ success: true, ...result })
+    await setFreshJwtCookie(req, response, session.user.id).catch((err) => console.error('[athlete/onboarding] setFreshJwtCookie failed:', err))
+    return response
   } catch (error) {
     console.error('[onboarding/generate] Error:', error)
     return NextResponse.json({ error: 'Error configurando la cuenta. Intenta de nuevo.' }, { status: 500 })

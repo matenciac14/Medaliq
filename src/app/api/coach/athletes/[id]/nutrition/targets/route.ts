@@ -3,6 +3,7 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import { z } from 'zod'
 import { calculateTDEE, calculateMacros, KCAL_ADJUSTMENT_MIN, KCAL_ADJUSTMENT_MAX } from '@/domain/plan/formulas'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 const Schema = z.object({
   targetKcalHard: z.number().int().min(500).max(10000).optional(),
@@ -20,6 +21,10 @@ export async function PATCH(
   if (!session?.user?.id || session.user.role !== 'COACH') {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
+
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:nutrition-targets-patch`, { limit: 60, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
+
 
   const { id: athleteId } = await params
 
@@ -66,10 +71,23 @@ export async function PATCH(
     return NextResponse.json(updated)
   }
 
+  // Leer valores actuales para recalcular fatG como macro residual
+  const current = await prisma.nutritionPlan.findUnique({
+    where: { userId: athleteId },
+    select: { targetKcalHard: true, proteinG: true, carbsHardG: true },
+  })
+  if (!current) return NextResponse.json({ error: 'Sin plan nutricional' }, { status: 404 })
+
+  const finalKcal = data.targetKcalHard ?? current.targetKcalHard
+  const finalProtein = data.proteinG ?? current.proteinG
+  const finalCarbs = current.carbsHardG
+  const fatG = Math.max(Math.round((finalKcal - finalProtein * 4 - finalCarbs * 4) / 9), 0)
+
   const updated = await prisma.nutritionPlan.update({
     where: { userId: athleteId },
     data: {
       ...data,
+      fatG,
       source: 'COACH',
     },
     select: { targetKcalHard: true, targetKcalEasy: true, targetKcalRest: true, proteinG: true, kcalAdjustment: true, source: true },

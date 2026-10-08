@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import { sendPushNotification } from '@/lib/push/expo_push'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 export async function POST(
   req: NextRequest,
@@ -11,6 +12,9 @@ export async function POST(
   if (!session?.user?.id || session.user.role !== 'COACH') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:celebrate-pr`, { limit: 30, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
 
   const { id: athleteId } = await params
   const { exerciseName, weightKg } = await req.json() as { exerciseName: string; weightKg: number }

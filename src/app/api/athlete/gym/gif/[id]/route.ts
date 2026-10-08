@@ -58,6 +58,7 @@ export async function GET(
   try {
     upstream = await fetch(exercise.gifUrl, {
       headers: { 'X-WorkoutX-Key': apiKey },
+      signal: AbortSignal.timeout(10_000),
     })
   } catch (err) {
     console.error('[gif-proxy] fetch error:', err)

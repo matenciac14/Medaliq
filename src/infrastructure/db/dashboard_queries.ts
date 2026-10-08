@@ -51,7 +51,7 @@ export async function fetchCoreDashboardData(userId: string, timezone?: string |
     prisma.nutritionPlan.findUnique({ where: { userId } }),
     prisma.assignedWorkout.findFirst({
       where: { athleteId: userId, isActive: true },
-      include: { template: { include: { days: { include: { exercises: true } } } } },
+      include: { template: { include: { days: { include: { exercises: { include: { exercise: { select: { id: true, name: true, nameEs: true, bodyPart: true, target: true } } }, orderBy: { order: 'asc' } } } } } } },
       orderBy: { createdAt: 'desc' as const },
     }),
     prisma.weeklyRoutine.findUnique({ where: { userId } }),

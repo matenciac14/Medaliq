@@ -82,8 +82,8 @@ export default function WeekNavBar({
         <span
           className={
             isDark
-              ? 'flex-1 text-[13px] font-semibold text-white whitespace-nowrap text-center'
-              : 'flex-1 text-[13px] font-semibold text-[#1e3a5f] whitespace-nowrap text-center px-4'
+              ? 'flex-1 text-sm font-semibold text-white whitespace-nowrap text-center'
+              : 'flex-1 text-sm font-semibold text-[#1e3a5f] whitespace-nowrap text-center px-4'
           }
         >
           {weekLabel}
@@ -91,7 +91,7 @@ export default function WeekNavBar({
         {shouldShowToday && isDark && (
           <button
             onClick={handleToday}
-            className="text-[12px] font-bold text-white bg-[#ea580c] px-3 py-1 rounded-full transition-colors hover:bg-[#d14d07]"
+            className="text-xs font-bold text-white bg-[#ea580c] px-3 py-1 rounded-full transition-colors hover:bg-[#d14d07]"
           >
             Hoy
           </button>
@@ -112,7 +112,7 @@ export default function WeekNavBar({
       {shouldShowToday && !isDark && (
         <button
           onClick={handleToday}
-          className="text-[12px] font-bold text-[#ea580c] border border-[#ea580c]/30 px-3 py-1 rounded-full transition-colors hover:bg-orange-50 whitespace-nowrap"
+          className="text-xs font-bold text-[#ea580c] border border-[#ea580c]/30 px-3 py-1 rounded-full transition-colors hover:bg-orange-50 whitespace-nowrap"
         >
           Hoy
         </button>

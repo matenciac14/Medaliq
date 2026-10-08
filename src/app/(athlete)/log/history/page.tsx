@@ -272,7 +272,7 @@ function GymCard({ gs }: { gs: GymSessionData }) {
             </span>
           )}
           {prCount > 0 && (
-            <span className="bg-orange-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md leading-none tracking-wide">
+            <span className="bg-orange-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md leading-none tracking-wide">
               🏆 {prCount} PR
             </span>
           )}
@@ -322,7 +322,7 @@ function GymCard({ gs }: { gs: GymSessionData }) {
                     )}
                     <span className="ml-auto flex items-center gap-1.5">
                       {sl.isPR && (
-                        <span className="bg-orange-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md leading-none tracking-wide">
+                        <span className="bg-orange-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md leading-none tracking-wide">
                           🏆 PR
                         </span>
                       )}

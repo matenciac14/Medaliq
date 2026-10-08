@@ -25,7 +25,7 @@ export default function InfoBannerRow({ coach, checkinPending, hasActivePlan }: 
             <p className="text-xs font-semibold text-gray-900 truncate">Coach {coach.name.split(' ')[0]}</p>
             <p className="text-[10px] text-gray-500 truncate">{coach.headline || 'Entrenador personal'}</p>
           </div>
-          <span className="text-[11px] font-semibold text-[#1e3a5f] shrink-0">💬 →</span>
+          <span className="text-xs font-semibold text-[#1e3a5f] shrink-0">💬 →</span>
         </Link>
       ) : (
         <Link href="/find-coach" className="px-4 py-2.5 hover:bg-gray-50/50 transition-colors flex items-center gap-2.5">
@@ -36,7 +36,7 @@ export default function InfoBannerRow({ coach, checkinPending, hasActivePlan }: 
             <p className="text-xs font-semibold text-gray-900">Conecta con un coach</p>
             <p className="text-[10px] text-gray-400">Lleva tu plan al siguiente nivel</p>
           </div>
-          <span className="text-[11px] font-semibold text-[#ea580c] shrink-0 whitespace-nowrap">Buscar coach →</span>
+          <span className="text-xs font-semibold text-[#ea580c] shrink-0 whitespace-nowrap">Buscar coach →</span>
         </Link>
       )}
 
@@ -56,7 +56,7 @@ export default function InfoBannerRow({ coach, checkinPending, hasActivePlan }: 
           </p>
         </div>
         {checkinPending && (
-          <span className="text-[11px] font-semibold text-[#ea580c] shrink-0 whitespace-nowrap">Hacer check-in →</span>
+          <span className="text-xs font-semibold text-[#ea580c] shrink-0 whitespace-nowrap">Hacer check-in →</span>
         )}
       </Link>
     </div>

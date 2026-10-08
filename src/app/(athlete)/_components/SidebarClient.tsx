@@ -118,7 +118,7 @@ export default function SidebarClient({ user, config, hasCoach = false }: Props)
           <Link href="/notifications" className="relative flex items-center justify-center min-w-[32px] min-h-[32px] text-white/60 hover:text-white transition-colors">
             <Bell size={18} />
             {notifCount > 0 && (
-              <span className="absolute top-0 right-0 min-w-[14px] h-[14px] rounded-full bg-[#ea580c] text-white text-[9px] font-bold flex items-center justify-center px-0.5">
+              <span className="absolute top-0 right-0 min-w-[14px] h-[14px] rounded-full bg-[#ea580c] text-white text-[10px] font-bold flex items-center justify-center px-0.5">
                 {notifCount > 9 ? '9+' : notifCount}
               </span>
             )}
@@ -188,7 +188,7 @@ export default function SidebarClient({ user, config, hasCoach = false }: Props)
           <Link href="/notifications" className="relative flex items-center justify-center min-w-[44px] min-h-[44px] text-white/80 hover:text-white">
             <Bell size={20} />
             {notifCount > 0 && (
-              <span className="absolute top-2 right-2 min-w-[14px] h-[14px] rounded-full bg-[#ea580c] text-white text-[9px] font-bold flex items-center justify-center px-0.5">
+              <span className="absolute top-2 right-2 min-w-[14px] h-[14px] rounded-full bg-[#ea580c] text-white text-[10px] font-bold flex items-center justify-center px-0.5">
                 {notifCount > 9 ? '9+' : notifCount}
               </span>
             )}
@@ -253,7 +253,7 @@ export default function SidebarClient({ user, config, hasCoach = false }: Props)
                   <div className="relative">
                     <Icon size={22} strokeWidth={active ? 2.5 : 2} />
                     {badge != null && badge > 0 && (
-                      <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-0.5 rounded-full bg-[#ea580c] text-white text-[9px] font-bold flex items-center justify-center">
+                      <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-0.5 rounded-full bg-[#ea580c] text-white text-[10px] font-bold flex items-center justify-center">
                         {badge > 9 ? '9+' : badge}
                       </span>
                     )}

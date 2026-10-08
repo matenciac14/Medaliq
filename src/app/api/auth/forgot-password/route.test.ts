@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
+vi.mock('@/lib/rate_limit', () => ({
+  rateLimitAsync: vi.fn().mockResolvedValue({ allowed: true }),
+}))
 vi.mock('@/lib/db/prisma', () => ({
   prisma: {
     user: { findUnique: vi.fn() },

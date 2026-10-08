@@ -1,40 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { prisma } from '@/lib/db/prisma'
-import { getMobileUser } from '@/lib/auth/mobile_auth'
+import { getMobileUser, buildMobileTokenPayload, MOBILE_USER_SELECT } from '@/lib/auth/mobile_auth'
 import { rateLimitAsync } from '@/lib/rate_limit'
+import { parseBody } from '@/lib/validation'
 
-const USER_SELECT = {
-  id: true, email: true, name: true, role: true,
-  featurePlan: true, featureCheckin: true, featureNutrition: true,
-  featureProgress: true, featureLog: true, featureCoach: true, featureGym: true,
-  onboardingCompleted: true,
-} as const
+const patchMeSchema = z.object({
+  timezone: z.string().min(1).max(100).optional(),
+  locale: z.string().min(2).max(10).optional(),
+}).refine(d => d.timezone || d.locale, { message: 'Nada que actualizar' })
 
 // PATCH /api/mobile/auth/me — actualizar timezone y locale desde la app mobile
-// expo-localization: Localization.getCalendars()[0].timeZone + Localization.getLocales()[0].languageTag
 export async function PATCH(req: NextRequest) {
   const mobile = await getMobileUser(req)
   if (!mobile) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   const { allowed } = await rateLimitAsync(`mobile-${mobile.id}:auth-me-patch`, { limit: 100, windowMs: 60_000 })
   if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes.' }, { status: 429 })
 
-  const body = await req.json().catch(() => ({}))
-  const { timezone, locale } = body as { timezone?: unknown; locale?: unknown }
-
-  if (timezone !== undefined && typeof timezone !== 'string') {
-    return NextResponse.json({ error: 'timezone inválido' }, { status: 400 })
-  }
-  if (locale !== undefined && typeof locale !== 'string') {
-    return NextResponse.json({ error: 'locale inválido' }, { status: 400 })
-  }
+  const raw = await req.json().catch(() => null)
+  const parsed = parseBody(patchMeSchema, raw)
+  if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 })
 
   const data: Record<string, string> = {}
-  if (timezone) data.timezone = timezone as string
-  if (locale) data.locale = locale as string
-
-  if (Object.keys(data).length === 0) {
-    return NextResponse.json({ error: 'Nada que actualizar' }, { status: 400 })
-  }
+  if (parsed.data.timezone) data.timezone = parsed.data.timezone
+  if (parsed.data.locale) data.locale = parsed.data.locale
 
   await prisma.user.update({ where: { id: mobile.id }, data })
 
@@ -47,30 +36,30 @@ export async function GET(req: NextRequest) {
   const { allowed } = await rateLimitAsync(`mobile-${mobile.id}:auth-me`, { limit: 300, windowMs: 60_000 })
   if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes. Intenta en un minuto.' }, { status: 429 })
 
-  const user = await prisma.user.findUnique({
-    where: { id: mobile.id },
-    select: USER_SELECT,
-  })
+  const [user, coachRelation, subscription] = await Promise.all([
+    prisma.user.findUnique({ where: { id: mobile.id }, select: MOBILE_USER_SELECT }),
+    prisma.coachAthlete.findFirst({ where: { athleteId: mobile.id, status: 'ACTIVE' }, select: { id: true } }),
+    prisma.userSubscription.findUnique({ where: { userId: mobile.id }, select: { tier: true, trialEndsAt: true } }),
+  ])
 
   if (!user) return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 })
 
-  const features = {
-    plan:      user.featurePlan,
-    checkin:   user.featureCheckin,
-    nutrition: user.featureNutrition,
-    progress:  user.featureProgress,
-    log:       user.featureLog,
-    coach:     user.featureCoach,
-    gym:       user.featureGym,
-  }
+  const payload = buildMobileTokenPayload(user, {
+    isB2B: !!coachRelation,
+    subscriptionTier: subscription?.tier,
+    trialEndsAt: subscription?.trialEndsAt,
+  })
 
   return NextResponse.json({
-    id: user.id,
-    email: user.email,
-    name: user.name,
-    role: user.role,
-    onboardingCompleted: user.onboardingCompleted,
-    userPlan: 'PRO',
-    features,
+    id: payload.id,
+    email: payload.email,
+    name: payload.name,
+    role: payload.role,
+    onboardingCompleted: payload.onboardingCompleted,
+    activated: payload.activated,
+    isB2B: payload.isB2B,
+    userPlan: payload.userPlan,
+    profileComplete: payload.profileComplete,
+    features: payload.features,
   })
 }

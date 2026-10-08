@@ -13,6 +13,7 @@ export async function GET() {
 
   const relations = await prisma.coachAthlete.findMany({
     where: { coachId, status: 'ACTIVE' },
+    take: 200,
     include: {
       athlete: {
         select: {

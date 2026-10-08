@@ -132,7 +132,7 @@ export default function PublicTemplates({ templates }: { templates: PublicTempla
               <div className="px-4 py-3.5 space-y-3">
                 <p className="text-xs text-gray-600 leading-relaxed">{tmpl.description}</p>
 
-                <div className="flex items-center gap-3 text-[11px] text-gray-400">
+                <div className="flex items-center gap-3 text-xs text-gray-400">
                   <span className="flex items-center gap-1">
                     <Dumbbell size={12} />
                     {GOAL_LABELS[tmpl.goal ?? ''] ?? tmpl.goal}

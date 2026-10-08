@@ -63,7 +63,7 @@ export default async function AdminUserProfilePage({ params }: { params: Promise
     { key: 'featureNutrition', label: 'Nutrición' },
     { key: 'featureProgress',  label: 'Progreso' },
     { key: 'featureLog',       label: 'Log' },
-    { key: 'featureGym',       label: 'Ejercicios' },
+    { key: 'featureGym',       label: 'Entrenamiento' },
     { key: 'featureCoach',     label: 'Coach' },
   ] as const
 

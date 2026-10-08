@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import type { ITrmProvider, TrmResult } from '@/domain/ports/trm.provider'
-import { TrmService, DEFAULT_TRM } from './trm'
+import { TrmService, DEFAULT_TRM, getTrmSync } from './trm'
 
 function makeStub(result: TrmResult | Error): ITrmProvider {
   return {
@@ -91,5 +91,29 @@ describe('TrmService.get', () => {
     const value = await service.get()
 
     expect(value).toBe(DEFAULT_TRM)
+  })
+})
+
+// ── getTrmSync ──────────────────────────────────────────────────────────────
+
+describe('getTrmSync', () => {
+  it('devuelve TRM_USD_COP cuando está definido', () => {
+    process.env.TRM_USD_COP = '4150'
+    expect(getTrmSync()).toBe(4150)
+  })
+
+  it('devuelve DEFAULT_TRM cuando TRM_USD_COP no está definido', () => {
+    delete process.env.TRM_USD_COP
+    expect(getTrmSync()).toBe(DEFAULT_TRM)
+  })
+
+  it('devuelve DEFAULT_TRM para valor inválido', () => {
+    process.env.TRM_USD_COP = 'abc'
+    expect(getTrmSync()).toBe(DEFAULT_TRM)
+  })
+
+  it('devuelve DEFAULT_TRM para valor negativo', () => {
+    process.env.TRM_USD_COP = '-500'
+    expect(getTrmSync()).toBe(DEFAULT_TRM)
   })
 })

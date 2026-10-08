@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import { createNotification } from '@/infrastructure/db/notification'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 interface AssignBody {
   athleteId: string
@@ -19,6 +20,9 @@ export async function POST(
   if (!session?.user?.id || session.user.role !== 'COACH') {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
+
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:routines-assign`, { limit: 30, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
 
   const coachId = session.user.id
   const { id: templateId } = await params
@@ -85,8 +89,8 @@ export async function POST(
     athleteId,
     'PLAN_ACTUALIZADO',
     'Nueva rutina asignada',
-    `Tu coach te asignó la rutina "${template.name}". Ábrela en la sección Ejercicios.`,
-  ).catch(() => {})
+    `Tu coach te asignó la rutina "${template.name}". Ábrela en la sección Entrenamiento.`,
+  ).catch((err) => console.error('[coach/gym/assign] createNotification failed:', err))
 
   return NextResponse.json(assignment, { status: 201 })
 }
@@ -100,6 +104,9 @@ export async function DELETE(
   if (!session?.user?.id || session.user.role !== 'COACH') {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
+
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:routines-assign-delete`, { limit: 30, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
 
   const coachId = session.user.id
   const { id: templateId } = await params

@@ -138,14 +138,14 @@ export default function DashboardCalendarStrip({ weekOffset, dashboardMode = 'FR
                 onClick={() => setSelectedIdx(cell.idx)}
                 className="flex flex-col items-center gap-1"
               >
-                <span className={`text-[11px] font-semibold ${
+                <span className={`text-xs font-semibold ${
                   cell.isToday ? 'text-[#ea580c]'
                   : isSelected ? 'text-[#1e3a5f]'
                   : 'text-gray-400'
                 }`}>
                   {WEEK_DAYS_SHORT[cell.idx]}
                 </span>
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-[15px] font-bold transition-colors ${
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
                   cell.isToday ? 'bg-[#ea580c] text-white'
                   : cell.done && hasSession ? 'bg-[#22c55e] text-white'
                   : isSelected ? 'border-2 border-[#1e3a5f] text-[#1e3a5f] bg-white'
@@ -299,36 +299,36 @@ function SelectedDayDetail({ day, dashboardMode, firstName, completedCount, tota
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-2.5">
           <div className="w-[3px] h-[50px] bg-[#1e3a5f] rounded-full shrink-0 mt-0.5" />
-          <span className="text-[28px] leading-none">{emoji}</span>
+          <span className="text-2xl leading-none">{emoji}</span>
           <div>
-            <p className="text-[18px] font-black text-gray-900 leading-tight">{sessionName}</p>
+            <p className="text-lg font-black text-gray-900 leading-tight">{sessionName}</p>
             {/* PillsRow */}
             <div className="flex gap-1.5 flex-wrap items-center mt-1.5">
               {durationMin > 0 && (
-                <span className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-gray-100 text-gray-600">
+                <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-gray-100 text-gray-600">
                   {durationMin} min
                 </span>
               )}
               {isSportPrimary && sport!.zoneTarget && sport!.zoneTarget !== 'N/A' && sport!.zoneTarget !== '—' && (
-                <span className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
+                <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
                   Zona {sport!.zoneTarget}
                 </span>
               )}
-              <span className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-green-50 text-green-700 border border-green-100">
+              <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-green-50 text-green-700 border border-green-100">
                 {sessionCategory}
               </span>
               {rpe && (
-                <span className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-gray-100 text-gray-600">
+                <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-gray-100 text-gray-600">
                   RPE {rpe}
                 </span>
               )}
               {isB2B && (
-                <span className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-blue-50 text-[#1e3a5f]">
+                <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-blue-50 text-[#1e3a5f]">
                   👤 COACH
                 </span>
               )}
               {isFreeRun && freeRun!.distanceKm && (
-                <span className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-gray-100 text-gray-600">
+                <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-gray-100 text-gray-600">
                   {freeRun!.distanceKm} km
                 </span>
               )}
@@ -338,16 +338,16 @@ function SelectedDayDetail({ day, dashboardMode, firstName, completedCount, tota
         {/* Buttons — right-aligned */}
         <div className="flex items-center gap-2 shrink-0">
           {(isSportPrimary || isGymPrimary) && (
-            <Link href={isSportPrimary ? '/plan' : '/gym'} className="text-[12px] font-semibold text-[#1e3a5f] border border-gray-200 px-4 py-2 rounded-xl hover:bg-gray-50 transition-colors whitespace-nowrap">
+            <Link href={isSportPrimary ? '/plan' : '/gym'} className="text-xs font-semibold text-[#1e3a5f] border border-gray-200 px-4 py-2 rounded-xl hover:bg-gray-50 transition-colors whitespace-nowrap">
               Ver plan →
             </Link>
           )}
           {done ? (
-            <span className="flex items-center gap-1 text-white text-[12px] font-semibold bg-[#22c55e] px-4 py-2 rounded-xl">
+            <span className="flex items-center gap-1 text-white text-xs font-semibold bg-[#22c55e] px-4 py-2 rounded-xl">
               <CheckCircle2 size={14} /> Completada
             </span>
           ) : (
-            <Link href={isGymPrimary ? '/gym/session' : '/log/run'} className="text-[12px] font-semibold text-white bg-[#ea580c] px-4 py-2 rounded-xl hover:bg-[#d14d07] transition-colors whitespace-nowrap">
+            <Link href={isGymPrimary ? '/gym/session' : '/log/run'} className="text-xs font-semibold text-white bg-[#ea580c] px-4 py-2 rounded-xl hover:bg-[#d14d07] transition-colors whitespace-nowrap">
               Realizar sesión →
             </Link>
           )}
@@ -396,10 +396,10 @@ function MobileSelectedDayCard({ day, isToday }: { day: CalendarDay; isToday: bo
   if (isRest && !hasGym) {
     return (
       <div className="bg-white rounded-[20px] p-[18px] flex items-center gap-3 shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
-        <span className="text-[28px]">😴</span>
+        <span className="text-2xl">😴</span>
         <div>
-          <p className="text-[15px] font-semibold text-gray-900">Día de descanso</p>
-          <p className="text-[13px] text-gray-500 mt-0.5">Recupera bien hoy</p>
+          <p className="text-sm font-semibold text-gray-900">Día de descanso</p>
+          <p className="text-sm text-gray-500 mt-0.5">Recupera bien hoy</p>
         </div>
       </div>
     )
@@ -415,13 +415,13 @@ function MobileSelectedDayCard({ day, isToday }: { day: CalendarDay; isToday: bo
             {isToday ? '● HOY' : `● ${WEEK_DAYS_SHORT[day.weekIdx].toUpperCase()}`}
           </span>
           <div className="flex items-center gap-2.5">
-            <span className="text-[28px]">🎯</span>
-            <span className="text-[28px] font-black text-[#1e3a5f] tracking-tight leading-none">Sin sesión</span>
+            <span className="text-2xl">🎯</span>
+            <span className="text-2xl font-black text-[#1e3a5f] tracking-tight leading-none">Sin sesión</span>
           </div>
-          <p className="text-[15px] font-semibold text-gray-900">Sin sesión planificada</p>
-          <p className="text-[12px] text-gray-500">Registra tu entrenamiento</p>
+          <p className="text-sm font-semibold text-gray-900">Sin sesión planificada</p>
+          <p className="text-xs text-gray-500">Registra tu entrenamiento</p>
           <div className="pt-2">
-            <Link href="/log/run" className="block bg-[#ea580c] text-white text-[13px] font-semibold text-center py-2.5 rounded-[10px]">
+            <Link href="/log/run" className="block bg-[#ea580c] text-white text-sm font-semibold text-center py-2.5 rounded-[10px]">
               Registrar actividad →
             </Link>
           </div>
@@ -464,37 +464,37 @@ function MobileSelectedDayCard({ day, isToday }: { day: CalendarDay; isToday: bo
             {isToday ? '● HOY' : `● ${WEEK_DAYS_SHORT[day.weekIdx].toUpperCase()}`}
           </span>
           {done ? (
-            <span className="bg-green-500 text-white text-[11px] font-semibold px-2.5 py-0.5 rounded-lg">Completada</span>
+            <span className="bg-green-500 text-white text-xs font-semibold px-2.5 py-0.5 rounded-lg">Completada</span>
           ) : zone && zone !== 'N/A' ? (
-            <span className="bg-green-100 text-green-700 text-[11px] font-semibold px-2 py-0.5 rounded-lg">
+            <span className="bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded-lg">
               Zona {zone}
             </span>
           ) : null}
         </div>
         <div className="flex items-center gap-2.5">
-          <span className="text-[28px]">{done ? '✓' : emoji}</span>
-          <span className="text-[28px] font-black text-[#1e3a5f] tracking-tight leading-none">
+          <span className="text-2xl">{done ? '✓' : emoji}</span>
+          <span className="text-2xl font-black text-[#1e3a5f] tracking-tight leading-none">
             {durationMin > 0 ? `${durationMin} min` : sessionName}
           </span>
         </div>
-        <p className="text-[15px] font-semibold text-gray-900">{sessionName}</p>
+        <p className="text-sm font-semibold text-gray-900">{sessionName}</p>
         {detailText && (
-          <p className="text-[12px] text-gray-500">{detailText}</p>
+          <p className="text-xs text-gray-500">{detailText}</p>
         )}
         <div className="pt-2">
           {done ? (
             <Link href={isGymPrimary ? '/gym/history' : '/progress'}
-              className="block bg-[#1e3a5f] text-white text-[13px] font-semibold text-center py-2.5 rounded-[10px]">
+              className="block bg-[#1e3a5f] text-white text-sm font-semibold text-center py-2.5 rounded-[10px]">
               Ver resumen →
             </Link>
           ) : (
             <Link href={isGymPrimary ? '/gym/session' : isSportPrimary ? `/log/run?sessionId=${sport!.sessionId}&type=${sport!.type}&duration=${sport!.durationMin}&zone=${sport!.zoneTarget}` : '/log/run'}
-              className="block bg-[#1e3a5f] text-white text-[13px] font-semibold text-center py-2.5 rounded-[10px]">
+              className="block bg-[#1e3a5f] text-white text-sm font-semibold text-center py-2.5 rounded-[10px]">
               {isGymPrimary ? 'Ir al Gym →' : 'Iniciar →'}
             </Link>
           )}
         </div>
-        <Link href="/log/run" className="block text-center text-[12px] font-medium text-gray-500">
+        <Link href="/log/run" className="block text-center text-xs font-medium text-gray-500">
           + Agregar otra actividad
         </Link>
       </div>
@@ -545,20 +545,20 @@ function MobileDotDetail({ day }: { day: CalendarDay }) {
     <div className="flex items-center gap-2.5 mt-3 pt-2.5 border-t border-gray-100">
       <span className="text-lg">{emoji}</span>
       <div className="flex-1 min-w-0">
-        <p className="text-[13px] font-semibold text-gray-900">{label}</p>
+        <p className="text-sm font-semibold text-gray-900">{label}</p>
         <div className="flex gap-1.5 mt-1">
           {durationMin > 0 && (
-            <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-gray-100 text-gray-500">
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-gray-100 text-gray-500">
               {durationMin} min
             </span>
           )}
           {zone && zone !== 'N/A' && (
-            <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-gray-100 text-gray-500">
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-gray-100 text-gray-500">
               Zona {zone}
             </span>
           )}
           {done && hasActive && (
-            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-green-100 text-green-600">
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-green-100 text-green-600">
               ✓ Completada
             </span>
           )}

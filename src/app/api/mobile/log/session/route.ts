@@ -6,6 +6,7 @@ import { requireFeature } from '@/lib/guards/feature_gate'
 import { z } from 'zod'
 import type { SessionType } from '@/generated/prisma/enums'
 import { calcNutritionAdjustment } from '@/domain/nutrition/calculate_nutrition_adjustment'
+import { resolveDisciplineId } from '@/domain/discipline/discipline_resolver'
 
 const INTENSITIES = ['HIGH', 'MODERATE', 'LOW', 'REST'] as const
 const DISCIPLINES = ['RUNNING', 'STRENGTH', 'CYCLING', 'SWIMMING', 'OTHER'] as const
@@ -49,6 +50,7 @@ export async function POST(req: NextRequest) {
     sessionDate: sessionDateStr, dataSource, externalId, caloriesBurned, avgPaceSecPerKm,
   } = parsed.data
   const sessionDate = sessionDateStr ? new Date(`${sessionDateStr}T00:00:00.000Z`) : null
+  const disciplineId = await resolveDisciplineId(discipline)
 
   // ── Deduplicación wearable: si ya existe un log con este externalId, saltar ──
   if (externalId) {
@@ -76,6 +78,7 @@ export async function POST(req: NextRequest) {
         distanceKm: distanceKm ?? null,
         notes: notes ?? null,
         discipline: discipline ?? null,
+        disciplineId,
         dataSource: dataSource ?? null,
         externalId: externalId ?? null,
         caloriesBurned: caloriesBurned ?? null,
@@ -117,11 +120,12 @@ export async function POST(req: NextRequest) {
       notes: notes ?? null,
       actualIntensity: actualIntensity ?? null,
       discipline: discipline ?? null,
+      disciplineId,
     },
   })
 
   // ── Sugerencia nutricional informativa por intensidad real ────────────────
-  // DEPRECATED: PendingNutritionAdjustment ya no se genera.
+  // R6: PendingNutritionAdjustment eliminado del sistema.
   // Solo notificación informativa si source=SYSTEM (plan de onboarding, no editado).
   if (actualIntensity && planned.intensity && actualIntensity !== planned.intensity) {
     try {
@@ -141,7 +145,7 @@ export async function POST(req: NextRequest) {
             adj.deltaKcal > 0
               ? `Tu sesión fue más intensa de lo planificado. Tu cuerpo necesita ~${adj.adjustedKcal} kcal y ~${adj.adjustedCarbsG}g de carbos para recuperarte bien.`
               : `Tu sesión fue más suave de lo planificado. Un target de ~${adj.adjustedKcal} kcal es suficiente para hoy.`,
-          ).catch(() => {})
+          ).catch((err) => console.error('[mobile/log/session] createNotification nutrition-suggestion failed:', err))
         }
       }
     } catch {

@@ -7,12 +7,13 @@
  *   3. Coach Demo Carlos Medina (coach_demo@medaliq.com)
  *   4. Atleta Miguel (miguel@medaliq.com) — B2B de Carlos, running+gym, data completa
  *   5. Atleta Ana (ana@medaliq.com) — B2C Free sin onboarding (empty state, sin rutinas)
- *   6. Atleta Laura (pro@medaliq.com) — B2B de Carlos, gym-focused, data completa
+ *   6. Atleta Laura (pro@medaliq.com) — B2C Pro, gym-focused autónoma, data completa
  *   7. Atleta Diego (pending@medaliq.com) — B2B pendiente de activación
- *   8. Ejercicios globales
- *   9. Rutinas públicas del sistema
- *  10. Alimentos LatAm
- *  11. Template de nutrición del coach + asignación a atletas
+ *   8. Atleta Miguel Test (migueltest2@medaliq.com) — B2C FREE para billing test
+ *   9. Ejercicios globales
+ *  10. Rutinas públicas del sistema
+ *  11. Alimentos LatAm
+ *  12. Template de nutrición del coach + asignación a atletas
  *
  * Idempotente — usa upsert. Safe re-run.
  * Uso: pnpm prisma db seed   (o:  tsx prisma/seed.ts)
@@ -25,6 +26,7 @@
  *   ana@medaliq.com          / atleta123
  *   pro@medaliq.com          / atleta123
  *   pending@medaliq.com      / atleta123
+ *   migueltest2@medaliq.com  / 123456789
  */
 import 'dotenv/config'
 import {
@@ -34,6 +36,7 @@ import {
 } from '../src/generated/prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import bcrypt from 'bcryptjs'
+import { DISCIPLINE_SEEDS } from '../src/domain/discipline/discipline.types'
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
 const prisma = new PrismaClient({ adapter } as any)
@@ -62,6 +65,31 @@ function mondayOf(d: Date): Date {
 
 async function main() {
   console.log('🌱 Seeding...')
+
+  // ── 0a. Seed de disciplinas (idempotente) ────────────────────────────────
+  await seedDisciplines()
+
+  // ── 0. Cleanup data residual de seeds anteriores ─────────────────────────
+  const seedEmails = ['miguel@medaliq.com', 'ana@medaliq.com', 'pro@medaliq.com', 'pending@medaliq.com', 'migueltest2@medaliq.com']
+  const seedUsers = await prisma.user.findMany({ where: { email: { in: seedEmails } }, select: { id: true } })
+  const seedIds = seedUsers.map(u => u.id)
+
+  if (seedIds.length > 0) {
+    // Orden de borrado respeta FKs (hijos primero)
+    await prisma.setLog.deleteMany({ where: { session: { athleteId: { in: seedIds } } } })
+    await prisma.gymSession.deleteMany({ where: { athleteId: { in: seedIds } } })
+    await prisma.assignedWorkout.deleteMany({ where: { athleteId: { in: seedIds } } })
+    await prisma.foodLog.deleteMany({ where: { userId: { in: seedIds } } })
+    await prisma.waterLog.deleteMany({ where: { userId: { in: seedIds } } })
+    await prisma.dailyLog.deleteMany({ where: { userId: { in: seedIds } } })
+    await prisma.weeklyCheckIn.deleteMany({ where: { userId: { in: seedIds } } })
+    await prisma.sessionLog.deleteMany({ where: { userId: { in: seedIds } } })
+    await prisma.plannedSession.deleteMany({ where: { week: { plan: { userId: { in: seedIds } } } } })
+    await prisma.planWeek.deleteMany({ where: { plan: { userId: { in: seedIds } } } })
+    await prisma.trainingPlan.deleteMany({ where: { userId: { in: seedIds } } })
+    await prisma.assignedNutritionPlan.deleteMany({ where: { athleteId: { in: seedIds } } })
+    await prisma.nutritionPlan.deleteMany({ where: { userId: { in: seedIds } } })
+  }
 
   // ── 1. Admin ───────────────────────────────────────────────────────────────
   await prisma.user.upsert({
@@ -216,7 +244,7 @@ async function main() {
   // ── 5. Atleta Ana (B2C Free sin onboarding — sin rutinas) ─────────────────
   await prisma.user.upsert({
     where: { email: 'ana@medaliq.com' },
-    update: {},
+    update: { featurePlan: false, featureCheckin: false, featureNutrition: false, featureProgress: false, featureLog: false, featureGym: false, onboardingCompleted: false },
     create: {
       email: 'ana@medaliq.com',
       name: 'Ana Runner',
@@ -237,7 +265,7 @@ async function main() {
   })
   console.log('✅ Atleta:        ana@medaliq.com (B2C Free — sin onboarding, sin rutinas)')
 
-  // ── 6. Atleta Laura (B2B de Carlos — gym-focused) ─────────────────────────
+  // ── 6. Atleta Laura (B2C Pro — gym-focused autónoma, sin coach) ───────────
   const pro = await prisma.user.upsert({
     where: { email: 'pro@medaliq.com' },
     update: { featurePlan: true, featureCheckin: true, featureNutrition: true, featureProgress: true, featureLog: true, featureGym: true, onboardingCompleted: true },
@@ -267,12 +295,9 @@ async function main() {
     create: { userId: pro.id, tier: SubscriptionTier.PRO },
   })
 
-  await prisma.coachAthlete.upsert({
-    where: { coachId_athleteId: { coachId: coach1.id, athleteId: pro.id } },
-    update: {},
-    create: { coachId: coach1.id, athleteId: pro.id },
-  })
-  console.log('✅ Atleta:        pro@medaliq.com (B2B gym → Carlos)')
+  // Limpiar CoachAthlete si existía de un seed anterior
+  await prisma.coachAthlete.deleteMany({ where: { athleteId: pro.id } })
+  console.log('✅ Atleta:        pro@medaliq.com (B2C Pro gym — autónoma, sin coach)')
 
   // ── 7. Atleta Pending (B2B sin activar) ───────────────────────────────────
   const pending = await prisma.user.upsert({
@@ -296,21 +321,60 @@ async function main() {
   })
   console.log('✅ Atleta:        pending@medaliq.com (B2B pendiente)')
 
-  // ── 8. Ejercicios globales ────────────────────────────────────────────────
+  // ── 8. Atleta Billing Test (B2C FREE — para probar flujo de pago) ────────
+  const billingTestPassword = await bcrypt.hash('123456789', 10)
+  const billingTest = await prisma.user.upsert({
+    where: { email: 'migueltest2@medaliq.com' },
+    update: {
+      featurePlan: false, featureCheckin: false, featureNutrition: true,
+      featureProgress: false, featureLog: true, featureGym: true,
+      onboardingCompleted: true,
+    },
+    create: {
+      email: 'migueltest2@medaliq.com',
+      name: 'Miguel Test Billing',
+      password: billingTestPassword,
+      role: UserRole.ATHLETE,
+      featurePlan: false, featureCheckin: false, featureNutrition: true,
+      featureProgress: false, featureLog: true, featureGym: true,
+      onboardingCompleted: true,
+      profile: {
+        create: {
+          age: 28, heightCm: 175, weightKg: 75, weightGoalKg: 72,
+          hrResting: 55, hrMax: 190, altitudeMeters: 0,
+          gender: 'male', sport: 'RUNNING', sportGoal: 'GENERAL_FITNESS', experienceLevel: 'INTERMEDIATE',
+          injuries: [], conditions: [], medications: [],
+          sleepHoursAvg: 7, sleepScoreAvg: 80,
+        },
+      },
+    },
+  })
+
+  await prisma.userSubscription.upsert({
+    where: { userId: billingTest.id },
+    update: { tier: SubscriptionTier.FREE },
+    create: { userId: billingTest.id, tier: SubscriptionTier.FREE },
+  })
+
+  // Limpiar CoachAthlete si existía
+  await prisma.coachAthlete.deleteMany({ where: { athleteId: billingTest.id } })
+  console.log('✅ Atleta:        migueltest2@medaliq.com (B2C FREE — billing test)')
+
+  // ── 9. Ejercicios globales ────────────────────────────────────────────────
   await seedExercises()
 
-  // ── 9. Rutinas públicas del sistema ───────────────────────────────────────
+  // ── 10. Rutinas públicas del sistema ──────────────────────────────────────
   await seedPublicTemplates()
 
-  // ── 10. Alimentos LatAm ───────────────────────────────────────────────────
+  // ── 11. Alimentos LatAm ───────────────────────────────────────────────────
   await seedLatamFoods()
 
-  // ── 11. Data histórica de atletas ─────────────────────────────────────────
+  // ── 12. Data histórica de atletas ─────────────────────────────────────────
   await seedMiguelData(miguel.id, coach1.id)
-  await seedLauraData(pro.id, coach1.id)
+  await seedLauraData(pro.id)
 
-  // ── 12. Template de nutrición del coach + asignaciones ────────────────────
-  await seedCoachNutritionTemplate(coach1.id, miguel.id, pro.id)
+  // ── 13. Template de nutrición del coach + asignación a Miguel ─────────────
+  await seedCoachNutritionTemplate(coach1.id, miguel.id)
 
   console.log('\n🎉 Seed completado.')
 }
@@ -327,7 +391,7 @@ async function seedMiguelData(userId: string, coachId: string) {
     create: {
       userId, source: NutritionSource.COACH, tdee: 2750,
       targetKcalHard: 2900, targetKcalEasy: 2500, targetKcalRest: 2200,
-      proteinG: 150, carbsHardG: 350, carbsEasyG: 280, fatG: 80, waterMlTarget: 3000,
+      proteinG: 150, carbsHardG: 350, carbsEasyG: 280, fatG: 100, waterMlTarget: 3000,
     },
   })
 
@@ -458,7 +522,7 @@ async function seedMiguelData(userId: string, coachId: string) {
   }
 
   // ── Daily Logs (últimos 14 días) ──────────────────────────────────────────
-  for (let d = 0; d < 14; d++) {
+  for (let d = 0; d < 30; d++) {
     const date = dateOnly(daysAgo(d))
     await prisma.dailyLog.upsert({
       where: { userId_date: { userId, date } },
@@ -467,8 +531,8 @@ async function seedMiguelData(userId: string, coachId: string) {
     })
   }
 
-  // ── Water Logs (últimos 7 días) ───────────────────────────────────────────
-  for (let d = 0; d < 7; d++) {
+  // ── Water Logs (últimos 30 días) ──────────────────────────────────────────
+  for (let d = 0; d < 30; d++) {
     const date = dateOnly(daysAgo(d))
     await prisma.waterLog.upsert({
       where: { userId_date: { userId, date } },
@@ -477,8 +541,8 @@ async function seedMiguelData(userId: string, coachId: string) {
     })
   }
 
-  // ── Food Logs (últimos 7 días, 3 comidas/día) ────────────────────────────
-  await seedFoodLogs(userId, 7)
+  // ── Food Logs (últimos 30 días, 3 comidas/día) ───────────────────────────
+  await seedFoodLogs(userId, 30)
 
   // ── Assigned Workout PPL + GymSessions (4 semanas de gym) ─────────────────
   const templateId = 'public-template-ppl-3x'
@@ -528,16 +592,16 @@ async function seedMiguelData(userId: string, coachId: string) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// LAURA — B2B gym-focused, 4 semanas de gym completadas, sin plan running
+// LAURA — B2C Pro gym-focused autónoma, 4 semanas de gym completadas
 // ═══════════════════════════════════════════════════════════════════════════════
 
-async function seedLauraData(userId: string, coachId: string) {
-  // ── Nutrition Plan ─────────────────────────────────────────────────────────
+async function seedLauraData(userId: string) {
+  // ── Nutrition Plan (system — sin coach) ──────────────────────────────────
   await prisma.nutritionPlan.upsert({
     where: { userId },
     update: {},
     create: {
-      userId, source: NutritionSource.COACH, tdee: 2100,
+      userId, source: NutritionSource.SYSTEM, tdee: 2100,
       targetKcalHard: 2250, targetKcalEasy: 1950, targetKcalRest: 1800,
       proteinG: 115, carbsHardG: 260, carbsEasyG: 210, fatG: 60, waterMlTarget: 2500,
     },
@@ -550,7 +614,7 @@ async function seedLauraData(userId: string, coachId: string) {
   await prisma.assignedWorkout.upsert({
     where: { id: awId },
     update: {},
-    create: { id: awId, templateId, athleteId: userId, coachId, startDate, isActive: true },
+    create: { id: awId, templateId, athleteId: userId, startDate, isActive: true },
   })
 
   // Upper/Lower 4x: Lun, Mar, Jue, Vie → dayOfWeek 1,2,4,5
@@ -644,14 +708,14 @@ async function seedLauraData(userId: string, coachId: string) {
   // ── Food Logs (últimos 5 días) ────────────────────────────────────────────
   await seedFoodLogs(userId, 5)
 
-  console.log('   📊 Laura: 4 sem gym (Upper/Lower 4x) + nutrición + check-ins')
+  console.log('   📊 Laura (B2C Pro): 4 sem gym (Upper/Lower 4x) + nutrición system + check-ins')
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // NUTRITION TEMPLATE del coach — asignado a Miguel y Laura
 // ═══════════════════════════════════════════════════════════════════════════════
 
-async function seedCoachNutritionTemplate(coachId: string, miguelId: string, lauraId: string) {
+async function seedCoachNutritionTemplate(coachId: string, miguelId: string) {
   const foods = await prisma.food.findMany({ take: 9, where: { isActive: true }, select: { id: true, kcalPer100g: true, proteinPer100g: true, carbsPer100g: true, fatPer100g: true } })
   if (foods.length < 9) {
     console.log('   ⚠️  No hay suficientes alimentos para crear template de nutrición')
@@ -706,19 +770,17 @@ async function seedCoachNutritionTemplate(coachId: string, miguelId: string, lau
     }
   }
 
-  // Asignar a Miguel y Laura
+  // Asignar solo a Miguel (Laura es B2C Pro — sin coach)
   await prisma.assignedNutritionPlan.upsert({
     where: { athleteId: miguelId },
     update: {},
     create: { templateId: tmpl.id, athleteId: miguelId, coachId },
   })
-  await prisma.assignedNutritionPlan.upsert({
-    where: { athleteId: lauraId },
-    update: {},
-    create: { templateId: tmpl.id, athleteId: lauraId, coachId },
-  })
 
-  console.log('   📊 Nutrición: template "Plan Rendimiento LatAm" asignado a Miguel + Laura')
+  // Limpiar asignación de Laura si existía de seed anterior
+  await prisma.assignedNutritionPlan.deleteMany({ where: { athleteId: { not: miguelId }, coachId } })
+
+  console.log('   📊 Nutrición: template "Plan Rendimiento LatAm" asignado a Miguel')
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -730,7 +792,7 @@ async function seedFoodLogs(userId: string, days: number) {
   if (foods.length < 3) return
 
   const meals: MealType[] = [MealType.BREAKFAST, MealType.LUNCH, MealType.DINNER]
-  for (let d = 0; d < days; d++) {
+  for (let d = 1; d <= days; d++) {
     const date = dateOnly(daysAgo(d))
     for (let m = 0; m < meals.length; m++) {
       const food = foods[(m + d) % foods.length]
@@ -1020,6 +1082,36 @@ async function seedLatamFoods() {
 
   await prisma.food.createMany({ data: toCreate })
   console.log(`✅ Alimentos:     ${toCreate.length} LatAm insertados (${existingNames.size} ya existían)`)
+}
+
+async function seedDisciplines() {
+  for (const d of DISCIPLINE_SEEDS) {
+    await prisma.discipline.upsert({
+      where: { slug: d.slug },
+      update: {
+        name: d.name,
+        nameEs: d.nameEs,
+        icon: d.icon,
+        color: d.color,
+        sortOrder: d.sortOrder,
+        hasExerciseLibrary: d.hasExerciseLibrary,
+        trackingFields: d.trackingFields,
+        sessionTypes: d.sessionTypes,
+      },
+      create: {
+        slug: d.slug,
+        name: d.name,
+        nameEs: d.nameEs,
+        icon: d.icon,
+        color: d.color,
+        sortOrder: d.sortOrder,
+        hasExerciseLibrary: d.hasExerciseLibrary,
+        trackingFields: d.trackingFields,
+        sessionTypes: d.sessionTypes,
+      },
+    })
+  }
+  console.log(`✅ Disciplinas:   ${DISCIPLINE_SEEDS.length} upserted`)
 }
 
 main()

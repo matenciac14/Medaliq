@@ -91,8 +91,8 @@ export default function PlanCompletedClient({
       <div className="bg-gradient-to-b from-[#1e3a5f] to-[#2d5a8e] pb-3 px-5 pt-[max(env(safe-area-inset-top,0px),20px)]">
         <div className="flex items-start justify-between mb-3">
           <div>
-            <h1 className="text-[20px] font-bold text-white leading-tight">Mi Plan</h1>
-            <p className="text-[11px] text-white/60 mt-0.5">{planName} · {totalWeeks} semanas</p>
+            <h1 className="text-xl font-bold text-white leading-tight">Mi Plan</h1>
+            <p className="text-xs text-white/60 mt-0.5">{planName} · {totalWeeks} semanas</p>
           </div>
           <div className="bg-green-500/20 text-green-300 px-3 py-1 rounded-full text-[10px] font-bold whitespace-nowrap">
             ✓ COMPLETADO
@@ -101,7 +101,7 @@ export default function PlanCompletedClient({
 
         {/* Completion date bar */}
         <div className="bg-white/10 rounded-xl px-4 py-2 text-center">
-          <span className="text-[13px] font-semibold text-white">Completado el {endDateObj.toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+          <span className="text-sm font-semibold text-white">Completado el {endDateObj.toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
         </div>
       </div>
 
@@ -118,8 +118,8 @@ export default function PlanCompletedClient({
 
             return (
               <div key={dow} className="flex flex-col items-center gap-1">
-                <span className="text-[11px] font-semibold text-gray-400">{WEEK_DAYS[i]}</span>
-                <div className={cn('w-10 h-10 rounded-full flex items-center justify-center text-[15px] font-bold',
+                <span className="text-xs font-semibold text-gray-400">{WEEK_DAYS[i]}</span>
+                <div className={cn('w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold',
                   isDone && !isRest ? 'bg-[#22c55e] text-white' :
                   isRest ? 'bg-[#f1f5f9] text-gray-400 border border-[#cbd5e1]' :
                   'bg-gray-100 text-gray-400 border border-gray-200'
@@ -136,21 +136,21 @@ export default function PlanCompletedClient({
       <div className="px-4 space-y-4 pb-24">
         {/* Celebration card */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 text-center space-y-4">
-          <span className="text-[48px] block">🏆</span>
-          <h2 className="text-[22px] font-black text-gray-900">¡Plan completado!</h2>
-          <p className="text-[13px] text-gray-500">{planName} · {totalWeeks} semanas</p>
+          <span className="text-4xl block">🏆</span>
+          <h2 className="text-xl font-black text-gray-900">¡Plan completado!</h2>
+          <p className="text-sm text-gray-500">{planName} · {totalWeeks} semanas</p>
           <div className="flex justify-center gap-8 pt-2">
             <div className="text-center">
-              <p className="text-[24px] font-black text-gray-900">{totalWeeks}</p>
-              <p className="text-[11px] text-gray-400">semanas</p>
+              <p className="text-2xl font-black text-gray-900">{totalWeeks}</p>
+              <p className="text-xs text-gray-400">semanas</p>
             </div>
             <div className="text-center">
-              <p className="text-[24px] font-black text-gray-900">{sessionsLogged}</p>
-              <p className="text-[11px] text-gray-400">sesiones</p>
+              <p className="text-2xl font-black text-gray-900">{sessionsLogged}</p>
+              <p className="text-xs text-gray-400">sesiones</p>
             </div>
             <div className="text-center">
-              <p className="text-[24px] font-black text-[#ea580c]">{completedAdherencePct}%</p>
-              <p className="text-[11px] text-gray-400">adherencia</p>
+              <p className="text-2xl font-black text-[#ea580c]">{completedAdherencePct}%</p>
+              <p className="text-xs text-gray-400">adherencia</p>
             </div>
           </div>
         </div>
@@ -161,17 +161,17 @@ export default function PlanCompletedClient({
         <div className="grid grid-cols-3 gap-2">
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-3">
             <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide mb-1 truncate">Completadas</p>
-            <p className="text-[20px] font-black leading-none text-gray-900">{sessionsLogged}/{sessionsTotal}</p>
+            <p className="text-xl font-black leading-none text-gray-900">{sessionsLogged}/{sessionsTotal}</p>
             <p className="text-[10px] text-gray-400 mt-1 whitespace-nowrap">sesiones</p>
           </div>
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-3">
             <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide mb-1 truncate">Volumen</p>
-            <p className="text-[20px] font-black leading-none text-gray-900">{totalWeeks * 4}</p>
+            <p className="text-xl font-black leading-none text-gray-900">{totalWeeks * 4}</p>
             <p className="text-[10px] text-gray-400 mt-1 whitespace-nowrap">en el plan</p>
           </div>
           <div className={cn('bg-white rounded-xl shadow-sm p-3', completedAdherencePct < 80 ? 'border-2 border-[#ea580c]/30' : 'border border-gray-100')}>
             <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide mb-1 truncate">Adherencia</p>
-            <p className="text-[20px] font-black leading-none text-[#ea580c]">{completedAdherencePct}%</p>
+            <p className="text-xl font-black leading-none text-[#ea580c]">{completedAdherencePct}%</p>
             <p className={cn('text-[10px] mt-1 whitespace-nowrap', completedAdherencePct < 80 ? 'text-red-500' : 'text-gray-400')}>
               {completedAdherencePct < 80 ? '↓ meta 80%' : '✓ objetivo'}
             </p>
@@ -196,15 +196,15 @@ export default function PlanCompletedClient({
         {/* CTA card */}
         {isB2B ? (
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-2">
-            <p className="text-[14px] font-bold text-[#1e3a5f]">Tu coach asignará el próximo plan</p>
-            <p className="text-[11px] text-gray-400">Recibirás una notificación cuando tu entrenador lo haya preparado.</p>
+            <p className="text-sm font-bold text-[#1e3a5f]">Tu coach asignará el próximo plan</p>
+            <p className="text-xs text-gray-400">Recibirás una notificación cuando tu entrenador lo haya preparado.</p>
           </div>
         ) : (
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-3">
-            <p className="text-[14px] font-bold text-[#1e3a5f]">¿Listo para el siguiente desafío?</p>
+            <p className="text-sm font-bold text-[#1e3a5f]">¿Listo para el siguiente desafío?</p>
             <a
               href="/find-coach"
-              className="block w-full text-center bg-[#1e3a5f] hover:bg-[#243f6a] text-white text-[14px] font-bold py-3 rounded-xl transition-colors"
+              className="block w-full text-center bg-[#1e3a5f] hover:bg-[#243f6a] text-white text-sm font-bold py-3 rounded-xl transition-colors"
             >
               Buscar entrenador →
             </a>
@@ -224,7 +224,7 @@ export default function PlanCompletedClient({
           title="Mi Plan"
           subtitle={`${planName} · ${totalWeeks} semanas`}
           right={
-            <span className="inline-flex items-center gap-1.5 bg-green-50 text-green-700 border border-green-200 px-3.5 py-1.5 rounded-[20px] text-[11px] font-semibold whitespace-nowrap">
+            <span className="inline-flex items-center gap-1.5 bg-green-50 text-green-700 border border-green-200 px-3.5 py-1.5 rounded-[20px] text-xs font-semibold whitespace-nowrap">
               ✓ PLAN COMPLETADO
             </span>
           }
@@ -244,7 +244,7 @@ export default function PlanCompletedClient({
 
         {/* Footer — session count */}
         <div className="px-5 pb-3 flex justify-end">
-          <span className="text-[12px] text-gray-400 font-medium">
+          <span className="text-xs text-gray-400 font-medium">
             {sessionsLogged} / {sessionsTotal} sesiones
           </span>
         </div>
@@ -269,17 +269,17 @@ export default function PlanCompletedClient({
           <div className="grid grid-cols-3 gap-2">
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-3">
               <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide mb-1 truncate">Completadas</p>
-              <p className="text-[20px] font-black leading-none text-gray-900">{sessionsLogged}/{sessionsTotal}</p>
+              <p className="text-xl font-black leading-none text-gray-900">{sessionsLogged}/{sessionsTotal}</p>
               <p className="text-[10px] text-gray-400 mt-1 whitespace-nowrap">sesiones</p>
             </div>
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-3">
               <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide mb-1 truncate">Volumen</p>
-              <p className="text-[20px] font-black leading-none text-gray-900">{totalWeeks * 4}</p>
+              <p className="text-xl font-black leading-none text-gray-900">{totalWeeks * 4}</p>
               <p className="text-[10px] text-gray-400 mt-1 whitespace-nowrap">en el plan</p>
             </div>
             <div className={cn('bg-white rounded-xl shadow-sm p-3', completedAdherencePct < 80 ? 'border-2 border-[#ea580c]/30' : 'border border-gray-100')}>
               <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide mb-1 truncate">Adherencia</p>
-              <p className="text-[20px] font-black leading-none text-[#ea580c]">{completedAdherencePct}%</p>
+              <p className="text-xl font-black leading-none text-[#ea580c]">{completedAdherencePct}%</p>
               <p className={cn('text-[10px] mt-1 whitespace-nowrap', completedAdherencePct < 80 ? 'text-red-500' : 'text-gray-400')}>
                 {completedAdherencePct < 80 ? '↓ meta 80%' : '✓ objetivo'}
               </p>
@@ -288,8 +288,8 @@ export default function PlanCompletedClient({
 
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-[12px] font-bold text-gray-900">Progreso del plan</p>
-              <p className="text-[11px] text-gray-400">
+              <p className="text-xs font-bold text-gray-900">Progreso del plan</p>
+              <p className="text-xs text-gray-400">
                 Sem. {currentWeek} / {totalWeeks} · 100%
               </p>
             </div>
@@ -297,7 +297,7 @@ export default function PlanCompletedClient({
               {displayPhases.map((phase, i) => (
                 <div
                   key={i}
-                  className="h-8 rounded-md flex items-center justify-center text-[9px] font-bold uppercase tracking-wide bg-[#1e3a5f] text-white"
+                  className="h-8 rounded-md flex items-center justify-center text-[10px] font-bold uppercase tracking-wide bg-[#1e3a5f] text-white"
                 >
                   {phase}
                 </div>
@@ -315,15 +315,15 @@ export default function PlanCompletedClient({
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
             {isB2B ? (
               <>
-                <p className="text-[13px] font-bold text-[#1e3a5f]">Tu coach asignará el próximo plan</p>
-                <p className="text-[11px] text-gray-400">Recibirás una notificación cuando tu entrenador lo tenga listo.</p>
+                <p className="text-sm font-bold text-[#1e3a5f]">Tu coach asignará el próximo plan</p>
+                <p className="text-xs text-gray-400">Recibirás una notificación cuando tu entrenador lo tenga listo.</p>
               </>
             ) : (
               <>
-                <p className="text-[13px] font-bold text-[#1e3a5f]">¿Listo para el siguiente desafío?</p>
+                <p className="text-sm font-bold text-[#1e3a5f]">¿Listo para el siguiente desafío?</p>
                 <a
                   href="/find-coach"
-                  className="block w-full text-center bg-[#1e3a5f] hover:bg-[#243f6a] text-white text-[14px] font-bold px-5 py-3 rounded-xl transition-colors"
+                  className="block w-full text-center bg-[#1e3a5f] hover:bg-[#243f6a] text-white text-sm font-bold px-5 py-3 rounded-xl transition-colors"
                 >
                   Buscar entrenador →
                 </a>
@@ -347,8 +347,8 @@ function CompletedPhaseBar({ totalWeeks }: { totalWeeks: number }) {
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-[13px] font-bold text-gray-900">Progreso del plan</p>
-        <p className="text-[11px] text-gray-400">Plan completado {totalWeeks}/{totalWeeks} · 100%</p>
+        <p className="text-sm font-bold text-gray-900">Progreso del plan</p>
+        <p className="text-xs text-gray-400">Plan completado {totalWeeks}/{totalWeeks} · 100%</p>
       </div>
       <div className="flex gap-1.5">
         {PHASES_ALL.map(p => (
@@ -372,14 +372,14 @@ function CompletedNutritionCard({ nt }: { nt: NutritionTarget }) {
       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Nutrición hoy</p>
       <div className="flex items-end gap-6">
         <div>
-          <span className="text-[28px] font-black text-gray-900 tracking-tight leading-none">{nt.kcal.toLocaleString('es')}</span>
-          <span className="text-[12px] text-gray-400 ml-1">kcal</span>
+          <span className="text-2xl font-black text-gray-900 tracking-tight leading-none">{nt.kcal.toLocaleString('es')}</span>
+          <span className="text-xs text-gray-400 ml-1">kcal</span>
         </div>
         {macros.map(m => (
           <div key={m.label} className="flex flex-col items-center gap-1">
             <div className="w-1.5 h-6 rounded-full" style={{ backgroundColor: m.color }} />
-            <span className="text-[13px] font-bold text-gray-900">{m.value}</span>
-            <span className="text-[9px] text-gray-400">{m.label}</span>
+            <span className="text-sm font-bold text-gray-900">{m.value}</span>
+            <span className="text-[10px] text-gray-400">{m.label}</span>
           </div>
         ))}
       </div>
@@ -397,13 +397,13 @@ function CompletedEstadoSemana({ checkInData }: { checkInData: CheckInData | nul
   ]
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-      <span className="text-[13px] font-bold text-gray-900 block mb-3">Tu estado esta semana</span>
+      <span className="text-sm font-bold text-gray-900 block mb-3">Tu estado esta semana</span>
       <div className="flex gap-3">
         {items.map(i => (
           <div key={i.label} className="flex-1 text-center">
-            <span className="text-[16px] block mb-1">{i.icon}</span>
-            <span className="text-[14px] font-bold text-gray-900 block">{i.value}</span>
-            <span className="text-[9px] text-gray-400">{i.label}</span>
+            <span className="text-base block mb-1">{i.icon}</span>
+            <span className="text-sm font-bold text-gray-900 block">{i.value}</span>
+            <span className="text-[10px] text-gray-400">{i.label}</span>
           </div>
         ))}
       </div>
@@ -425,14 +425,14 @@ function CompletedZonasFC({ hrZones }: { hrZones: HRZoneData | null }) {
 
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-      <span className="text-[13px] font-bold text-gray-900 block mb-3">Zonas FC</span>
+      <span className="text-sm font-bold text-gray-900 block mb-3">Zonas FC</span>
       {!hrZones && <p className="text-[10px] text-gray-300 -mt-1 mb-2">Completa tu perfil con FC máx</p>}
       <div className="flex gap-2">
         {zones.map(z => (
           <div key={z.label} className="flex-1 text-center">
             <div className={cn('w-2.5 h-2.5 rounded-full mx-auto mb-1.5', !hrZones && 'opacity-30')} style={{ backgroundColor: z.color }} />
-            <span className="text-[11px] font-bold text-gray-900 block">{z.label}</span>
-            <span className={cn('text-[9px]', hrZones ? 'text-gray-400' : 'text-gray-300')}>{z.range}</span>
+            <span className="text-xs font-bold text-gray-900 block">{z.label}</span>
+            <span className={cn('text-[10px]', hrZones ? 'text-gray-400' : 'text-gray-300')}>{z.range}</span>
           </div>
         ))}
       </div>
@@ -453,22 +453,22 @@ function CompletedBodyCard({ weightData, bodyMeasures }: { weightData: WeightDat
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-[13px] font-bold text-gray-900">Composición corporal</span>
-        {!hasData && <span className="text-[11px] text-gray-400">Sin datos</span>}
+        <span className="text-sm font-bold text-gray-900">Composición corporal</span>
+        {!hasData && <span className="text-xs text-gray-400">Sin datos</span>}
       </div>
       <div className="flex items-baseline gap-2 mb-3">
-        <span className="text-[24px] font-black text-gray-900 tracking-tight">
+        <span className="text-2xl font-black text-gray-900 tracking-tight">
           {currentKg != null ? `${currentKg} kg` : '— kg'}
         </span>
-        {goalKg != null && <span className="text-[12px] text-gray-400">→ meta {goalKg} kg</span>}
+        {goalKg != null && <span className="text-xs text-gray-400">→ meta {goalKg} kg</span>}
       </div>
       <div className="flex gap-2">
         {measures.map(m => (
           <div key={m.label} className="flex-1 text-center">
-            <span className="text-[15px] font-bold text-gray-900">
+            <span className="text-sm font-bold text-gray-900">
               {m.value != null ? `${m.value} cm` : '— cm'}
             </span>
-            <p className="text-[9px] text-gray-400 mt-0.5">{m.label}</p>
+            <p className="text-[10px] text-gray-400 mt-0.5">{m.label}</p>
           </div>
         ))}
       </div>
@@ -479,7 +479,7 @@ function CompletedBodyCard({ weightData, bodyMeasures }: { weightData: WeightDat
 function CompletedCheckInBanner({ recordedAt }: { recordedAt: string | null }) {
   if (!recordedAt) {
     return (
-      <a href="/checkin" className="flex items-center gap-2 text-[11px] text-gray-300 hover:text-gray-500 transition-colors mt-2">
+      <a href="/checkin" className="flex items-center gap-2 text-xs text-gray-300 hover:text-gray-500 transition-colors mt-2">
         <span>📊</span>
         <span>Sin check-ins registrados · Haz tu primer check-in semanal</span>
       </a>
@@ -490,7 +490,7 @@ function CompletedCheckInBanner({ recordedAt }: { recordedAt: string | null }) {
   const monthNames = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
   const label = `${dayNames[d.getDay()]} ${d.getDate()} ${monthNames[d.getMonth()]}`
   return (
-    <a href="/checkin" className="flex items-center gap-2 text-[11px] text-gray-400 hover:text-gray-600 transition-colors mt-2">
+    <a href="/checkin" className="flex items-center gap-2 text-xs text-gray-400 hover:text-gray-600 transition-colors mt-2">
       <span>📊</span>
       <span>Último check-in: {label}</span>
     </a>

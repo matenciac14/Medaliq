@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
+import { rateLimitAsync } from '@/lib/rate_limit'
 
 const INVITE_SELECT = {
   id: true,
@@ -16,6 +17,9 @@ export async function POST() {
   if (!session?.user?.id || session.user.role !== 'COACH') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  const { allowed } = await rateLimitAsync(`coach-${session.user.id}:invite-post`, { limit: 10, windowMs: 60_000 })
+  if (!allowed) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
 
   const coachId = session.user.id
   const suffix = Math.random().toString(36).substr(2, 6).toUpperCase()

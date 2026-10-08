@@ -6,6 +6,7 @@
  * without creating cross-dependencies between app/ subfolders.
  */
 import { getPlanWeekNumber } from '@/lib/core/week_number'
+import { calculateTrainingAdherence } from '@/domain/training/get_training_adherence'
 
 const SESSION_DISPLAY: Record<string, { label: string; color: string }> = {
   RODAJE_Z2:    { label: 'Z2',   color: '#16a34a' },
@@ -88,6 +89,15 @@ export type CoachAthleteRow = {
       adjustmentsTriggered: string[]
       weekNumber: number
     }>
+    // Gym data for unified adherence (optional — backward compatible)
+    athleteAssignments?: Array<{
+      isActive: boolean
+      startDate: Date
+      template: { daysPerWeek: number }
+    }>
+    _count?: {
+      gymSessions: number
+    }
   }
 }
 
@@ -106,11 +116,24 @@ export function mapCoachAthleteRelation(rel: CoachAthleteRow, now: Date): Mapped
     : 0
 
   const allPastSessions = plan?.weeks.filter((w) => w.weekNumber <= currentWeek).flatMap((w) => w.sessions) ?? []
-  const completedCount = allPastSessions.filter((s) => s.log !== null).length
-  const adherencePct =
-    allPastSessions.length > 0
-      ? Math.round((completedCount / allPastSessions.length) * 100)
-      : 0
+
+  // Gym routine data for unified adherence
+  const activeWorkout = athlete.athleteAssignments?.find(w => w.isActive)
+  const gymRoutine = activeWorkout
+    ? {
+        daysPerWeek: activeWorkout.template.daysPerWeek,
+        weeksActive: Math.max(1, Math.ceil(
+          (now.getTime() - new Date(activeWorkout.startDate).getTime()) / (7 * 86_400_000)
+        )),
+      }
+    : null
+
+  const adherenceResult = calculateTrainingAdherence({
+    planSessions: allPastSessions,
+    gymRoutine,
+    gymSessionsDone: { count: athlete._count?.gymSessions ?? 0 },
+  })
+  const adherencePct = adherenceResult.totalAdherence
 
   const currentPlanWeek =
     plan?.weeks.find((w) => w.weekNumber === currentWeek) ??

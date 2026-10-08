@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
+import { setFreshJwtCookie } from '@/lib/auth/refresh_jwt_cookie'
 
 // GET /api/invite/[code] — valida el código y devuelve info del coach
 export async function GET(
@@ -79,7 +80,7 @@ export async function GET(
 
 // POST /api/invite/[code] — redime el código (atleta autenticado)
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
   const { code } = await params
@@ -119,5 +120,7 @@ export async function POST(
     })
   }
 
-  return NextResponse.json({ ok: true })
+  const response = NextResponse.json({ ok: true })
+  await setFreshJwtCookie(req, response, athleteId).catch((err) => console.error('[invite/redeem] setFreshJwtCookie failed:', err))
+  return response
 }
